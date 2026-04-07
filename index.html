@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Control de Ingreso — Home Delivery</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f0f2f6;--surface:#fff;--border:#dde2ed;--text:#1e2433;--muted:#7a8299;
+  --accent:#e85d9b;--accent2:#22c27a;--accent3:#3b82f6;--accent4:#8b5cf6;
+  --nav-bg:#1e2433;
+  --pill-in:#d1fae5;--pill-in-t:#065f46;
+  --pill-out:#fce7f3;--pill-out-t:#9d174d;
+  --pill-break:#dbeafe;--pill-break-t:#1e40af;
+  --pill-banio:#ede9fe;--pill-banio-t:#5b21b6;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* NAV */
+nav{background:var(--nav-bg);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,36,51,.2)}
+.nav-brand{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:#fff;letter-spacing:.08em;text-transform:uppercase;line-height:1}
+.nav-sub{font-size:10px;color:var(--accent);font-weight:600;letter-spacing:.15em;text-transform:uppercase}
+.nav-tabs{display:flex;gap:4px}
+.nav-tab{padding:7px 18px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;color:#9aa3b8;border:none;background:transparent;transition:all .2s;font-family:'DM Sans',sans-serif}
+.nav-tab:hover{color:#fff;background:rgba(255,255,255,.07)}
+.nav-tab.active{background:var(--accent);color:#fff}
+.nav-time{font-family:'Syne',sans-serif;font-size:13px;color:#9aa3b8;letter-spacing:.06em}
+
+/* LAYOUT */
+.page{padding:28px 32px;max-width:1280px;margin:0 auto;display:none}
+.page.active{display:block}
+.section-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:22px;display:flex;align-items:center;gap:10px}
+.section-title .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(232,93,155,.2)}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 16px;text-align:center;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.green::before{background:var(--accent2)}
+.stat-card.blue::before{background:var(--accent3)}
+.stat-card.pink::before{background:var(--accent)}
+.stat-num{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;line-height:1}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:5px}
+.stat-card.green .stat-num{color:var(--accent2)}
+.stat-card.blue .stat-num{color:var(--accent3)}
+.stat-card.pink .stat-num{color:var(--accent)}
+
+/* CARDS */
+.registro-grid{display:grid;grid-template-columns:390px 1fr;gap:20px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:0 1px 4px rgba(30,36,51,.06)}
+.card-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:16px}
+.divider{height:1px;background:var(--border);margin:18px 0}
+
+/* DNI */
+.dni-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px;display:block}
+.dni-input{width:100%;padding:14px 16px;font-size:24px;font-family:'Syne',sans-serif;font-weight:700;border:2px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);letter-spacing:.12em;transition:border-color .2s,box-shadow .2s;outline:none;margin-bottom:14px}
+.dni-input:focus{border-color:var(--accent3);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+
+/* PERSONA */
+.persona-info{background:var(--bg);border-radius:10px;padding:13px 15px;margin-bottom:18px;min-height:62px;display:flex;align-items:center;gap:12px;border:1px solid var(--border);transition:border-color .2s}
+.persona-info.found{border-color:var(--accent2)}
+.persona-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent3),var(--accent));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;color:#fff;font-size:15px;flex-shrink:0}
+.persona-name{font-weight:600;font-size:15px}
+.persona-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.persona-empty{color:var(--muted);font-size:13px}
+
+/* BOTONES MARCAR */
+.btns-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-marca{padding:13px 10px;border-radius:9px;border:2px solid transparent;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.05em;width:100%}
+.btn-marca:disabled{opacity:.22;cursor:not-allowed}
+.btn-ingreso{background:var(--accent2);color:#fff;grid-column:span 2;font-size:15px;padding:15px}
+.btn-ingreso:hover:not(:disabled){background:#18a368;transform:translateY(-1px);box-shadow:0 4px 14px rgba(34,194,122,.3)}
+.btn-salida{background:var(--accent);color:#fff;grid-column:span 2;font-size:15px;padding:15px}
+.btn-salida:hover:not(:disabled){background:#d44d89;transform:translateY(-1px);box-shadow:0 4px 14px rgba(232,93,155,.3)}
+.btn-break-out{background:transparent;border-color:var(--accent3);color:var(--accent3)}
+.btn-break-in{background:var(--accent3);color:#fff}
+.btn-banio-out{background:transparent;border-color:var(--accent4);color:var(--accent4)}
+.btn-banio-in{background:var(--accent4);color:#fff}
+.btn-break-out:hover:not(:disabled),.btn-break-in:hover:not(:disabled),.btn-banio-out:hover:not(:disabled),.btn-banio-in:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.12)}
+
+/* FORM NUEVO */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:span 2}
+.form-group label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.form-input{padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:var(--bg);outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--accent3);background:#fff}
+.btn-guardar{margin-top:14px;width:100%;padding:13px;background:var(--accent3);color:#fff;border:none;border-radius:9px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.05em;transition:background .15s;text-transform:uppercase}
+.btn-guardar:hover{background:#2563eb}
+
+/* TABLE */
+.table-search-wrap{margin-bottom:12px;position:relative}
+.table-search{width:100%;padding:9px 12px 9px 36px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--bg);outline:none;transition:border-color .2s}
+.table-search:focus{border-color:var(--accent3)}
+.table-search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none}
+.table-wrap{overflow-x:auto;max-height:420px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{border-bottom:2px solid var(--border)}
+thead th{position:sticky;top:0;background:var(--surface);z-index:1;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);padding:10px 12px;text-align:left}
+td{padding:11px 12px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f7f9fc}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-dentro{background:var(--pill-in);color:var(--pill-in-t)}
+.badge-fuera{background:var(--pill-out);color:var(--pill-out-t)}
+.badge-break{background:var(--pill-break);color:var(--pill-break-t)}
+.badge-banio{background:var(--pill-banio);color:var(--pill-banio-t)}
+.td-muted{color:#c5cad8}
+
+/* FILTROS RESUMEN */
+.filtros-row{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;align-items:flex-end}
+.filtro-group{display:flex;flex-direction:column;gap:5px}
+.filtro-group label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.filtro-input{padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .2s}
+.filtro-input:focus{border-color:var(--accent3)}
+.download-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px}
+.btn-dl{padding:9px 16px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s;text-transform:uppercase;letter-spacing:.06em;color:var(--text)}
+.btn-dl:hover{background:var(--nav-bg);color:#fff;border-color:var(--nav-bg)}
+.btn-buscar{padding:9px 20px;border-radius:8px;border:1.5px solid var(--accent3);background:transparent;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;color:var(--accent3);text-transform:uppercase;letter-spacing:.06em;transition:all .15s}
+.btn-buscar:hover{background:var(--accent3);color:#fff}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--nav-bg);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;z-index:9999;display:flex;align-items:center;gap:10px;transform:translateY(80px);opacity:0;transition:all .28s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 28px rgba(0,0,0,.18);max-width:340px;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-left:4px solid var(--accent2)}
+.toast.warning{border-left:4px solid var(--accent)}
+.toast.error{border-left:4px solid #ef4444}
+
+@media(max-width:900px){
+  .registro-grid{grid-template-columns:1fr}
+  .page{padding:16px}
+  nav{padding:0 16px}
+  .nav-time{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <div>
+    <div class="nav-brand">Control HD</div>
+    <div class="nav-sub">Home Delivery</div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('registro')">Registro</button>
+    <button class="nav-tab" onclick="showPage('resumen')">Resumen</button>
+  </div>
+  <div class="nav-time" id="reloj"></div>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+<!-- ===================== PÁGINA: REGISTRO ===================== -->
+<div class="page active" id="page-registro">
+  <div class="section-title"><div class="dot"></div> Registro de Acceso</div>
+
+  <div class="stats-row">
+    <div class="stat-card green"><div class="stat-num" id="s-dentro">0</div><div class="stat-label">Dentro</div></div>
+    <div class="stat-card blue"><div class="stat-num" id="s-break">0</div><div class="stat-label">Break / Baño</div></div>
+    <div class="stat-card pink"><div class="stat-num" id="s-salida">0</div><div class="stat-label">Salieron</div></div>
+  </div>
+
+  <div class="registro-grid">
+    <!-- PANEL IZQUIERDO -->
+    <div class="card">
+      <div class="card-title">Buscar por DNI</div>
+      <label class="dni-label">DNI / Cédula</label>
+      <input class="dni-input" type="text" id="dni-input" placeholder="00000000" maxlength="12" autocomplete="off" autofocus />
+
+      <div class="persona-info" id="persona-info">
+        <span class="persona-empty">Ingresa un DNI para continuar</span>
+      </div>
+
+      <!-- FORM NUEVO -->
+      <div id="form-nuevo" style="display:none">
+        <div class="divider"></div>
+        <div class="card-title" style="color:var(--accent)">DNI no encontrado — Registrar persona</div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Nombre completo</label>
+            <input class="form-input" id="nuevo-nombre" placeholder="Nombre y apellido" />
+          </div>
+          <div class="form-group">
+            <label>Empresa</label>
+            <input class="form-input" id="nuevo-empresa" placeholder="Empresa" />
+          </div>
+          <div class="form-group">
+            <label>Cargo</label>
+            <input class="form-input" id="nuevo-cargo" placeholder="Cargo" />
+          </div>
+        </div>
+        <button class="btn-guardar" onclick="guardarNuevo()">Guardar y Marcar Ingreso</button>
+      </div>
+
+      <div class="divider"></div>
+      <div class="card-title">Marcar</div>
+      <div class="btns-grid">
+        <button class="btn-marca btn-ingreso" id="btn-ingreso" disabled onclick="marcar('ingreso')">↓ Ingreso</button>
+        <button class="btn-marca btn-break-out" id="btn-break-out" disabled onclick="marcar('break_salida')">⏸ Break Salida</button>
+        <button class="btn-marca btn-break-in" id="btn-break-in" disabled onclick="marcar('break_retorno')">▶ Break Retorno</button>
+        <button class="btn-marca btn-banio-out" id="btn-banio-out" disabled onclick="marcar('banio_salida')">🚻 Baño Salida</button>
+        <button class="btn-marca btn-banio-in" id="btn-banio-in" disabled onclick="marcar('banio_retorno')">↩ Baño Retorno</button>
+        <button class="btn-marca btn-salida" id="btn-salida" disabled onclick="marcar('salida')">↑ Salida</button>
+      </div>
+    </div>
+
+    <!-- TABLA TIEMPO REAL -->
+    <div class="card">
+      <div class="card-title">Actividad de hoy — Tiempo real</div>
+      <div class="table-search-wrap">
+        <span class="table-search-icon">🔍</span>
+        <input class="table-search" type="text" id="busqueda-tabla" placeholder="Buscar por nombre, DNI o empresa..." oninput="renderTabla()" />
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Ingreso</th><th>Salida</th><th>Estado</th></tr>
+          </thead>
+          <tbody id="tabla-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== PÁGINA: RESUMEN ===================== -->
+<div class="page" id="page-resumen">
+  <div class="section-title"><div class="dot"></div> Resumen y Reportes</div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Filtros</div>
+    <div class="filtros-row">
+      <div class="filtro-group">
+        <label>Desde</label>
+        <input class="filtro-input" type="date" id="f-desde" />
+      </div>
+      <div class="filtro-group">
+        <label>Hasta</label>
+        <input class="filtro-input" type="date" id="f-hasta" />
+      </div>
+      <div class="filtro-group">
+        <label>DNI o Nombre</label>
+        <input class="filtro-input" type="text" id="f-search" placeholder="Buscar..." />
+      </div>
+      <div class="filtro-group">
+        <label>Empresa</label>
+        <input class="filtro-input" type="text" id="f-empresa" placeholder="Empresa..." />
+      </div>
+      <div class="filtro-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <button class="btn-buscar" onclick="buscarEventos()" id="btn-buscar">Buscar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="download-row">
+    <button class="btn-dl" onclick="descargar('asistencia')">📥 Asistencia</button>
+    <button class="btn-dl" onclick="descargar('break')">📥 Breaks</button>
+    <button class="btn-dl" onclick="descargar('banio')">📥 Baños</button>
+    <button class="btn-dl" onclick="descargar('general')">📥 General</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title" id="resumen-count">Registros</div>
+    <div class="table-wrap" style="max-height:520px">
+      <table>
+        <thead>
+          <tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Cargo</th><th>Tipo</th><th>Fecha y Hora</th></tr>
+        </thead>
+        <tbody id="tabla-resumen"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────
+const SUPABASE_URL = 'https://cqsojxexrjflczdkjnyx.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxc29qeGV4cmpmbGN6ZGtqbnl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1Mjk2MjUsImV4cCI6MjA5MTEwNTYyNX0.tFjyYleGhKuWgIce12CFMvrCAvgDFVbH7qggcmIyJx0'
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+// ─── HELPERS ──────────────────────────────────────────
+const today = () => new Date().toISOString().slice(0, 10)
+const toPeruTime = iso => {
+  const d = new Date(iso)
+  d.setHours(d.getHours() - 5)
+  return d.toLocaleDateString('es-PE') + ' ' + d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
+}
+const fmt = d => d.toLocaleDateString('es-PE') + ' ' + d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
+const initials = n => n.split(' ').map(x => x[0]).slice(0, 2).join('')
+
+const TIPO_LABEL = {
+  ingreso: 'Ingreso', salida: 'Salida',
+  break_salida: 'Break Salida', break_retorno: 'Break Retorno',
+  banio_salida: 'Baño Salida', banio_retorno: 'Baño Retorno'
+}
+const TIPO_BADGE = {
+  ingreso: 'badge-dentro', salida: 'badge-fuera',
+  break_salida: 'badge-break', break_retorno: 'badge-break',
+  banio_salida: 'badge-banio', banio_retorno: 'badge-banio'
+}
+const ESTADO_BADGE = {
+  dentro: { label: 'Dentro', cls: 'badge-dentro' },
+  break: { label: 'Break', cls: 'badge-break' },
+  banio: { label: 'Baño', cls: 'badge-banio' },
+  salida: { label: 'Salió', cls: 'badge-fuera' }
+}
+
+// ─── ESTADO ───────────────────────────────────────────
+let estadoHoy = []
+let currentDni = ''
+let currentPersona = null
+let eventosResumen = []
+
+// ─── RELOJ ────────────────────────────────────────────
+setInterval(() => {
+  document.getElementById('reloj').textContent = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}, 1000)
+
+// ─── NAVEGACIÓN ───────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'))
+  document.getElementById('page-' + name).classList.add('active')
+  event.target.classList.add('active')
+  if (name === 'resumen') initResumen()
+}
+
+// ─── TOAST ────────────────────────────────────────────
+let toastTimer
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast')
+  document.getElementById('toast-msg').textContent = msg
+  t.className = 'toast show ' + type
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400)
+}
+
+// ─── CARGAR ESTADO HOY ────────────────────────────────
+async function loadEstadoHoy() {
+  const { data } = await db.from('estado_hoy').select('*').eq('fecha', today()).order('updated_at', { ascending: false })
+  if (data) {
+    estadoHoy = data
+    updateStats()
+    renderTabla()
+  }
+}
+
+function updateStats() {
+  document.getElementById('s-dentro').textContent = estadoHoy.filter(e => e.estado === 'dentro').length
+  document.getElementById('s-break').textContent = estadoHoy.filter(e => ['break', 'banio'].includes(e.estado)).length
+  document.getElementById('s-salida').textContent = estadoHoy.filter(e => e.estado === 'salida').length
+}
+
+function renderTabla() {
+  const q = document.getElementById('busqueda-tabla').value.toLowerCase()
+  const rows = estadoHoy.filter(e => !q || e.nombre.toLowerCase().includes(q) || e.dni.includes(q) || e.empresa.toLowerCase().includes(q))
+  const tbody = document.getElementById('tabla-body')
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px">Sin registros por el momento</td></tr>'
+    return
+  }
+  tbody.innerHTML = rows.map(e => {
+    const b = ESTADO_BADGE[e.estado] || { label: e.estado, cls: '' }
+    return `<tr>
+      <td><b>${e.dni}</b></td>
+      <td>${e.nombre}</td>
+      <td>${e.empresa}</td>
+      <td>${e.ingreso || '<span class="td-muted">—</span>'}</td>
+      <td>${e.salida || '<span class="td-muted">—</span>'}</td>
+      <td><span class="badge ${b.cls}">${b.label}</span></td>
+    </tr>`
+  }).join('')
+}
+
+// ─── REALTIME ─────────────────────────────────────────
+db.channel('estado_hoy_rt')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'estado_hoy' }, loadEstadoHoy)
+  .subscribe()
+
+// ─── BUSCAR DNI ───────────────────────────────────────
+document.getElementById('dni-input').addEventListener('input', async function () {
+  const val = this.value.trim()
+  currentDni = val
+  currentPersona = null
+  document.getElementById('form-nuevo').style.display = 'none'
+  updatePersonaInfo()
+  updateButtons()
+  if (val.length < 6) return
+
+  const { data } = await db.from('personas').select('*').eq('dni', val).single()
+  if (data) {
+    currentPersona = data
+    updatePersonaInfo(true)
+  } else if (val.length >= 8) {
+    document.getElementById('form-nuevo').style.display = 'block'
+  }
+  updateButtons()
+})
+
+function updatePersonaInfo(found = false) {
+  const box = document.getElementById('persona-info')
+  if (!currentPersona) {
+    box.className = 'persona-info'
+    box.innerHTML = `<span class="persona-empty">${document.getElementById('form-nuevo').style.display === 'block' ? 'DNI no encontrado' : 'Ingresa un DNI para continuar'}</span>`
+    return
+  }
+  box.className = 'persona-info found'
+  box.innerHTML = `<div class="persona-avatar">${initials(currentPersona.nombre)}</div>
+    <div><div class="persona-name">${currentPersona.nombre}</div>
+    <div class="persona-sub">${currentPersona.empresa} · ${currentPersona.cargo}</div></div>`
+}
+
+function updateButtons() {
+  const estado = estadoHoy.find(e => e.dni === currentDni)?.estado || null
+  const p = !!currentPersona
+  document.getElementById('btn-ingreso').disabled = !p || (!!estado && estado !== 'salida')
+  document.getElementById('btn-break-out').disabled = !p || estado !== 'dentro'
+  document.getElementById('btn-break-in').disabled = !p || estado !== 'break'
+  document.getElementById('btn-banio-out').disabled = !p || estado !== 'dentro'
+  document.getElementById('btn-banio-in').disabled = !p || estado !== 'banio'
+  document.getElementById('btn-salida').disabled = !p || estado !== 'dentro'
+}
+
+// ─── MARCAR ───────────────────────────────────────────
+const ESTADO_MAP = { ingreso: 'dentro', salida: 'salida', break_salida: 'break', break_retorno: 'dentro', banio_salida: 'banio', banio_retorno: 'dentro' }
+const ACCION_LABEL = { ingreso: 'Ingreso registrado', salida: 'Salida registrada', break_salida: 'Break iniciado', break_retorno: 'Break finalizado', banio_salida: 'Salida a baño', banio_retorno: 'Retorno de baño' }
+
+async function marcar(tipo) {
+  if (!currentPersona) return
+  const ahora = fmt(new Date())
+  const nuevoEstado = ESTADO_MAP[tipo]
+  const existente = estadoHoy.find(e => e.dni === currentPersona.dni)
+
+  await db.from('estado_hoy').upsert({
+    dni: currentPersona.dni, nombre: currentPersona.nombre,
+    empresa: currentPersona.empresa, cargo: currentPersona.cargo,
+    estado: nuevoEstado, fecha: today(),
+    ingreso: tipo === 'ingreso' ? ahora : (existente?.ingreso || ahora),
+    salida: tipo === 'salida' ? ahora : (existente?.salida || ''),
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'dni,fecha' })
+
+  await db.from('eventos').insert({
+    dni: currentPersona.dni, nombre: currentPersona.nombre,
+    empresa: currentPersona.empresa, cargo: currentPersona.cargo,
+    tipo, fecha: ahora, fecha_iso: new Date().toISOString()
+  })
+
+  showToast(ACCION_LABEL[tipo] + ' — ' + currentPersona.nombre, tipo === 'salida' ? 'warning' : 'success')
+  loadEstadoHoy()
+
+  setTimeout(() => {
+    document.getElementById('dni-input').value = ''
+    currentDni = ''; currentPersona = null
+    document.getElementById('form-nuevo').style.display = 'none'
+    updatePersonaInfo(); updateButtons()
+    document.getElementById('dni-input').focus()
+  }, 1500)
+}
+
+// ─── GUARDAR NUEVO ────────────────────────────────────
+async function guardarNuevo() {
+  const nombre = document.getElementById('nuevo-nombre').value.trim()
+  const empresa = document.getElementById('nuevo-empresa').value.trim()
+  const cargo = document.getElementById('nuevo-cargo').value.trim() || 'Sin cargo'
+  if (!nombre || !empresa) { showToast('Completa nombre y empresa', 'error'); return }
+  const nuevaPersona = { dni: currentDni, nombre, empresa, cargo }
+  await db.from('personas').upsert(nuevaPersona)
+  currentPersona = nuevaPersona
+  document.getElementById('form-nuevo').style.display = 'none'
+  document.getElementById('nuevo-nombre').value = ''
+  document.getElementById('nuevo-empresa').value = ''
+  document.getElementById('nuevo-cargo').value = ''
+  updatePersonaInfo(true)
+  await marcar('ingreso')
+}
+
+// ─── RESUMEN ──────────────────────────────────────────
+function initResumen() {
+  const t = today()
+  document.getElementById('f-desde').value = t
+  document.getElementById('f-hasta').value = t
+  buscarEventos()
+}
+
+async function buscarEventos() {
+  const btn = document.getElementById('btn-buscar')
+  btn.textContent = 'Buscando...'
+  const desde = document.getElementById('f-desde').value
+  const hasta = document.getElementById('f-hasta').value
+  const search = document.getElementById('f-search').value.trim()
+  const empresa = document.getElementById('f-empresa').value.trim()
+
+  let q = db.from('eventos').select('*').order('fecha_iso', { ascending: true })
+  if (desde) q = q.gte('fecha_iso', desde + 'T05:00:00')
+  if (hasta) q = q.lte('fecha_iso', hasta + 'T28:59:59')
+  if (search) q = q.or(`dni.ilike.%${search}%,nombre.ilike.%${search}%`)
+  if (empresa) q = q.ilike('empresa', `%${empresa}%`)
+
+  const { data } = await q
+  eventosResumen = data || []
+  renderResumen()
+  btn.textContent = 'Buscar'
+}
+
+function renderResumen() {
+  document.getElementById('resumen-count').textContent = `Registros (${eventosResumen.length})`
+  const tbody = document.getElementById('tabla-resumen')
+  if (!eventosResumen.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Sin registros para este rango de fechas</td></tr>'
+    return
+  }
+  tbody.innerHTML = eventosResumen.map(e => `<tr>
+    <td><b>${e.dni}</b></td>
+    <td>${e.nombre}</td>
+    <td>${e.empresa}</td>
+    <td>${e.cargo}</td>
+    <td><span class="badge ${TIPO_BADGE[e.tipo] || ''}">${TIPO_LABEL[e.tipo] || e.tipo}</span></td>
+    <td>${e.fecha}</td>
+  </tr>`).join('')
+}
+
+// ─── EXPORTAR EXCEL ───────────────────────────────────
+async function descargar(tipo) {
+  const filtros = { asistencia: ['ingreso', 'salida'], break: ['break_salida', 'break_retorno'], banio: ['banio_salida', 'banio_retorno'], general: [] }
+  const filtro = filtros[tipo]
+  const data = filtro.length ? eventosResumen.filter(e => filtro.includes(e.tipo)) : eventosResumen
+  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
+  const rows = [['DNI', 'Nombre', 'Empresa', 'Cargo', 'Tipo', 'Fecha y Hora']]
+  data.forEach(e => rows.push([e.dni, e.nombre, e.empresa, e.cargo, TIPO_LABEL[e.tipo] || e.tipo, e.fecha]))
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols'] = [{ wch: 12 }, { wch: 24 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 20 }]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, tipo.charAt(0).toUpperCase() + tipo.slice(1))
+  XLSX.writeFile(wb, `reporte_${tipo}_${today()}.xlsx`)
+}
+
+// ─── INIT ─────────────────────────────────────────────
+loadEstadoHoy()
+</script>
+</body>
+</html>
