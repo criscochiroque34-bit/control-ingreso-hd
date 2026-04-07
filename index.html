@@ -35,6 +35,11 @@ nav{background:var(--nav-bg);padding:0 32px;display:flex;align-items:center;just
 .section-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:22px;display:flex;align-items:center;gap:10px}
 .section-title .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(232,93,155,.2)}
 
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:0 1px 4px rgba(30,36,51,.06)}
+.card-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:16px}
+.divider{height:1px;background:var(--border);margin:18px 0}
+
 /* STATS */
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 16px;text-align:center;position:relative;overflow:hidden}
@@ -42,24 +47,17 @@ nav{background:var(--nav-bg);padding:0 32px;display:flex;align-items:center;just
 .stat-card.green::before{background:var(--accent2)}
 .stat-card.blue::before{background:var(--accent3)}
 .stat-card.pink::before{background:var(--accent)}
-.stat-num{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;line-height:1}
+.stat-num{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;line-height:1;transition:all .3s}
 .stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:5px}
 .stat-card.green .stat-num{color:var(--accent2)}
 .stat-card.blue .stat-num{color:var(--accent3)}
 .stat-card.pink .stat-num{color:var(--accent)}
 
-/* CARDS */
-.registro-grid{display:grid;grid-template-columns:390px 1fr;gap:20px;align-items:start}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:0 1px 4px rgba(30,36,51,.06)}
-.card-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:16px}
-.divider{height:1px;background:var(--border);margin:18px 0}
-
 /* DNI */
+.registro-grid{display:grid;grid-template-columns:390px 1fr;gap:20px;align-items:start}
 .dni-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px;display:block}
 .dni-input{width:100%;padding:14px 16px;font-size:24px;font-family:'Syne',sans-serif;font-weight:700;border:2px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);letter-spacing:.12em;transition:border-color .2s,box-shadow .2s;outline:none;margin-bottom:14px}
 .dni-input:focus{border-color:var(--accent3);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
-
-/* PERSONA */
 .persona-info{background:var(--bg);border-radius:10px;padding:13px 15px;margin-bottom:18px;min-height:62px;display:flex;align-items:center;gap:12px;border:1px solid var(--border);transition:border-color .2s}
 .persona-info.found{border-color:var(--accent2)}
 .persona-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent3),var(--accent));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;color:#fff;font-size:15px;flex-shrink:0}
@@ -110,7 +108,33 @@ tr:hover td{background:#f7f9fc}
 .badge-banio{background:var(--pill-banio);color:var(--pill-banio-t)}
 .td-muted{color:#c5cad8}
 
-/* FILTROS RESUMEN */
+/* SITUACION ACTUAL */
+.filtro-bar{display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.filtro-bar-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.emp-btn{padding:6px 16px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;font-family:'DM Sans',sans-serif}
+.emp-btn:hover{border-color:var(--accent3);color:var(--accent3)}
+.emp-btn.active{background:var(--nav-bg);color:#fff;border-color:var(--nav-bg)}
+.persona-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;margin-bottom:4px;transition:background .15s}
+.persona-row:hover{background:var(--bg)}
+.persona-left{display:flex;align-items:center;gap:10px}
+.p-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:12px;color:#fff;flex-shrink:0}
+.av-g{background:linear-gradient(135deg,#22c27a,#16a35a)}
+.av-b{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
+.av-p{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+.av-o{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.av-r{background:linear-gradient(135deg,#ef4444,#b91c1c)}
+.p-name{font-weight:600;font-size:13px}
+.p-meta{font-size:11px;color:var(--muted)}
+.persona-right{display:flex;align-items:center;gap:8px}
+.desde{font-size:11px;color:var(--muted)}
+.timer{font-family:monospace;font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px;min-width:48px;text-align:center}
+.tok{background:var(--pill-break);color:var(--pill-break-t)}
+.twarn{background:#fee2e2;color:#991b1b;animation:blink 1s infinite}
+.tbok{background:var(--pill-banio);color:var(--pill-banio-t)}
+.tbwarn{background:#fee2e2;color:#991b1b;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* REPORTES */
 .filtros-row{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;align-items:flex-end}
 .filtro-group{display:flex;flex-direction:column;gap:5px}
 .filtro-group label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
@@ -134,39 +158,38 @@ tr:hover td{background:#f7f9fc}
   .page{padding:16px}
   nav{padding:0 16px}
   .nav-time{display:none}
+  .stats-row{grid-template-columns:repeat(3,1fr)}
 }
 </style>
 </head>
 <body>
 
-<!-- NAVBAR -->
 <nav>
   <div>
     <div class="nav-brand">Control HD</div>
     <div class="nav-sub">Home Delivery</div>
   </div>
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showPage('registro')">Registro</button>
-    <button class="nav-tab" onclick="showPage('resumen')">Resumen</button>
+    <button class="nav-tab active" onclick="showPage('registro',this)">Registro</button>
+    <button class="nav-tab" onclick="showPage('situacion',this)">Situación Actual</button>
+    <button class="nav-tab" onclick="showPage('reportes',this)">Reportes</button>
   </div>
   <div class="nav-time" id="reloj"></div>
 </nav>
 
-<!-- TOAST -->
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
 
-<!-- ===================== PÁGINA: REGISTRO ===================== -->
+<!-- ===================== REGISTRO ===================== -->
 <div class="page active" id="page-registro">
   <div class="section-title"><div class="dot"></div> Registro de Acceso</div>
 
   <div class="stats-row">
-    <div class="stat-card green"><div class="stat-num" id="s-dentro">0</div><div class="stat-label">Dentro</div></div>
-    <div class="stat-card blue"><div class="stat-num" id="s-break">0</div><div class="stat-label">Break / Baño</div></div>
-    <div class="stat-card pink"><div class="stat-num" id="s-salida">0</div><div class="stat-label">Salieron</div></div>
+    <div class="stat-card green"><div class="stat-num" id="r-dentro">0</div><div class="stat-label">Dentro</div></div>
+    <div class="stat-card blue"><div class="stat-num" id="r-break">0</div><div class="stat-label">Break / Baño</div></div>
+    <div class="stat-card pink"><div class="stat-num" id="r-salida">0</div><div class="stat-label">Salieron</div></div>
   </div>
 
   <div class="registro-grid">
-    <!-- PANEL IZQUIERDO -->
     <div class="card">
       <div class="card-title">Buscar por DNI</div>
       <label class="dni-label">DNI / Cédula</label>
@@ -176,7 +199,6 @@ tr:hover td{background:#f7f9fc}
         <span class="persona-empty">Ingresa un DNI para continuar</span>
       </div>
 
-      <!-- FORM NUEVO -->
       <div id="form-nuevo" style="display:none">
         <div class="divider"></div>
         <div class="card-title" style="color:var(--accent)">DNI no encontrado — Registrar persona</div>
@@ -209,28 +231,47 @@ tr:hover td{background:#f7f9fc}
       </div>
     </div>
 
-    <!-- TABLA TIEMPO REAL -->
     <div class="card">
       <div class="card-title">Actividad de hoy — Tiempo real</div>
       <div class="table-search-wrap">
         <span class="table-search-icon">🔍</span>
-        <input class="table-search" type="text" id="busqueda-tabla" placeholder="Buscar por nombre, DNI o empresa..." oninput="renderTabla()" />
+        <input class="table-search" type="text" id="busqueda-tabla" placeholder="Buscar por nombre, DNI o empresa..." oninput="renderTablaRegistro()" />
       </div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Ingreso</th><th>Salida</th><th>Estado</th></tr>
-          </thead>
-          <tbody id="tabla-body"></tbody>
+          <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Ingreso</th><th>Salida</th><th>Estado</th></tr></thead>
+          <tbody id="tabla-registro"></tbody>
         </table>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ===================== PÁGINA: RESUMEN ===================== -->
-<div class="page" id="page-resumen">
-  <div class="section-title"><div class="dot"></div> Resumen y Reportes</div>
+<!-- ===================== SITUACIÓN ACTUAL ===================== -->
+<div class="page" id="page-situacion">
+  <div class="section-title"><div class="dot"></div> Situación Actual</div>
+
+  <div class="filtro-bar">
+    <span class="filtro-bar-label">Empresa:</span>
+    <button class="emp-btn active" onclick="filtrarEmpresa('todas',this)">Todas</button>
+    <div id="emp-btns"></div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card green"><div class="stat-num" id="sa-dentro">0</div><div class="stat-label">Dentro</div></div>
+    <div class="stat-card blue"><div class="stat-num" id="sa-break">0</div><div class="stat-label">Break / Baño</div></div>
+    <div class="stat-card pink"><div class="stat-num" id="sa-salida">0</div><div class="stat-label">Salieron</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" id="sa-titulo">Todas las personas</div>
+    <div id="sa-lista"></div>
+  </div>
+</div>
+
+<!-- ===================== REPORTES ===================== -->
+<div class="page" id="page-reportes">
+  <div class="section-title"><div class="dot"></div> Reportes</div>
 
   <div class="card" style="margin-bottom:20px">
     <div class="card-title">Filtros</div>
@@ -245,15 +286,15 @@ tr:hover td{background:#f7f9fc}
       </div>
       <div class="filtro-group">
         <label>DNI o Nombre</label>
-        <input class="filtro-input" type="text" id="f-search" placeholder="Buscar..." />
+        <input class="filtro-input" type="text" id="f-search" placeholder="Buscar..." style="width:160px" />
       </div>
       <div class="filtro-group">
         <label>Empresa</label>
-        <input class="filtro-input" type="text" id="f-empresa" placeholder="Empresa..." />
+        <input class="filtro-input" type="text" id="f-empresa" placeholder="Empresa..." style="width:140px" />
       </div>
       <div class="filtro-group" style="justify-content:flex-end">
         <label>&nbsp;</label>
-        <button class="btn-buscar" onclick="buscarEventos()" id="btn-buscar">Buscar</button>
+        <button class="btn-buscar" onclick="buscarEventos()" id="btn-buscar-rep">Buscar</button>
       </div>
     </div>
   </div>
@@ -266,13 +307,11 @@ tr:hover td{background:#f7f9fc}
   </div>
 
   <div class="card">
-    <div class="card-title" id="resumen-count">Registros</div>
+    <div class="card-title" id="rep-count">Registros</div>
     <div class="table-wrap" style="max-height:520px">
       <table>
-        <thead>
-          <tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Cargo</th><th>Tipo</th><th>Fecha y Hora</th></tr>
-        </thead>
-        <tbody id="tabla-resumen"></tbody>
+        <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Cargo</th><th>Tipo</th><th>Fecha y Hora</th></tr></thead>
+        <tbody id="tabla-reportes"></tbody>
       </table>
     </div>
   </div>
@@ -280,61 +319,55 @@ tr:hover td{background:#f7f9fc}
 
 <script>
 // ─── CONFIG ───────────────────────────────────────────
-const SUPABASE_URL = 'https://cqsojxexrjflczdkjnyx.supabase.co'
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxc29qeGV4cmpmbGN6ZGtqbnl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1Mjk2MjUsImV4cCI6MjA5MTEwNTYyNX0.tFjyYleGhKuWgIce12CFMvrCAvgDFVbH7qggcmIyJx0'
+const SUPABASE_URL = 'https://lflenisloinbqyuptxzc.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbGVuaXNsb2luYnF5dXB0eHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MzAxNDQsImV4cCI6MjA5MTEwNjE0NH0.jcjKs2xCgxf4mvGbf9a5eRETWAOKf0SXg_JC0iy4UsI'
 const { createClient } = supabase
 const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-// ─── HELPERS ──────────────────────────────────────────
-const today = () => new Date().toISOString().slice(0, 10)
-const toPeruTime = iso => {
-  const d = new Date(iso)
-  d.setHours(d.getHours() - 5)
-  return d.toLocaleDateString('es-PE') + ' ' + d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
-}
-const fmt = d => d.toLocaleDateString('es-PE') + ' ' + d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
-const initials = n => n.split(' ').map(x => x[0]).slice(0, 2).join('')
-
-const TIPO_LABEL = {
-  ingreso: 'Ingreso', salida: 'Salida',
-  break_salida: 'Break Salida', break_retorno: 'Break Retorno',
-  banio_salida: 'Baño Salida', banio_retorno: 'Baño Retorno'
-}
-const TIPO_BADGE = {
-  ingreso: 'badge-dentro', salida: 'badge-fuera',
-  break_salida: 'badge-break', break_retorno: 'badge-break',
-  banio_salida: 'badge-banio', banio_retorno: 'badge-banio'
-}
-const ESTADO_BADGE = {
-  dentro: { label: 'Dentro', cls: 'badge-dentro' },
-  break: { label: 'Break', cls: 'badge-break' },
-  banio: { label: 'Baño', cls: 'badge-banio' },
-  salida: { label: 'Salió', cls: 'badge-fuera' }
-}
+// ─── CONSTANTES ───────────────────────────────────────
+const TIPO_LABEL = {ingreso:'Ingreso',salida:'Salida',break_salida:'Break Salida',break_retorno:'Break Retorno',banio_salida:'Baño Salida',banio_retorno:'Baño Retorno'}
+const TIPO_BADGE = {ingreso:'badge-dentro',salida:'badge-fuera',break_salida:'badge-break',break_retorno:'badge-break',banio_salida:'badge-banio',banio_retorno:'badge-banio'}
+const ESTADO_BADGE = {dentro:{label:'Dentro',cls:'badge-dentro'},break:{label:'Break',cls:'badge-break'},banio:{label:'Baño',cls:'badge-banio'},salida:{label:'Salió',cls:'badge-fuera'}}
+const ESTADO_MAP = {ingreso:'dentro',salida:'salida',break_salida:'break',break_retorno:'dentro',banio_salida:'banio',banio_retorno:'dentro'}
+const ACCION_LABEL = {ingreso:'Ingreso registrado',salida:'Salida registrada',break_salida:'Break iniciado',break_retorno:'Break finalizado',banio_salida:'Salida a baño',banio_retorno:'Retorno de baño'}
+const TOLERANCIA_MS = 10 * 60 * 1000
+const AVATARES = ['av-g','av-b','av-p','av-o','av-r']
 
 // ─── ESTADO ───────────────────────────────────────────
 let estadoHoy = []
+let eventosResumen = []
 let currentDni = ''
 let currentPersona = null
-let eventosResumen = []
+let filtroEmpresa = 'todas'
+let empresaTimers = {} // { dni: Date cuando entró a break/baño }
+let avatarMap = {}
+let avatarIdx = 0
+
+// ─── HELPERS ──────────────────────────────────────────
+const today = () => new Date().toISOString().slice(0,10)
+const fmt = d => d.toLocaleDateString('es-PE') + ' ' + d.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})
+const ini = n => n.split(' ').map(x=>x[0]).slice(0,2).join('')
+const pad = n => String(n).padStart(2,'0')
+const getAvatar = emp => { if (!avatarMap[emp]) { avatarMap[emp] = AVATARES[avatarIdx++ % AVATARES.length] } return avatarMap[emp] }
 
 // ─── RELOJ ────────────────────────────────────────────
 setInterval(() => {
-  document.getElementById('reloj').textContent = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  document.getElementById('reloj').textContent = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit'})
 }, 1000)
 
 // ─── NAVEGACIÓN ───────────────────────────────────────
-function showPage(name) {
+function showPage(name, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'))
   document.getElementById('page-' + name).classList.add('active')
-  event.target.classList.add('active')
-  if (name === 'resumen') initResumen()
+  el.classList.add('active')
+  if (name === 'reportes') initReportes()
+  if (name === 'situacion') renderSituacion()
 }
 
 // ─── TOAST ────────────────────────────────────────────
 let toastTimer
-function showToast(msg, type = 'success') {
+function showToast(msg, type='success') {
   const t = document.getElementById('toast')
   document.getElementById('toast-msg').textContent = msg
   t.className = 'toast show ' + type
@@ -344,146 +377,196 @@ function showToast(msg, type = 'success') {
 
 // ─── CARGAR ESTADO HOY ────────────────────────────────
 async function loadEstadoHoy() {
-  const { data } = await db.from('estado_hoy').select('*').eq('fecha', today()).order('updated_at', { ascending: false })
+  const { data } = await db.from('estado_hoy').select('*').eq('fecha', today()).order('updated_at',{ascending:false})
   if (data) {
+    // Actualizar timers para break/baño
+    data.forEach(e => {
+      if (['break','banio'].includes(e.estado) && !empresaTimers[e.dni]) {
+        empresaTimers[e.dni] = new Date(e.updated_at).getTime()
+      }
+      if (!['break','banio'].includes(e.estado)) {
+        delete empresaTimers[e.dni]
+      }
+    })
     estadoHoy = data
-    updateStats()
-    renderTabla()
+    updateStatsRegistro()
+    renderTablaRegistro()
+    renderSituacion()
+    updateEmpresaBtns()
   }
 }
 
-function updateStats() {
-  document.getElementById('s-dentro').textContent = estadoHoy.filter(e => e.estado === 'dentro').length
-  document.getElementById('s-break').textContent = estadoHoy.filter(e => ['break', 'banio'].includes(e.estado)).length
-  document.getElementById('s-salida').textContent = estadoHoy.filter(e => e.estado === 'salida').length
+function updateStatsRegistro() {
+  document.getElementById('r-dentro').textContent = estadoHoy.filter(e=>e.estado==='dentro').length
+  document.getElementById('r-break').textContent = estadoHoy.filter(e=>['break','banio'].includes(e.estado)).length
+  document.getElementById('r-salida').textContent = estadoHoy.filter(e=>e.estado==='salida').length
 }
 
-function renderTabla() {
+function renderTablaRegistro() {
   const q = document.getElementById('busqueda-tabla').value.toLowerCase()
-  const rows = estadoHoy.filter(e => !q || e.nombre.toLowerCase().includes(q) || e.dni.includes(q) || e.empresa.toLowerCase().includes(q))
-  const tbody = document.getElementById('tabla-body')
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px">Sin registros por el momento</td></tr>'
-    return
-  }
+  const rows = estadoHoy.filter(e=>!q||e.nombre.toLowerCase().includes(q)||e.dni.includes(q)||e.empresa.toLowerCase().includes(q))
+  const tbody = document.getElementById('tabla-registro')
+  if (!rows.length) { tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px">Sin registros por el momento</td></tr>'; return }
   tbody.innerHTML = rows.map(e => {
-    const b = ESTADO_BADGE[e.estado] || { label: e.estado, cls: '' }
-    return `<tr>
-      <td><b>${e.dni}</b></td>
-      <td>${e.nombre}</td>
-      <td>${e.empresa}</td>
-      <td>${e.ingreso || '<span class="td-muted">—</span>'}</td>
-      <td>${e.salida || '<span class="td-muted">—</span>'}</td>
-      <td><span class="badge ${b.cls}">${b.label}</span></td>
-    </tr>`
+    const b = ESTADO_BADGE[e.estado]||{label:e.estado,cls:''}
+    return `<tr><td><b>${e.dni}</b></td><td>${e.nombre}</td><td>${e.empresa}</td><td>${e.ingreso||'<span class="td-muted">—</span>'}</td><td>${e.salida||'<span class="td-muted">—</span>'}</td><td><span class="badge ${b.cls}">${b.label}</span></td></tr>`
   }).join('')
 }
 
 // ─── REALTIME ─────────────────────────────────────────
 db.channel('estado_hoy_rt')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'estado_hoy' }, loadEstadoHoy)
+  .on('postgres_changes',{event:'*',schema:'public',table:'estado_hoy'}, loadEstadoHoy)
   .subscribe()
 
 // ─── BUSCAR DNI ───────────────────────────────────────
-document.getElementById('dni-input').addEventListener('input', async function () {
+document.getElementById('dni-input').addEventListener('input', async function() {
   const val = this.value.trim()
   currentDni = val
   currentPersona = null
   document.getElementById('form-nuevo').style.display = 'none'
-  updatePersonaInfo()
-  updateButtons()
+  updatePersonaInfo(); updateButtons()
   if (val.length < 6) return
-
-  const { data } = await db.from('personas').select('*').eq('dni', val).single()
-  if (data) {
-    currentPersona = data
-    updatePersonaInfo(true)
-  } else if (val.length >= 8) {
-    document.getElementById('form-nuevo').style.display = 'block'
-  }
+  const { data } = await db.from('personas').select('*').eq('dni',val).single()
+  if (data) { currentPersona = data; updatePersonaInfo(true) }
+  else if (val.length >= 8) { document.getElementById('form-nuevo').style.display = 'block' }
   updateButtons()
 })
 
-function updatePersonaInfo(found = false) {
+function updatePersonaInfo(found=false) {
   const box = document.getElementById('persona-info')
   if (!currentPersona) {
     box.className = 'persona-info'
-    box.innerHTML = `<span class="persona-empty">${document.getElementById('form-nuevo').style.display === 'block' ? 'DNI no encontrado' : 'Ingresa un DNI para continuar'}</span>`
+    box.innerHTML = `<span class="persona-empty">${document.getElementById('form-nuevo').style.display==='block'?'DNI no encontrado':'Ingresa un DNI para continuar'}</span>`
     return
   }
   box.className = 'persona-info found'
-  box.innerHTML = `<div class="persona-avatar">${initials(currentPersona.nombre)}</div>
-    <div><div class="persona-name">${currentPersona.nombre}</div>
-    <div class="persona-sub">${currentPersona.empresa} · ${currentPersona.cargo}</div></div>`
+  box.innerHTML = `<div class="persona-avatar">${ini(currentPersona.nombre)}</div><div><div class="persona-name">${currentPersona.nombre}</div><div class="persona-sub">${currentPersona.empresa} · ${currentPersona.cargo}</div></div>`
 }
 
 function updateButtons() {
-  const estado = estadoHoy.find(e => e.dni === currentDni)?.estado || null
+  const estado = estadoHoy.find(e=>e.dni===currentDni)?.estado||null
   const p = !!currentPersona
-  document.getElementById('btn-ingreso').disabled = !p || (!!estado && estado !== 'salida')
-  document.getElementById('btn-break-out').disabled = !p || estado !== 'dentro'
-  document.getElementById('btn-break-in').disabled = !p || estado !== 'break'
-  document.getElementById('btn-banio-out').disabled = !p || estado !== 'dentro'
-  document.getElementById('btn-banio-in').disabled = !p || estado !== 'banio'
-  document.getElementById('btn-salida').disabled = !p || estado !== 'dentro'
+  document.getElementById('btn-ingreso').disabled = !p||(!!estado&&estado!=='salida')
+  document.getElementById('btn-break-out').disabled = !p||estado!=='dentro'
+  document.getElementById('btn-break-in').disabled = !p||estado!=='break'
+  document.getElementById('btn-banio-out').disabled = !p||estado!=='dentro'
+  document.getElementById('btn-banio-in').disabled = !p||estado!=='banio'
+  document.getElementById('btn-salida').disabled = !p||estado!=='dentro'
 }
 
 // ─── MARCAR ───────────────────────────────────────────
-const ESTADO_MAP = { ingreso: 'dentro', salida: 'salida', break_salida: 'break', break_retorno: 'dentro', banio_salida: 'banio', banio_retorno: 'dentro' }
-const ACCION_LABEL = { ingreso: 'Ingreso registrado', salida: 'Salida registrada', break_salida: 'Break iniciado', break_retorno: 'Break finalizado', banio_salida: 'Salida a baño', banio_retorno: 'Retorno de baño' }
-
 async function marcar(tipo) {
   if (!currentPersona) return
   const ahora = fmt(new Date())
   const nuevoEstado = ESTADO_MAP[tipo]
-  const existente = estadoHoy.find(e => e.dni === currentPersona.dni)
+  const existente = estadoHoy.find(e=>e.dni===currentPersona.dni)
 
   await db.from('estado_hoy').upsert({
-    dni: currentPersona.dni, nombre: currentPersona.nombre,
-    empresa: currentPersona.empresa, cargo: currentPersona.cargo,
-    estado: nuevoEstado, fecha: today(),
-    ingreso: tipo === 'ingreso' ? ahora : (existente?.ingreso || ahora),
-    salida: tipo === 'salida' ? ahora : (existente?.salida || ''),
+    dni:currentPersona.dni, nombre:currentPersona.nombre,
+    empresa:currentPersona.empresa, cargo:currentPersona.cargo,
+    estado:nuevoEstado, fecha:today(),
+    ingreso: tipo==='ingreso'?ahora:(existente?.ingreso||ahora),
+    salida: tipo==='salida'?ahora:(existente?.salida||''),
     updated_at: new Date().toISOString()
-  }, { onConflict: 'dni,fecha' })
+  },{onConflict:'dni,fecha'})
 
   await db.from('eventos').insert({
-    dni: currentPersona.dni, nombre: currentPersona.nombre,
-    empresa: currentPersona.empresa, cargo: currentPersona.cargo,
-    tipo, fecha: ahora, fecha_iso: new Date().toISOString()
+    dni:currentPersona.dni, nombre:currentPersona.nombre,
+    empresa:currentPersona.empresa, cargo:currentPersona.cargo,
+    tipo, fecha:ahora, fecha_iso:new Date().toISOString()
   })
 
-  showToast(ACCION_LABEL[tipo] + ' — ' + currentPersona.nombre, tipo === 'salida' ? 'warning' : 'success')
+  showToast(ACCION_LABEL[tipo]+' — '+currentPersona.nombre, tipo==='salida'?'warning':'success')
   loadEstadoHoy()
 
   setTimeout(() => {
-    document.getElementById('dni-input').value = ''
-    currentDni = ''; currentPersona = null
-    document.getElementById('form-nuevo').style.display = 'none'
+    document.getElementById('dni-input').value=''
+    currentDni=''; currentPersona=null
+    document.getElementById('form-nuevo').style.display='none'
     updatePersonaInfo(); updateButtons()
     document.getElementById('dni-input').focus()
   }, 1500)
 }
 
-// ─── GUARDAR NUEVO ────────────────────────────────────
 async function guardarNuevo() {
   const nombre = document.getElementById('nuevo-nombre').value.trim()
   const empresa = document.getElementById('nuevo-empresa').value.trim()
-  const cargo = document.getElementById('nuevo-cargo').value.trim() || 'Sin cargo'
-  if (!nombre || !empresa) { showToast('Completa nombre y empresa', 'error'); return }
-  const nuevaPersona = { dni: currentDni, nombre, empresa, cargo }
+  const cargo = document.getElementById('nuevo-cargo').value.trim()||'Sin cargo'
+  if (!nombre||!empresa) { showToast('Completa nombre y empresa','error'); return }
+  const nuevaPersona = {dni:currentDni, nombre, empresa, cargo}
   await db.from('personas').upsert(nuevaPersona)
   currentPersona = nuevaPersona
-  document.getElementById('form-nuevo').style.display = 'none'
-  document.getElementById('nuevo-nombre').value = ''
-  document.getElementById('nuevo-empresa').value = ''
-  document.getElementById('nuevo-cargo').value = ''
+  document.getElementById('form-nuevo').style.display='none'
+  document.getElementById('nuevo-nombre').value=''
+  document.getElementById('nuevo-empresa').value=''
+  document.getElementById('nuevo-cargo').value=''
   updatePersonaInfo(true)
   await marcar('ingreso')
 }
 
-// ─── RESUMEN ──────────────────────────────────────────
-function initResumen() {
+// ─── SITUACIÓN ACTUAL ─────────────────────────────────
+function updateEmpresaBtns() {
+  const empresas = [...new Set(estadoHoy.map(e=>e.empresa))].sort()
+  const cont = document.getElementById('emp-btns')
+  cont.innerHTML = empresas.map(emp =>
+    `<button class="emp-btn ${filtroEmpresa===emp?'active':''}" onclick="filtrarEmpresa('${emp}',this)" style="margin-left:4px">${emp}</button>`
+  ).join('')
+}
+
+function filtrarEmpresa(empresa, btn) {
+  filtroEmpresa = empresa
+  document.querySelectorAll('.emp-btn').forEach(b=>b.classList.remove('active'))
+  btn.classList.add('active')
+  renderSituacion()
+}
+
+function renderSituacion() {
+  const data = filtroEmpresa==='todas' ? estadoHoy : estadoHoy.filter(e=>e.empresa===filtroEmpresa)
+  document.getElementById('sa-dentro').textContent = data.filter(e=>e.estado==='dentro').length
+  document.getElementById('sa-break').textContent = data.filter(e=>['break','banio'].includes(e.estado)).length
+  document.getElementById('sa-salida').textContent = data.filter(e=>e.estado==='salida').length
+  document.getElementById('sa-titulo').textContent = filtroEmpresa==='todas' ? 'Todas las personas' : filtroEmpresa
+
+  const lista = document.getElementById('sa-lista')
+  if (!data.length) { lista.innerHTML='<div style="text-align:center;color:var(--muted);padding:28px;font-size:13px">Sin registros por el momento</div>'; return }
+
+  lista.innerHTML = data.map(e => {
+    const b = ESTADO_BADGE[e.estado]||{label:e.estado,cls:''}
+    const av = getAvatar(e.empresa)
+    const timerHtml = ['break','banio'].includes(e.estado)
+      ? `<span class="timer tok" id="tmr-${e.dni}">00:00</span>` : ''
+    return `<div class="persona-row">
+      <div class="persona-left">
+        <div class="p-avatar ${av}">${ini(e.nombre)}</div>
+        <div><div class="p-name">${e.nombre}</div><div class="p-meta">${e.empresa} · ${e.cargo}</div></div>
+      </div>
+      <div class="persona-right">
+        <span class="desde">desde ${e.ingreso||'—'}</span>
+        <span class="badge ${b.cls}">${b.label}</span>
+        ${timerHtml}
+      </div>
+    </div>`
+  }).join('')
+}
+
+// Contadores en vivo
+setInterval(() => {
+  estadoHoy.forEach(e => {
+    if (!['break','banio'].includes(e.estado)) return
+    const el = document.getElementById('tmr-' + e.dni)
+    if (!el) return
+    const start = empresaTimers[e.dni] || Date.now()
+    const elapsed = Date.now() - start
+    const mins = Math.floor(elapsed/60000)
+    const secs = Math.floor((elapsed%60000)/1000)
+    el.textContent = pad(mins)+':'+pad(secs)
+    const over = elapsed > TOLERANCIA_MS
+    el.className = 'timer ' + (e.estado==='break' ? (over?'twarn':'tok') : (over?'tbwarn':'tbok'))
+  })
+}, 1000)
+
+// ─── REPORTES ─────────────────────────────────────────
+function initReportes() {
   const t = today()
   document.getElementById('f-desde').value = t
   document.getElementById('f-hasta').value = t
@@ -491,54 +574,48 @@ function initResumen() {
 }
 
 async function buscarEventos() {
-  const btn = document.getElementById('btn-buscar')
+  const btn = document.getElementById('btn-buscar-rep')
   btn.textContent = 'Buscando...'
   const desde = document.getElementById('f-desde').value
   const hasta = document.getElementById('f-hasta').value
   const search = document.getElementById('f-search').value.trim()
   const empresa = document.getElementById('f-empresa').value.trim()
 
-  let q = db.from('eventos').select('*').order('fecha_iso', { ascending: true })
-  if (desde) q = q.gte('fecha_iso', desde + 'T05:00:00')
-  if (hasta) q = q.lte('fecha_iso', hasta + 'T28:59:59')
+  let q = db.from('eventos').select('*').order('fecha_iso',{ascending:true})
+  if (desde) q = q.gte('fecha_iso', desde+'T05:00:00')
+  if (hasta) q = q.lte('fecha_iso', hasta+'T28:59:59')
   if (search) q = q.or(`dni.ilike.%${search}%,nombre.ilike.%${search}%`)
-  if (empresa) q = q.ilike('empresa', `%${empresa}%`)
+  if (empresa) q = q.ilike('empresa',`%${empresa}%`)
 
   const { data } = await q
-  eventosResumen = data || []
-  renderResumen()
+  eventosResumen = data||[]
+  renderReportes()
   btn.textContent = 'Buscar'
 }
 
-function renderResumen() {
-  document.getElementById('resumen-count').textContent = `Registros (${eventosResumen.length})`
-  const tbody = document.getElementById('tabla-resumen')
-  if (!eventosResumen.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Sin registros para este rango de fechas</td></tr>'
-    return
-  }
-  tbody.innerHTML = eventosResumen.map(e => `<tr>
-    <td><b>${e.dni}</b></td>
-    <td>${e.nombre}</td>
-    <td>${e.empresa}</td>
-    <td>${e.cargo}</td>
-    <td><span class="badge ${TIPO_BADGE[e.tipo] || ''}">${TIPO_LABEL[e.tipo] || e.tipo}</span></td>
+function renderReportes() {
+  document.getElementById('rep-count').textContent = `Registros (${eventosResumen.length})`
+  const tbody = document.getElementById('tabla-reportes')
+  if (!eventosResumen.length) { tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Sin registros para este rango de fechas</td></tr>'; return }
+  tbody.innerHTML = eventosResumen.map(e=>`<tr>
+    <td><b>${e.dni}</b></td><td>${e.nombre}</td><td>${e.empresa}</td><td>${e.cargo}</td>
+    <td><span class="badge ${TIPO_BADGE[e.tipo]||''}">${TIPO_LABEL[e.tipo]||e.tipo}</span></td>
     <td>${e.fecha}</td>
   </tr>`).join('')
 }
 
 // ─── EXPORTAR EXCEL ───────────────────────────────────
 async function descargar(tipo) {
-  const filtros = { asistencia: ['ingreso', 'salida'], break: ['break_salida', 'break_retorno'], banio: ['banio_salida', 'banio_retorno'], general: [] }
+  const filtros = {asistencia:['ingreso','salida'],break:['break_salida','break_retorno'],banio:['banio_salida','banio_retorno'],general:[]}
   const filtro = filtros[tipo]
-  const data = filtro.length ? eventosResumen.filter(e => filtro.includes(e.tipo)) : eventosResumen
+  const data = filtro.length ? eventosResumen.filter(e=>filtro.includes(e.tipo)) : eventosResumen
   const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
-  const rows = [['DNI', 'Nombre', 'Empresa', 'Cargo', 'Tipo', 'Fecha y Hora']]
-  data.forEach(e => rows.push([e.dni, e.nombre, e.empresa, e.cargo, TIPO_LABEL[e.tipo] || e.tipo, e.fecha]))
+  const rows = [['DNI','Nombre','Empresa','Cargo','Tipo','Fecha y Hora']]
+  data.forEach(e=>rows.push([e.dni,e.nombre,e.empresa,e.cargo,TIPO_LABEL[e.tipo]||e.tipo,e.fecha]))
   const ws = XLSX.utils.aoa_to_sheet(rows)
-  ws['!cols'] = [{ wch: 12 }, { wch: 24 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 20 }]
+  ws['!cols'] = [{wch:12},{wch:24},{wch:20},{wch:16},{wch:16},{wch:20}]
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, tipo.charAt(0).toUpperCase() + tipo.slice(1))
+  XLSX.utils.book_append_sheet(wb, ws, tipo.charAt(0).toUpperCase()+tipo.slice(1))
   XLSX.writeFile(wb, `reporte_${tipo}_${today()}.xlsx`)
 }
 
