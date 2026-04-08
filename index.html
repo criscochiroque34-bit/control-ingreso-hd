@@ -146,6 +146,25 @@ tr:hover td{background:#f7f9fc}
 .btn-buscar{padding:9px 20px;border-radius:8px;border:1.5px solid var(--accent3);background:transparent;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;color:var(--accent3);text-transform:uppercase;letter-spacing:.06em;transition:all .15s}
 .btn-buscar:hover{background:var(--accent3);color:#fff}
 
+/* MODAL EDICION */
+.modal-overlay{position:fixed;inset:0;background:rgba(30,36,51,.5);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:16px;padding:28px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2);transform:translateY(16px);transition:transform .2s}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+.modal-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.modal-field label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.modal-select{padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:var(--bg);outline:none;transition:border-color .2s;appearance:none;cursor:pointer}
+.modal-select:focus{border-color:var(--accent3)}
+.modal-actions{display:flex;gap:10px;margin-top:20px}
+.btn-modal-cancel{flex:1;padding:11px;border-radius:9px;border:1.5px solid var(--border);background:transparent;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);text-transform:uppercase}
+.btn-modal-cancel:hover{background:var(--bg)}
+.btn-modal-save{flex:1;padding:11px;border-radius:9px;border:none;background:var(--accent3);color:#fff;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-transform:uppercase;transition:background .15s}
+.btn-modal-save:hover{background:#2563eb}
+.btn-edit{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;font-size:11px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;font-family:'DM Sans',sans-serif}
+.btn-edit:hover{background:var(--nav-bg);color:#fff;border-color:var(--nav-bg)}
+
 /* TOAST */
 .toast{position:fixed;bottom:28px;right:28px;background:var(--nav-bg);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;z-index:9999;display:flex;align-items:center;gap:10px;transform:translateY(80px);opacity:0;transition:all .28s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 28px rgba(0,0,0,.18);max-width:340px;pointer-events:none}
 .toast.show{transform:translateY(0);opacity:1}
@@ -182,12 +201,6 @@ tr:hover td{background:#f7f9fc}
 <!-- ===================== REGISTRO ===================== -->
 <div class="page active" id="page-registro">
   <div class="section-title"><div class="dot"></div> Registro de Acceso</div>
-
-  <div class="stats-row">
-    <div class="stat-card green"><div class="stat-num" id="r-dentro">0</div><div class="stat-label">Dentro</div></div>
-    <div class="stat-card blue"><div class="stat-num" id="r-break">0</div><div class="stat-label">Break / Baño</div></div>
-    <div class="stat-card pink"><div class="stat-num" id="r-salida">0</div><div class="stat-label">Salieron</div></div>
-  </div>
 
   <div class="registro-grid">
     <div class="card">
@@ -239,7 +252,7 @@ tr:hover td{background:#f7f9fc}
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Ingreso</th><th>Salida</th><th>Estado</th></tr></thead>
+          <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Ingreso</th><th>Salida</th><th>Estado</th><th></th></tr></thead>
           <tbody id="tabla-registro"></tbody>
         </table>
       </div>
@@ -317,6 +330,35 @@ tr:hover td{background:#f7f9fc}
   </div>
 </div>
 
+<!-- MODAL EDICION -->
+<div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-nombre">—</div>
+    <div class="modal-sub" id="modal-meta">—</div>
+    <div class="modal-field">
+      <label>Estado actual</label>
+      <select class="modal-select" id="modal-estado">
+        <option value="dentro">Dentro</option>
+        <option value="break">Break</option>
+        <option value="banio">Baño</option>
+        <option value="salida">Salió</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Hora de ingreso</label>
+      <input class="modal-select" type="text" id="modal-ingreso" placeholder="ej: 08:30" />
+    </div>
+    <div class="modal-field">
+      <label>Hora de salida</label>
+      <input class="modal-select" type="text" id="modal-salida" placeholder="ej: 17:00 (opcional)" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-modal-save" onclick="guardarEdicion()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ─── CONFIG ───────────────────────────────────────────
 const SUPABASE_URL = 'https://lflenisloinbqyuptxzc.supabase.co'
@@ -379,10 +421,10 @@ function showToast(msg, type='success') {
 async function loadEstadoHoy() {
   const { data } = await db.from('estado_hoy').select('*').eq('fecha', today()).order('updated_at',{ascending:false})
   if (data) {
-    // Actualizar timers para break/baño
+    // Actualizar timers usando break_inicio de Supabase
     data.forEach(e => {
-      if (['break','banio'].includes(e.estado) && !empresaTimers[e.dni]) {
-        empresaTimers[e.dni] = new Date(e.updated_at).getTime()
+      if (['break','banio'].includes(e.estado) && e.break_inicio) {
+        empresaTimers[e.dni] = new Date(e.break_inicio).getTime()
       }
       if (!['break','banio'].includes(e.estado)) {
         delete empresaTimers[e.dni]
@@ -396,11 +438,7 @@ async function loadEstadoHoy() {
   }
 }
 
-function updateStatsRegistro() {
-  document.getElementById('r-dentro').textContent = estadoHoy.filter(e=>e.estado==='dentro').length
-  document.getElementById('r-break').textContent = estadoHoy.filter(e=>['break','banio'].includes(e.estado)).length
-  document.getElementById('r-salida').textContent = estadoHoy.filter(e=>e.estado==='salida').length
-}
+function updateStatsRegistro() {}
 
 function renderTablaRegistro() {
   const q = document.getElementById('busqueda-tabla').value.toLowerCase()
@@ -409,7 +447,7 @@ function renderTablaRegistro() {
   if (!rows.length) { tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px">Sin registros por el momento</td></tr>'; return }
   tbody.innerHTML = rows.map(e => {
     const b = ESTADO_BADGE[e.estado]||{label:e.estado,cls:''}
-    return `<tr><td><b>${e.dni}</b></td><td>${e.nombre}</td><td>${e.empresa}</td><td>${e.ingreso||'<span class="td-muted">—</span>'}</td><td>${e.salida||'<span class="td-muted">—</span>'}</td><td><span class="badge ${b.cls}">${b.label}</span></td></tr>`
+    return `<tr><td><b>${e.dni}</b></td><td>${e.nombre}</td><td>${e.empresa}</td><td>${e.ingreso||'<span class="td-muted">—</span>'}</td><td>${e.salida||'<span class="td-muted">—</span>'}</td><td><span class="badge ${b.cls}">${b.label}</span></td><td><button class="btn-edit" onclick="abrirModal('${e.dni}')">Editar</button></td></tr>`
   }).join('')
 }
 
@@ -461,12 +499,16 @@ async function marcar(tipo) {
   const nuevoEstado = ESTADO_MAP[tipo]
   const existente = estadoHoy.find(e=>e.dni===currentPersona.dni)
 
+  const esBreak = ['break_salida','banio_salida'].includes(tipo)
+  const breakInicio = esBreak ? new Date().toISOString() : null
+
   await db.from('estado_hoy').upsert({
     dni:currentPersona.dni, nombre:currentPersona.nombre,
     empresa:currentPersona.empresa, cargo:currentPersona.cargo,
     estado:nuevoEstado, fecha:today(),
     ingreso: tipo==='ingreso'?ahora:(existente?.ingreso||ahora),
     salida: tipo==='salida'?ahora:(existente?.salida||''),
+    break_inicio: esBreak ? breakInicio : null,
     updated_at: new Date().toISOString()
   },{onConflict:'dni,fecha'})
 
@@ -582,8 +624,12 @@ async function buscarEventos() {
   const empresa = document.getElementById('f-empresa').value.trim()
 
   let q = db.from('eventos').select('*').order('fecha_iso',{ascending:true})
-  if (desde) q = q.gte('fecha_iso', desde+'T05:00:00')
-  if (hasta) q = q.lte('fecha_iso', hasta+'T28:59:59')
+  if (desde) q = q.gte('fecha_iso', desde+'T05:00:00Z')
+  if (hasta) {
+    const nextDay = new Date(hasta)
+    nextDay.setDate(nextDay.getDate() + 1)
+    q = q.lte('fecha_iso', nextDay.toISOString().slice(0,10)+'T04:59:59Z')
+  }
   if (search) q = q.or(`dni.ilike.%${search}%,nombre.ilike.%${search}%`)
   if (empresa) q = q.ilike('empresa',`%${empresa}%`)
 
@@ -617,6 +663,43 @@ async function descargar(tipo) {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, tipo.charAt(0).toUpperCase()+tipo.slice(1))
   XLSX.writeFile(wb, `reporte_${tipo}_${today()}.xlsx`)
+}
+
+// ─── MODAL EDICIÓN ────────────────────────────────────
+let editDni = null
+
+function abrirModal(dni) {
+  const e = estadoHoy.find(x => x.dni === dni)
+  if (!e) return
+  editDni = dni
+  document.getElementById('modal-nombre').textContent = e.nombre
+  document.getElementById('modal-meta').textContent = e.empresa + ' · ' + e.cargo
+  document.getElementById('modal-estado').value = e.estado
+  document.getElementById('modal-ingreso').value = e.ingreso || ''
+  document.getElementById('modal-salida').value = e.salida || ''
+  document.getElementById('modal-overlay').classList.add('open')
+}
+
+function cerrarModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return
+  document.getElementById('modal-overlay').classList.remove('open')
+  editDni = null
+}
+
+async function guardarEdicion() {
+  if (!editDni) return
+  const estado = document.getElementById('modal-estado').value
+  const ingreso = document.getElementById('modal-ingreso').value.trim()
+  const salida = document.getElementById('modal-salida').value.trim()
+
+  await db.from('estado_hoy').update({
+    estado, ingreso, salida, updated_at: new Date().toISOString()
+  }).eq('dni', editDni).eq('fecha', today())
+
+  document.getElementById('modal-overlay').classList.remove('open')
+  editDni = null
+  showToast('Registro actualizado', 'success')
+  loadEstadoHoy()
 }
 
 // ─── INIT ─────────────────────────────────────────────
