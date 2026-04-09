@@ -58,12 +58,38 @@ nav{background:var(--nav-bg);padding:0 32px;display:flex;align-items:center;just
 .dni-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px;display:block}
 .dni-input{width:100%;padding:14px 16px;font-size:24px;font-family:'Syne',sans-serif;font-weight:700;border:2px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);letter-spacing:.12em;transition:border-color .2s,box-shadow .2s;outline:none;margin-bottom:14px}
 .dni-input:focus{border-color:var(--accent3);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
-.persona-info{background:var(--bg);border-radius:10px;padding:13px 15px;margin-bottom:18px;min-height:62px;display:flex;align-items:center;gap:12px;border:1px solid var(--border);transition:border-color .2s}
+.persona-info{background:var(--bg);border-radius:10px;padding:13px 15px;margin-bottom:14px;min-height:62px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--border);transition:border-color .2s}
 .persona-info.found{border-color:var(--accent2)}
+.persona-info-left{display:flex;align-items:center;gap:12px}
 .persona-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent3),var(--accent));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;color:#fff;font-size:15px;flex-shrink:0}
 .persona-name{font-weight:600;font-size:15px}
 .persona-sub{font-size:12px;color:var(--muted);margin-top:2px}
 .persona-empty{color:var(--muted);font-size:13px}
+.btn-edit-inline{padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;font-size:12px;font-weight:500;cursor:pointer;color:var(--muted);transition:all .15s;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0}
+.btn-edit-inline:hover{background:var(--nav-bg);color:#fff;border-color:var(--nav-bg)}
+
+/* FORM PERSONA */
+.form-persona{background:var(--bg);border-radius:10px;padding:14px;margin-bottom:14px;border:1px solid var(--border)}
+.form-persona-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:12px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.form-row.full{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.form-input{padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface);outline:none;transition:border-color .2s;width:100%}
+.form-input:focus{border-color:var(--accent3)}
+.form-actions{display:flex;gap:8px;margin-top:4px}
+.btn-form-save{flex:1;padding:10px;background:var(--accent3);color:#fff;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;text-transform:uppercase;transition:background .15s}
+.btn-form-save:hover{background:#2563eb}
+.btn-form-cancel{padding:10px 14px;border:1.5px solid var(--border);background:transparent;border-radius:8px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);text-transform:uppercase}
+
+/* AUTOCOMPLETE */
+.ac-wrap{position:relative}
+.ac-input{padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface);outline:none;transition:border-color .2s;width:100%}
+.ac-input:focus{border-color:var(--accent3)}
+.ac-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-top:3px;z-index:50;overflow:hidden;box-shadow:0 4px 16px rgba(30,36,51,.1);display:none}
+.ac-item{padding:9px 12px;font-size:13px;cursor:pointer;color:var(--text)}
+.ac-item:hover{background:var(--bg)}
+.ac-item.new-item{color:var(--accent3);font-weight:600}
 
 /* BOTONES MARCAR */
 .btns-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -78,16 +104,6 @@ nav{background:var(--nav-bg);padding:0 32px;display:flex;align-items:center;just
 .btn-banio-out{background:transparent;border-color:var(--accent4);color:var(--accent4)}
 .btn-banio-in{background:var(--accent4);color:#fff}
 .btn-break-out:hover:not(:disabled),.btn-break-in:hover:not(:disabled),.btn-banio-out:hover:not(:disabled),.btn-banio-in:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.12)}
-
-/* FORM NUEVO */
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
-.form-group{display:flex;flex-direction:column;gap:5px}
-.form-group.full{grid-column:span 2}
-.form-group label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
-.form-input{padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:var(--bg);outline:none;transition:border-color .2s}
-.form-input:focus{border-color:var(--accent3);background:#fff}
-.btn-guardar{margin-top:14px;width:100%;padding:13px;background:var(--accent3);color:#fff;border:none;border-radius:9px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.05em;transition:background .15s;text-transform:uppercase}
-.btn-guardar:hover{background:#2563eb}
 
 /* TABLE */
 .table-search-wrap{margin-bottom:12px;position:relative}
@@ -212,24 +228,37 @@ tr:hover td{background:#f7f9fc}
         <span class="persona-empty">Ingresa un DNI para continuar</span>
       </div>
 
-      <div id="form-nuevo" style="display:none">
-        <div class="divider"></div>
-        <div class="card-title" style="color:var(--accent)">DNI no encontrado — Registrar persona</div>
-        <div class="form-grid">
-          <div class="form-group full">
-            <label>Nombre completo</label>
-            <input class="form-input" id="nuevo-nombre" placeholder="Nombre y apellido" />
+      <!-- FORM PERSONA (nuevo o edición) -->
+      <div id="form-persona" style="display:none">
+        <div class="form-persona">
+          <div class="form-persona-title" id="form-persona-title">Registrar nueva persona</div>
+          <div class="form-row full">
+            <div class="form-group">
+              <label>Nombre completo</label>
+              <input class="form-input" id="fp-nombre" placeholder="Nombre y apellido" />
+            </div>
           </div>
-          <div class="form-group">
-            <label>Empresa</label>
-            <input class="form-input" id="nuevo-empresa" placeholder="Empresa" />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Empresa</label>
+              <div class="ac-wrap">
+                <input class="ac-input" id="fp-empresa" placeholder="Empresa..." autocomplete="off" oninput="acFilter('empresa')" onfocus="acShow('empresa')" />
+                <div class="ac-dropdown" id="ac-empresa"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Área</label>
+              <div class="ac-wrap">
+                <input class="ac-input" id="fp-area" placeholder="Área..." autocomplete="off" oninput="acFilter('area')" onfocus="acShow('area')" />
+                <div class="ac-dropdown" id="ac-area"></div>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Cargo</label>
-            <input class="form-input" id="nuevo-cargo" placeholder="Cargo" />
+          <div class="form-actions">
+            <button class="btn-form-cancel" id="btn-form-cancel" onclick="cerrarFormPersona()">Cancelar</button>
+            <button class="btn-form-save" id="btn-form-save" onclick="guardarPersona()">Guardar e Ingresar</button>
           </div>
         </div>
-        <button class="btn-guardar" onclick="guardarNuevo()">Guardar y Marcar Ingreso</button>
       </div>
 
       <div class="divider"></div>
@@ -252,7 +281,7 @@ tr:hover td{background:#f7f9fc}
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Ingreso</th><th>Salida</th><th>Estado</th><th></th></tr></thead>
+          <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Área</th><th>Ingreso</th><th>Salida</th><th>Estado</th><th></th></tr></thead>
           <tbody id="tabla-registro"></tbody>
         </table>
       </div>
@@ -270,10 +299,20 @@ tr:hover td{background:#f7f9fc}
     <div id="emp-btns"></div>
   </div>
 
-  <div class="stats-row">
+  <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
     <div class="stat-card green"><div class="stat-num" id="sa-dentro">0</div><div class="stat-label">Dentro</div></div>
     <div class="stat-card blue"><div class="stat-num" id="sa-break">0</div><div class="stat-label">Break / Baño</div></div>
     <div class="stat-card pink"><div class="stat-num" id="sa-salida">0</div><div class="stat-label">Salieron</div></div>
+    <div class="stat-card" style="border-top:3px solid #f59e0b"><div class="stat-num" id="sa-dia" style="color:#b45309">0</div><div class="stat-label">Turno Día</div></div>
+  </div>
+  <div class="stats-row" style="grid-template-columns:1fr;margin-top:-10px;margin-bottom:22px">
+    <div class="stat-card" style="border-top:3px solid #8b5cf6;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div><div class="stat-num" id="sa-noche" style="color:#6d28d9;font-size:28px">0</div><div class="stat-label">Turno Noche</div></div>
+        <div style="font-size:11px;color:var(--muted)">Ingreso 10pm — 5:59am</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted)">Turno Día: ingreso 6am — 9:59pm</div>
+    </div>
   </div>
 
   <div class="card">
@@ -323,7 +362,7 @@ tr:hover td{background:#f7f9fc}
     <div class="card-title" id="rep-count">Registros</div>
     <div class="table-wrap" style="max-height:520px">
       <table>
-        <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Cargo</th><th>Tipo</th><th>Fecha y Hora</th></tr></thead>
+        <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Área</th><th>Tipo</th><th>Fecha y Hora</th></tr></thead>
         <tbody id="tabla-reportes"></tbody>
       </table>
     </div>
@@ -386,11 +425,37 @@ let avatarMap = {}
 let avatarIdx = 0
 
 // ─── HELPERS ──────────────────────────────────────────
-const today = () => new Date().toISOString().slice(0,10)
+const today = () => {
+  const d = new Date()
+  d.setHours(d.getHours() - 5) // UTC-5 Peru
+  if (d.getHours() < 6) d.setDate(d.getDate() - 1) // antes de 6am = turno anterior
+  return d.toISOString().slice(0,10)
+}
 const fmt = d => d.toLocaleDateString('es-PE') + ' ' + d.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})
 const ini = n => n.split(' ').map(x=>x[0]).slice(0,2).join('')
 const pad = n => String(n).padStart(2,'0')
 const getAvatar = emp => { if (!avatarMap[emp]) { avatarMap[emp] = AVATARES[avatarIdx++ % AVATARES.length] } return avatarMap[emp] }
+
+// hora de ingreso desde string "DD/MM/YYYY HH:MM"
+const horaIngreso = str => {
+  if (!str) return null
+  const p = str.split(' ')
+  return p.length >= 2 ? parseInt(p[1].split(':')[0]) : null
+}
+const esTurnoNoche = str => { const h = horaIngreso(str); return h !== null && (h >= 22 || h < 6) }
+
+// alerta: persona dentro más de 10 horas
+const ALERTA_HORAS = 10
+const horasDesdeIngreso = str => {
+  if (!str) return 0
+  try {
+    const [fecha, hora] = str.split(' ')
+    const [d,m,a] = fecha.split('/')
+    const [hh,mm] = hora.split(':')
+    const dt = new Date(`${a}-${m}-${d}T${hh}:${mm}:00`)
+    return (Date.now() - dt.getTime()) / 3600000
+  } catch { return 0 }
+}
 
 // ─── RELOJ ────────────────────────────────────────────
 setInterval(() => {
@@ -419,9 +484,9 @@ function showToast(msg, type='success') {
 
 // ─── CARGAR ESTADO HOY ────────────────────────────────
 async function loadEstadoHoy() {
-  const { data } = await db.from('estado_hoy').select('*').eq('fecha', today()).order('updated_at',{ascending:false})
+  const { data } = await db.from('estado_hoy').select('*')
+    .eq('fecha', today()).order('updated_at',{ascending:false})
   if (data) {
-    // Actualizar timers usando break_inicio de Supabase
     data.forEach(e => {
       if (['break','banio'].includes(e.estado) && e.break_inicio) {
         empresaTimers[e.dni] = new Date(e.break_inicio).getTime()
@@ -444,10 +509,10 @@ function renderTablaRegistro() {
   const q = document.getElementById('busqueda-tabla').value.toLowerCase()
   const rows = estadoHoy.filter(e=>!q||e.nombre.toLowerCase().includes(q)||e.dni.includes(q)||e.empresa.toLowerCase().includes(q))
   const tbody = document.getElementById('tabla-registro')
-  if (!rows.length) { tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px">Sin registros por el momento</td></tr>'; return }
+  if (!rows.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px">Sin registros por el momento</td></tr>'; return }
   tbody.innerHTML = rows.map(e => {
     const b = ESTADO_BADGE[e.estado]||{label:e.estado,cls:''}
-    return `<tr><td><b>${e.dni}</b></td><td>${e.nombre}</td><td>${e.empresa}</td><td>${e.ingreso||'<span class="td-muted">—</span>'}</td><td>${e.salida||'<span class="td-muted">—</span>'}</td><td><span class="badge ${b.cls}">${b.label}</span></td><td><button class="btn-edit" onclick="abrirModal('${e.dni}')">Editar</button></td></tr>`
+    return `<tr><td><b>${e.dni}</b></td><td>${e.nombre}</td><td>${e.empresa}</td><td>${e.area||'<span class="td-muted">—</span>'}</td><td>${e.ingreso||'<span class="td-muted">—</span>'}</td><td>${e.salida||'<span class="td-muted">—</span>'}</td><td><span class="badge ${b.cls}">${b.label}</span></td><td><button class="btn-edit" onclick="abrirModal('${e.dni}')">Editar</button></td></tr>`
   }).join('')
 }
 
@@ -456,29 +521,113 @@ db.channel('estado_hoy_rt')
   .on('postgres_changes',{event:'*',schema:'public',table:'estado_hoy'}, loadEstadoHoy)
   .subscribe()
 
+// ─── AUTOCOMPLETE ─────────────────────────────────────
+let acListas = { empresa: [], area: [] }
+
+async function loadAcListas() {
+  const { data: pe } = await db.from('personas').select('empresa')
+  const { data: pa } = await db.from('personas').select('area')
+  acListas.empresa = [...new Set((pe||[]).map(x=>x.empresa).filter(Boolean))].sort()
+  acListas.area = [...new Set((pa||[]).map(x=>x.area).filter(Boolean))].sort()
+}
+
+function acFilter(field) {
+  const val = document.getElementById('fp-'+field).value.trim().toLowerCase()
+  acShow(field, val)
+}
+
+function acShow(field, q='') {
+  const drop = document.getElementById('ac-'+field)
+  const val = q || document.getElementById('fp-'+field).value.trim().toLowerCase()
+  const lista = acListas[field]
+  const matches = val ? lista.filter(x=>x.toLowerCase().includes(val)) : lista
+  if (!matches.length && !val) { drop.style.display='none'; return }
+  const items = matches.map(x => `<div class="ac-item" onclick="acSelect('${field}','${x}')">${x}</div>`).join('')
+  const newItem = val && !lista.find(x=>x.toLowerCase()===val)
+    ? `<div class="ac-item new-item" onclick="acSelectNew('${field}','${document.getElementById('fp-'+field).value.trim()}')">+ Agregar "${document.getElementById('fp-'+field).value.trim()}"</div>` : ''
+  drop.innerHTML = items + newItem
+  drop.style.display = (items||newItem) ? 'block' : 'none'
+}
+
+function acSelect(field, val) {
+  document.getElementById('fp-'+field).value = val
+  document.getElementById('ac-'+field).style.display='none'
+}
+
+function acSelectNew(field, val) {
+  document.getElementById('fp-'+field).value = val
+  document.getElementById('ac-'+field).style.display='none'
+  if (!acListas[field].includes(val)) acListas[field].push(val)
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ac-wrap')) {
+    document.querySelectorAll('.ac-dropdown').forEach(d=>d.style.display='none')
+  }
+})
+
 // ─── BUSCAR DNI ───────────────────────────────────────
+let modoEdicion = false
+
 document.getElementById('dni-input').addEventListener('input', async function() {
   const val = this.value.trim()
   currentDni = val
   currentPersona = null
-  document.getElementById('form-nuevo').style.display = 'none'
+  modoEdicion = false
+  cerrarFormPersona()
   updatePersonaInfo(); updateButtons()
   if (val.length < 6) return
   const { data } = await db.from('personas').select('*').eq('dni',val).single()
   if (data) { currentPersona = data; updatePersonaInfo(true) }
-  else if (val.length >= 8) { document.getElementById('form-nuevo').style.display = 'block' }
+  else if (val.length >= 8) { abrirFormNuevo() }
   updateButtons()
 })
 
+function abrirFormNuevo() {
+  modoEdicion = false
+  document.getElementById('form-persona-title').textContent = 'Registrar nueva persona'
+  document.getElementById('fp-nombre').value = ''
+  document.getElementById('fp-empresa').value = ''
+  document.getElementById('fp-area').value = ''
+  document.getElementById('btn-form-save').textContent = 'Guardar e Ingresar'
+  document.getElementById('form-persona').style.display = 'block'
+  updatePersonaInfo()
+}
+
+function abrirFormEdicion() {
+  if (!currentPersona) return
+  modoEdicion = true
+  document.getElementById('form-persona-title').textContent = 'Editar datos'
+  document.getElementById('fp-nombre').value = currentPersona.nombre
+  document.getElementById('fp-empresa').value = currentPersona.empresa||''
+  document.getElementById('fp-area').value = currentPersona.area||''
+  document.getElementById('btn-form-save').textContent = 'Guardar cambios'
+  document.getElementById('form-persona').style.display = 'block'
+}
+
+function cerrarFormPersona() {
+  document.getElementById('form-persona').style.display = 'none'
+  document.querySelectorAll('.ac-dropdown').forEach(d=>d.style.display='none')
+}
+
 function updatePersonaInfo(found=false) {
   const box = document.getElementById('persona-info')
+  const formVisible = document.getElementById('form-persona').style.display !== 'none'
   if (!currentPersona) {
     box.className = 'persona-info'
-    box.innerHTML = `<span class="persona-empty">${document.getElementById('form-nuevo').style.display==='block'?'DNI no encontrado':'Ingresa un DNI para continuar'}</span>`
+    box.innerHTML = `<span class="persona-empty">${formVisible ? 'DNI no encontrado — completa los datos' : 'Ingresa un DNI para continuar'}</span>`
     return
   }
   box.className = 'persona-info found'
-  box.innerHTML = `<div class="persona-avatar">${ini(currentPersona.nombre)}</div><div><div class="persona-name">${currentPersona.nombre}</div><div class="persona-sub">${currentPersona.empresa} · ${currentPersona.cargo}</div></div>`
+  box.innerHTML = `
+    <div class="persona-info-left">
+      <div class="persona-avatar">${ini(currentPersona.nombre)}</div>
+      <div>
+        <div class="persona-name">${currentPersona.nombre}</div>
+        <div class="persona-sub">${[currentPersona.empresa, currentPersona.area].filter(Boolean).join(' · ')}</div>
+      </div>
+    </div>
+    <button class="btn-edit-inline" onclick="abrirFormEdicion()">Editar</button>`
 }
 
 function updateButtons() {
@@ -504,7 +653,7 @@ async function marcar(tipo) {
 
   await db.from('estado_hoy').upsert({
     dni:currentPersona.dni, nombre:currentPersona.nombre,
-    empresa:currentPersona.empresa, cargo:currentPersona.cargo,
+    empresa:currentPersona.empresa, area:currentPersona.area||'',
     estado:nuevoEstado, fecha:today(),
     ingreso: tipo==='ingreso'?ahora:(existente?.ingreso||ahora),
     salida: tipo==='salida'?ahora:(existente?.salida||''),
@@ -514,7 +663,7 @@ async function marcar(tipo) {
 
   await db.from('eventos').insert({
     dni:currentPersona.dni, nombre:currentPersona.nombre,
-    empresa:currentPersona.empresa, cargo:currentPersona.cargo,
+    empresa:currentPersona.empresa, area:currentPersona.area||'',
     tipo, fecha:ahora, fecha_iso:new Date().toISOString()
   })
 
@@ -523,27 +672,28 @@ async function marcar(tipo) {
 
   setTimeout(() => {
     document.getElementById('dni-input').value=''
-    currentDni=''; currentPersona=null
-    document.getElementById('form-nuevo').style.display='none'
+    currentDni=''; currentPersona=null; modoEdicion=false
+    cerrarFormPersona()
     updatePersonaInfo(); updateButtons()
     document.getElementById('dni-input').focus()
   }, 1500)
 }
 
-async function guardarNuevo() {
-  const nombre = document.getElementById('nuevo-nombre').value.trim()
-  const empresa = document.getElementById('nuevo-empresa').value.trim()
-  const cargo = document.getElementById('nuevo-cargo').value.trim()||'Sin cargo'
+async function guardarPersona() {
+  const nombre = document.getElementById('fp-nombre').value.trim()
+  const empresa = document.getElementById('fp-empresa').value.trim()
+  const area = document.getElementById('fp-area').value.trim()
   if (!nombre||!empresa) { showToast('Completa nombre y empresa','error'); return }
-  const nuevaPersona = {dni:currentDni, nombre, empresa, cargo}
-  await db.from('personas').upsert(nuevaPersona)
-  currentPersona = nuevaPersona
-  document.getElementById('form-nuevo').style.display='none'
-  document.getElementById('nuevo-nombre').value=''
-  document.getElementById('nuevo-empresa').value=''
-  document.getElementById('nuevo-cargo').value=''
+  const p = {dni:currentDni, nombre, empresa, area}
+  await db.from('personas').upsert(p)
+  if (!acListas.empresa.includes(empresa)) acListas.empresa.push(empresa)
+  if (area && !acListas.area.includes(area)) acListas.area.push(area)
+  currentPersona = p
+  cerrarFormPersona()
   updatePersonaInfo(true)
-  await marcar('ingreso')
+  updateButtons()
+  if (!modoEdicion) await marcar('ingreso')
+  else showToast('Datos actualizados — '+nombre, 'success')
 }
 
 // ─── SITUACIÓN ACTUAL ─────────────────────────────────
@@ -564,9 +714,12 @@ function filtrarEmpresa(empresa, btn) {
 
 function renderSituacion() {
   const data = filtroEmpresa==='todas' ? estadoHoy : estadoHoy.filter(e=>e.empresa===filtroEmpresa)
+  const activos = data.filter(e=>e.estado!=='salida')
   document.getElementById('sa-dentro').textContent = data.filter(e=>e.estado==='dentro').length
   document.getElementById('sa-break').textContent = data.filter(e=>['break','banio'].includes(e.estado)).length
   document.getElementById('sa-salida').textContent = data.filter(e=>e.estado==='salida').length
+  document.getElementById('sa-dia').textContent = activos.filter(e=>!esTurnoNoche(e.ingreso)).length
+  document.getElementById('sa-noche').textContent = activos.filter(e=>esTurnoNoche(e.ingreso)).length
   document.getElementById('sa-titulo').textContent = filtroEmpresa==='todas' ? 'Todas las personas' : filtroEmpresa
 
   const lista = document.getElementById('sa-lista')
@@ -577,12 +730,21 @@ function renderSituacion() {
     const av = getAvatar(e.empresa)
     const timerHtml = ['break','banio'].includes(e.estado)
       ? `<span class="timer tok" id="tmr-${e.dni}">00:00</span>` : ''
-    return `<div class="persona-row">
+    const horas = horasDesdeIngreso(e.ingreso)
+    const alertaLarga = e.estado==='dentro' && horas > ALERTA_HORAS
+    const turnoTag = esTurnoNoche(e.ingreso)
+      ? `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:#ede9fe;color:#5b21b6">Noche</span>`
+      : `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:#fef3c7;color:#92400e">Día</span>`
+    const alertaHtml = alertaLarga
+      ? `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:#fef3c7;color:#92400e">+${Math.floor(horas)}h sin salida</span>` : ''
+    return `<div class="persona-row" style="${alertaLarga?'background:#fffbeb;border-left:3px solid #f59e0b;border-radius:0':''}">
       <div class="persona-left">
         <div class="p-avatar ${av}">${ini(e.nombre)}</div>
-        <div><div class="p-name">${e.nombre}</div><div class="p-meta">${e.empresa} · ${e.cargo}</div></div>
+        <div><div class="p-name">${e.nombre}</div><div class="p-meta">${e.empresa}${e.area?' · '+e.area:''}</div></div>
       </div>
       <div class="persona-right">
+        ${turnoTag}
+        ${alertaHtml}
         <span class="desde">desde ${e.ingreso||'—'}</span>
         <span class="badge ${b.cls}">${b.label}</span>
         ${timerHtml}
@@ -644,7 +806,7 @@ function renderReportes() {
   const tbody = document.getElementById('tabla-reportes')
   if (!eventosResumen.length) { tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Sin registros para este rango de fechas</td></tr>'; return }
   tbody.innerHTML = eventosResumen.map(e=>`<tr>
-    <td><b>${e.dni}</b></td><td>${e.nombre}</td><td>${e.empresa}</td><td>${e.cargo}</td>
+    <td><b>${e.dni}</b></td><td>${e.nombre}</td><td>${e.empresa}</td><td>${e.area||'<span class="td-muted">—</span>'}</td>
     <td><span class="badge ${TIPO_BADGE[e.tipo]||''}">${TIPO_LABEL[e.tipo]||e.tipo}</span></td>
     <td>${e.fecha}</td>
   </tr>`).join('')
@@ -656,8 +818,8 @@ async function descargar(tipo) {
   const filtro = filtros[tipo]
   const data = filtro.length ? eventosResumen.filter(e=>filtro.includes(e.tipo)) : eventosResumen
   const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
-  const rows = [['DNI','Nombre','Empresa','Cargo','Tipo','Fecha y Hora']]
-  data.forEach(e=>rows.push([e.dni,e.nombre,e.empresa,e.cargo,TIPO_LABEL[e.tipo]||e.tipo,e.fecha]))
+  const rows = [['DNI','Nombre','Empresa','Área','Tipo','Fecha y Hora']]
+  data.forEach(e=>rows.push([e.dni,e.nombre,e.empresa,e.area||'',TIPO_LABEL[e.tipo]||e.tipo,e.fecha]))
   const ws = XLSX.utils.aoa_to_sheet(rows)
   ws['!cols'] = [{wch:12},{wch:24},{wch:20},{wch:16},{wch:16},{wch:20}]
   const wb = XLSX.utils.book_new()
@@ -704,6 +866,7 @@ async function guardarEdicion() {
 
 // ─── INIT ─────────────────────────────────────────────
 loadEstadoHoy()
+loadAcListas()
 </script>
 </body>
 </html>
