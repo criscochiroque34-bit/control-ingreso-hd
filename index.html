@@ -411,7 +411,9 @@ const TIPO_BADGE = {ingreso:'badge-dentro',salida:'badge-fuera',break_salida:'ba
 const ESTADO_BADGE = {dentro:{label:'Dentro',cls:'badge-dentro'},break:{label:'Break',cls:'badge-break'},banio:{label:'Baño',cls:'badge-banio'},salida:{label:'Salió',cls:'badge-fuera'}}
 const ESTADO_MAP = {ingreso:'dentro',salida:'salida',break_salida:'break',break_retorno:'dentro',banio_salida:'banio',banio_retorno:'dentro'}
 const ACCION_LABEL = {ingreso:'Ingreso registrado',salida:'Salida registrada',break_salida:'Break iniciado',break_retorno:'Break finalizado',banio_salida:'Salida a baño',banio_retorno:'Retorno de baño'}
-const TOLERANCIA_MS = 10 * 60 * 1000
+const TOLERANCIA_BREAK_MS = 45 * 60 * 1000  // 45 min para break
+const TOLERANCIA_BANIO_MS = 10 * 60 * 1000  // 10 min para baño
+const BANIO_ALERTA = 3                        // alerta mayor a partir de 3ra salida
 const AVATARES = ['av-g','av-b','av-p','av-o','av-r']
 
 // ─── ESTADO ───────────────────────────────────────────
@@ -444,7 +446,7 @@ const horaIngreso = str => {
 }
 const esTurnoNoche = str => { const h = horaIngreso(str); return h !== null && (h >= 22 || h < 6) }
 
-// alerta: persona dentro más de 10 horas
+// alerta: persona dentro más de 10 horas (usando Lima UTC-5)
 const ALERTA_HORAS = 10
 const horasDesdeIngreso = str => {
   if (!str) return 0
@@ -452,7 +454,8 @@ const horasDesdeIngreso = str => {
     const [fecha, hora] = str.split(' ')
     const [d,m,a] = fecha.split('/')
     const [hh,mm] = hora.split(':')
-    const dt = new Date(`${a}-${m}-${d}T${hh}:${mm}:00`)
+    // Crear fecha como Lima local (UTC-5) usando offset explícito
+    const dt = new Date(`${a}-${m}-${d}T${hh}:${mm}:00-05:00`)
     return (Date.now() - dt.getTime()) / 3600000
   } catch { return 0 }
 }
@@ -469,8 +472,11 @@ function showPage(name, el) {
   document.getElementById('page-' + name).classList.add('active')
   el.classList.add('active')
   if (name === 'reportes') initReportes()
-  if (name === 'situacion') renderSituacion()
+  if (name === 'situacion') { updateEmpresaBtns(); renderSituacion() }
 }
+
+let paginaActual = 'registro'
+const enPagina = p => document.getElementById('page-'+p)?.classList.contains('active')
 
 // ─── TOAST ────────────────────────────────────────────
 let toastTimer
@@ -498,7 +504,7 @@ async function loadEstadoHoy() {
     estadoHoy = data
     updateStatsRegistro()
     renderTablaRegistro()
-    renderSituacion()
+    if (enPagina('situacion')) renderSituacion()
     updateEmpresaBtns()
   }
 }
@@ -648,8 +654,10 @@ async function marcar(tipo) {
   const nuevoEstado = ESTADO_MAP[tipo]
   const existente = estadoHoy.find(e=>e.dni===currentPersona.dni)
 
-  const esBreak = ['break_salida','banio_salida'].includes(tipo)
-  const breakInicio = esBreak ? new Date().toISOString() : null
+  const esAusencia = ['break_salida','banio_salida'].includes(tipo)
+  const esBanioSalida = tipo === 'banio_salida'
+  const ausenciaInicio = esAusencia ? new Date().toISOString() : null
+  const banioCount = esBanioSalida ? ((existente?.banio_count||0) + 1) : (existente?.banio_count||0)
 
   await db.from('estado_hoy').upsert({
     dni:currentPersona.dni, nombre:currentPersona.nombre,
@@ -657,7 +665,8 @@ async function marcar(tipo) {
     estado:nuevoEstado, fecha:today(),
     ingreso: tipo==='ingreso'?ahora:(existente?.ingreso||ahora),
     salida: tipo==='salida'?ahora:(existente?.salida||''),
-    break_inicio: esBreak ? breakInicio : null,
+    break_inicio: esAusencia ? ausenciaInicio : null,
+    banio_count: banioCount,
     updated_at: new Date().toISOString()
   },{onConflict:'dni,fecha'})
 
@@ -698,7 +707,9 @@ async function guardarPersona() {
 
 // ─── SITUACIÓN ACTUAL ─────────────────────────────────
 function updateEmpresaBtns() {
-  const empresas = [...new Set(estadoHoy.map(e=>e.empresa))].sort()
+  const empresas = [...new Set(estadoHoy.map(e=>e.empresa).filter(Boolean))].sort()
+  // Fix bug: sync Todas button visual state
+  document.querySelector('.emp-btn[onclick*="todas"]')?.classList.toggle('active', filtroEmpresa==='todas')
   const cont = document.getElementById('emp-btns')
   cont.innerHTML = empresas.map(emp =>
     `<button class="emp-btn ${filtroEmpresa===emp?'active':''}" onclick="filtrarEmpresa('${emp}',this)" style="margin-left:4px">${emp}</button>`
@@ -728,8 +739,10 @@ function renderSituacion() {
   lista.innerHTML = data.map(e => {
     const b = ESTADO_BADGE[e.estado]||{label:e.estado,cls:''}
     const av = getAvatar(e.empresa)
+    // Fix: timer class based on actual estado
+    const timerClass = e.estado==='break' ? 'tok' : 'tbok'
     const timerHtml = ['break','banio'].includes(e.estado)
-      ? `<span class="timer tok" id="tmr-${e.dni}">00:00</span>` : ''
+      ? `<span class="timer ${timerClass}" id="tmr-${e.dni}">--:--</span>` : ''
     const horas = horasDesdeIngreso(e.ingreso)
     const alertaLarga = e.estado==='dentro' && horas > ALERTA_HORAS
     const turnoTag = esTurnoNoche(e.ingreso)
@@ -737,6 +750,10 @@ function renderSituacion() {
       : `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:#fef3c7;color:#92400e">Día</span>`
     const alertaHtml = alertaLarga
       ? `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:#fef3c7;color:#92400e">+${Math.floor(horas)}h sin salida</span>` : ''
+    // Contador baño
+    const banioCount = e.banio_count||0
+    const banioBadge = banioCount > 0
+      ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:${banioCount>=BANIO_ALERTA?'#fee2e2':'#ede9fe'};color:${banioCount>=BANIO_ALERTA?'#991b1b':'#5b21b6'}">🚻 x${banioCount}${banioCount>=BANIO_ALERTA?' ⚠':''}</span>` : ''
     return `<div class="persona-row" style="${alertaLarga?'background:#fffbeb;border-left:3px solid #f59e0b;border-radius:0':''}">
       <div class="persona-left">
         <div class="p-avatar ${av}">${ini(e.nombre)}</div>
@@ -744,6 +761,7 @@ function renderSituacion() {
       </div>
       <div class="persona-right">
         ${turnoTag}
+        ${banioBadge}
         ${alertaHtml}
         <span class="desde">desde ${e.ingreso||'—'}</span>
         <span class="badge ${b.cls}">${b.label}</span>
@@ -761,11 +779,24 @@ setInterval(() => {
     if (!el) return
     const start = empresaTimers[e.dni] || Date.now()
     const elapsed = Date.now() - start
-    const mins = Math.floor(elapsed/60000)
-    const secs = Math.floor((elapsed%60000)/1000)
-    el.textContent = pad(mins)+':'+pad(secs)
-    const over = elapsed > TOLERANCIA_MS
-    el.className = 'timer ' + (e.estado==='break' ? (over?'twarn':'tok') : (over?'tbwarn':'tbok'))
+
+    if (e.estado === 'break') {
+      // Countdown: 45:00 → 00:00 → negativo = rojo
+      const remaining = TOLERANCIA_BREAK_MS - elapsed
+      const abs = Math.abs(remaining)
+      const mins = Math.floor(abs/60000)
+      const secs = Math.floor((abs%60000)/1000)
+      const over = remaining < 0
+      el.textContent = (over ? '-' : '') + pad(mins)+':'+pad(secs)
+      el.className = 'timer ' + (over ? 'twarn' : 'tok')
+    } else {
+      // Baño: countup normal, alerta a los 10 min
+      const mins = Math.floor(elapsed/60000)
+      const secs = Math.floor((elapsed%60000)/1000)
+      const over = elapsed > TOLERANCIA_BANIO_MS
+      el.textContent = pad(mins)+':'+pad(secs)
+      el.className = 'timer ' + (over ? 'tbwarn' : 'tbok')
+    }
   })
 }, 1000)
 
@@ -835,7 +866,7 @@ function abrirModal(dni) {
   if (!e) return
   editDni = dni
   document.getElementById('modal-nombre').textContent = e.nombre
-  document.getElementById('modal-meta').textContent = e.empresa + ' · ' + e.cargo
+  document.getElementById('modal-meta').textContent = e.empresa + (e.area ? ' · ' + e.area : '')
   document.getElementById('modal-estado').value = e.estado
   document.getElementById('modal-ingreso').value = e.ingreso || ''
   document.getElementById('modal-salida').value = e.salida || ''
@@ -853,9 +884,19 @@ async function guardarEdicion() {
   const estado = document.getElementById('modal-estado').value
   const ingreso = document.getElementById('modal-ingreso').value.trim()
   const salida = document.getElementById('modal-salida').value.trim()
+  const existente = estadoHoy.find(e=>e.dni===editDni)
+
+  // Fix: si se edita a break/baño manualmente, setear break_inicio ahora
+  const eraAusencia = ['break','banio'].includes(existente?.estado)
+  const esAusencia = ['break','banio'].includes(estado)
+  const breakInicio = esAusencia && !eraAusencia ? new Date().toISOString()
+    : esAusencia ? (existente?.break_inicio || new Date().toISOString())
+    : null
 
   await db.from('estado_hoy').update({
-    estado, ingreso, salida, updated_at: new Date().toISOString()
+    estado, ingreso, salida,
+    break_inicio: breakInicio,
+    updated_at: new Date().toISOString()
   }).eq('dni', editDni).eq('fecha', today())
 
   document.getElementById('modal-overlay').classList.remove('open')
