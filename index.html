@@ -208,6 +208,7 @@ tr:hover td{background:#f7f9fc}
     <button class="nav-tab active" onclick="showPage('registro',this)">Registro</button>
     <button class="nav-tab" onclick="showPage('situacion',this)">Situación Actual</button>
     <button class="nav-tab" onclick="showPage('reportes',this)">Reportes</button>
+    <button class="nav-tab" onclick="showPage('personal',this)">Personal</button>
   </div>
   <div class="nav-time" id="reloj"></div>
 </nav>
@@ -299,19 +300,30 @@ tr:hover td{background:#f7f9fc}
     <div id="emp-btns"></div>
   </div>
 
-  <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
+  <div class="stats-row">
     <div class="stat-card green"><div class="stat-num" id="sa-dentro">0</div><div class="stat-label">Dentro</div></div>
     <div class="stat-card blue"><div class="stat-num" id="sa-break">0</div><div class="stat-label">Break / Baño</div></div>
     <div class="stat-card pink"><div class="stat-num" id="sa-salida">0</div><div class="stat-label">Salieron</div></div>
-    <div class="stat-card" style="border-top:3px solid #f59e0b"><div class="stat-num" id="sa-dia" style="color:#b45309">0</div><div class="stat-label">Turno Día</div></div>
   </div>
-  <div class="stats-row" style="grid-template-columns:1fr;margin-top:-10px;margin-bottom:22px">
-    <div class="stat-card" style="border-top:3px solid #8b5cf6;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:16px">
-        <div><div class="stat-num" id="sa-noche" style="color:#6d28d9;font-size:28px">0</div><div class="stat-label">Turno Noche</div></div>
-        <div style="font-size:11px;color:var(--muted)">Ingreso 10pm — 5:59am</div>
+
+  <!-- BARRA TURNOS -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 20px;margin-bottom:22px;display:flex;align-items:center;gap:24px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></div>
+      <div>
+        <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#92400e" id="sa-dia">0</span>
+        <span style="font-size:12px;font-weight:600;color:#92400e;margin-left:4px">Turno Día</span>
+        <div style="font-size:10px;color:var(--muted)">ingreso 6am — 9:59pm</div>
       </div>
-      <div style="font-size:11px;color:var(--muted)">Turno Día: ingreso 6am — 9:59pm</div>
+    </div>
+    <div style="width:1px;height:32px;background:var(--border)"></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:8px;height:8px;border-radius:50%;background:#8b5cf6"></div>
+      <div>
+        <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#5b21b6" id="sa-noche">0</span>
+        <span style="font-size:12px;font-weight:600;color:#5b21b6;margin-left:4px">Turno Noche</span>
+        <div style="font-size:10px;color:var(--muted)">ingreso 10pm — 5:59am</div>
+      </div>
     </div>
   </div>
 
@@ -365,6 +377,69 @@ tr:hover td{background:#f7f9fc}
         <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Área</th><th>Tipo</th><th>Fecha y Hora</th></tr></thead>
         <tbody id="tabla-reportes"></tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== PERSONAL ===================== -->
+<div class="page" id="page-personal">
+  <div class="section-title"><div class="dot"></div> Personal</div>
+
+  <div style="display:grid;grid-template-columns:380px 1fr;gap:20px;align-items:start">
+
+    <!-- CARGA MASIVA -->
+    <div class="card">
+      <div class="card-title">Carga masiva desde Excel</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Sube un archivo Excel con columnas: <b>DNI, Nombre, Empresa, Area</b>. Si el DNI ya existe, se actualiza.</p>
+
+      <div id="upload-zone" style="border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:14px" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent3)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="handleDrop(event)">
+        <div style="font-size:28px;margin-bottom:8px">📁</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">Arrastra el archivo aquí</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">o haz click para seleccionar</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px">.xlsx o .xls</div>
+      </div>
+      <input type="file" id="file-input" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])"/>
+
+      <div id="upload-preview" style="display:none;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px" id="preview-title">—</div>
+        <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr id="preview-head" style="border-bottom:1px solid var(--border)"></tr></thead>
+            <tbody id="preview-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="upload-actions" style="display:none;gap:8px;flex-direction:column">
+        <button class="btn-guardar" id="btn-subir" onclick="subirPersonal()">Cargar personal</button>
+        <button style="width:100%;padding:9px;border:1.5px solid var(--border);background:transparent;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);text-transform:uppercase;font-family:'Syne',sans-serif" onclick="resetUpload()">Cancelar</button>
+      </div>
+
+      <div id="upload-result" style="display:none;padding:12px;border-radius:8px;font-size:13px;margin-top:10px"></div>
+
+      <div class="divider"></div>
+      <div class="card-title">Formato requerido</div>
+      <div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;font-family:monospace;color:var(--text)">
+        DNI | Nombre | Empresa | Area<br>
+        12345678 | Juan Pérez | Movo | Transporte<br>
+        87654321 | Ana Torres | Nel | Supervisión
+      </div>
+      <button style="margin-top:10px;width:100%;padding:9px;border:1.5px solid var(--accent3);background:transparent;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;color:var(--accent3);text-transform:uppercase;font-family:'Syne',sans-serif" onclick="descargarPlantilla()">📥 Descargar plantilla</button>
+    </div>
+
+    <!-- CATALOGO -->
+    <div class="card">
+      <div class="card-title" id="catalogo-count">Catálogo de personas</div>
+      <div class="table-search-wrap">
+        <span class="table-search-icon">🔍</span>
+        <input class="table-search" type="text" id="busqueda-catalogo" placeholder="Buscar por nombre, DNI o empresa..." oninput="renderCatalogo()" />
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Área</th></tr></thead>
+          <tbody id="tabla-catalogo"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -433,7 +508,7 @@ const today = () => {
   if (d.getHours() < 6) d.setDate(d.getDate() - 1) // antes de 6am = turno anterior
   return d.toISOString().slice(0,10)
 }
-const fmt = d => d.toLocaleDateString('es-PE') + ' ' + d.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})
+const fmt = d => d.toLocaleDateString('es-PE') + ' ' + d.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false})
 const ini = n => n.split(' ').map(x=>x[0]).slice(0,2).join('')
 const pad = n => String(n).padStart(2,'0')
 const getAvatar = emp => { if (!avatarMap[emp]) { avatarMap[emp] = AVATARES[avatarIdx++ % AVATARES.length] } return avatarMap[emp] }
@@ -473,6 +548,7 @@ function showPage(name, el) {
   el.classList.add('active')
   if (name === 'reportes') initReportes()
   if (name === 'situacion') { updateEmpresaBtns(); renderSituacion() }
+  if (name === 'personal') loadCatalogo()
 }
 
 let paginaActual = 'registro'
@@ -845,16 +921,34 @@ function renderReportes() {
 
 // ─── EXPORTAR EXCEL ───────────────────────────────────
 async function descargar(tipo) {
-  const filtros = {asistencia:['ingreso','salida'],break:['break_salida','break_retorno'],banio:['banio_salida','banio_retorno'],general:[]}
-  const filtro = filtros[tipo]
-  const data = filtro.length ? eventosResumen.filter(e=>filtro.includes(e.tipo)) : eventosResumen
   const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
-  const rows = [['DNI','Nombre','Empresa','Área','Tipo','Fecha y Hora']]
-  data.forEach(e=>rows.push([e.dni,e.nombre,e.empresa,e.area||'',TIPO_LABEL[e.tipo]||e.tipo,e.fecha]))
+  let rows, sheetName
+
+  if (tipo === 'asistencia') {
+    // Agrupar por DNI: una fila con ingreso + salida
+    const ingresos = eventosResumen.filter(e=>e.tipo==='ingreso')
+    const salidas = eventosResumen.filter(e=>e.tipo==='salida')
+    rows = [['DNI','Nombre','Empresa','Área','Fecha y Hora Ingreso','Fecha y Hora Salida']]
+    ingresos.forEach(ing => {
+      const sal = salidas.find(s=>s.dni===ing.dni && s.fecha.slice(0,10)===ing.fecha.slice(0,10))
+      rows.push([ing.dni, ing.nombre, ing.empresa, ing.area||'', ing.fecha, sal?.fecha||'—'])
+    })
+    sheetName = 'Asistencia'
+  } else {
+    const filtros = {break:['break_salida','break_retorno'],banio:['banio_salida','banio_retorno'],general:[]}
+    const filtro = filtros[tipo]
+    const data = filtro?.length ? eventosResumen.filter(e=>filtro.includes(e.tipo)) : eventosResumen
+    rows = [['DNI','Nombre','Empresa','Área','Tipo','Fecha y Hora']]
+    data.forEach(e=>rows.push([e.dni,e.nombre,e.empresa,e.area||'',TIPO_LABEL[e.tipo]||e.tipo,e.fecha]))
+    sheetName = tipo.charAt(0).toUpperCase()+tipo.slice(1)
+  }
+
   const ws = XLSX.utils.aoa_to_sheet(rows)
-  ws['!cols'] = [{wch:12},{wch:24},{wch:20},{wch:16},{wch:16},{wch:20}]
+  ws['!cols'] = tipo==='asistencia'
+    ? [{wch:12},{wch:24},{wch:20},{wch:16},{wch:22},{wch:22}]
+    : [{wch:12},{wch:24},{wch:20},{wch:16},{wch:16},{wch:20}]
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, tipo.charAt(0).toUpperCase()+tipo.slice(1))
+  XLSX.utils.book_append_sheet(wb, ws, sheetName)
   XLSX.writeFile(wb, `reporte_${tipo}_${today()}.xlsx`)
 }
 
@@ -903,6 +997,123 @@ async function guardarEdicion() {
   editDni = null
   showToast('Registro actualizado', 'success')
   loadEstadoHoy()
+}
+
+// ─── PERSONAL ─────────────────────────────────────────
+let catalogoPersonas = []
+let uploadData = []
+
+async function loadCatalogo() {
+  const { data } = await db.from('personas').select('*').order('nombre',{ascending:true})
+  catalogoPersonas = data||[]
+  renderCatalogo()
+  document.getElementById('catalogo-count').textContent = `Catálogo de personas (${catalogoPersonas.length})`
+}
+
+function renderCatalogo() {
+  const q = document.getElementById('busqueda-catalogo').value.toLowerCase()
+  const rows = catalogoPersonas.filter(p=>!q||p.nombre?.toLowerCase().includes(q)||p.dni?.includes(q)||p.empresa?.toLowerCase().includes(q))
+  const tbody = document.getElementById('tabla-catalogo')
+  if (!rows.length) { tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">Sin resultados</td></tr>'; return }
+  tbody.innerHTML = rows.map(p=>`<tr>
+    <td><b>${p.dni}</b></td><td>${p.nombre}</td><td>${p.empresa||'—'}</td><td>${p.area||'—'}</td>
+  </tr>`).join('')
+}
+
+function handleDrop(e) {
+  e.preventDefault()
+  document.getElementById('upload-zone').style.borderColor = 'var(--border)'
+  const file = e.dataTransfer.files[0]
+  if (file) handleFile(file)
+}
+
+async function handleFile(file) {
+  if (!file) return
+  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
+  const buf = await file.arrayBuffer()
+  const wb = XLSX.read(buf)
+  const ws = wb.Sheets[wb.SheetNames[0]]
+  const raw = XLSX.utils.sheet_to_json(ws, {header:1})
+  if (raw.length < 2) { showToast('El archivo está vacío','error'); return }
+
+  // Normalizar headers
+  const headers = raw[0].map(h=>String(h).trim().toLowerCase())
+  const getIdx = (keys) => keys.reduce((found,k)=>found>=0?found:headers.findIndex(h=>h.includes(k)),-1)
+  const iDni = getIdx(['dni'])
+  const iNom = getIdx(['nombre','name'])
+  const iEmp = getIdx(['empresa','company'])
+  const iArea = getIdx(['area','área'])
+
+  if (iDni<0||iNom<0) { showToast('Faltan columnas DNI o Nombre','error'); return }
+
+  uploadData = raw.slice(1).filter(r=>r[iDni]).map(r=>({
+    dni: String(r[iDni]||'').trim(),
+    nombre: String(r[iNom]||'').trim(),
+    empresa: iEmp>=0 ? String(r[iEmp]||'').trim() : '',
+    area: iArea>=0 ? String(r[iArea]||'').trim() : ''
+  })).filter(p=>p.dni&&p.nombre)
+
+  if (!uploadData.length) { showToast('No se encontraron filas válidas','error'); return }
+
+  // Preview
+  document.getElementById('preview-title').textContent = `${uploadData.length} personas encontradas — Vista previa (primeras 5)`
+  document.getElementById('preview-head').innerHTML = '<th style="padding:6px 10px;color:var(--muted);font-size:10px;text-transform:uppercase">DNI</th><th style="padding:6px 10px;color:var(--muted);font-size:10px;text-transform:uppercase">Nombre</th><th style="padding:6px 10px;color:var(--muted);font-size:10px;text-transform:uppercase">Empresa</th><th style="padding:6px 10px;color:var(--muted);font-size:10px;text-transform:uppercase">Área</th>'
+  document.getElementById('preview-body').innerHTML = uploadData.slice(0,5).map(p=>`<tr><td style="padding:6px 10px">${p.dni}</td><td style="padding:6px 10px">${p.nombre}</td><td style="padding:6px 10px">${p.empresa||'—'}</td><td style="padding:6px 10px">${p.area||'—'}</td></tr>`).join('')
+  document.getElementById('upload-preview').style.display='block'
+  document.getElementById('upload-actions').style.display='flex'
+  document.getElementById('upload-result').style.display='none'
+}
+
+async function subirPersonal() {
+  if (!uploadData.length) return
+  const btn = document.getElementById('btn-subir')
+  btn.textContent='Cargando...'
+  btn.disabled=true
+
+  // Upsert en lotes de 50
+  let ok=0, err=0
+  const chunks = []
+  for (let i=0;i<uploadData.length;i+=50) chunks.push(uploadData.slice(i,i+50))
+  for (const chunk of chunks) {
+    const { error } = await db.from('personas').upsert(chunk, {onConflict:'dni'})
+    if (error) err+=chunk.length
+    else ok+=chunk.length
+  }
+
+  const res = document.getElementById('upload-result')
+  res.style.display='block'
+  res.style.background = err>0 ? '#fef3c7' : '#d1fae5'
+  res.style.color = err>0 ? '#92400e' : '#065f46'
+  res.textContent = err>0
+    ? `✓ ${ok} cargados correctamente · ✗ ${err} con error`
+    : `✓ ${ok} personas cargadas correctamente`
+
+  btn.textContent='Cargar personal'
+  btn.disabled=false
+  uploadData=[]
+  document.getElementById('upload-preview').style.display='none'
+  document.getElementById('upload-actions').style.display='none'
+  document.getElementById('file-input').value=''
+  await loadCatalogo()
+  await loadAcListas()
+}
+
+function resetUpload() {
+  uploadData=[]
+  document.getElementById('upload-preview').style.display='none'
+  document.getElementById('upload-actions').style.display='none'
+  document.getElementById('upload-result').style.display='none'
+  document.getElementById('file-input').value=''
+}
+
+async function descargarPlantilla() {
+  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
+  const rows = [['DNI','Nombre','Empresa','Area'],['12345678','Juan Pérez','Movo','Transporte'],['87654321','Ana Torres','Nel','Supervisión']]
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols'] = [{wch:12},{wch:28},{wch:18},{wch:16}]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb,ws,'Personal')
+  XLSX.writeFile(wb,'plantilla_personal.xlsx')
 }
 
 // ─── INIT ─────────────────────────────────────────────
