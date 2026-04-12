@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Resumen — Control HD</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f0f2f6;--surface:#fff;--border:#dde2ed;--text:#1e2433;--muted:#7a8299;--accent:#e85d9b;--nav:#1e2433}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap');
+
+/* LAYOUT */
+.wrap{max-width:960px;margin:0 auto;padding:1.5rem 1rem}
+.view{display:none}.view.active{display:block}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:320px;text-align:center;box-shadow:0 4px 24px rgba(30,36,51,.08)}
+.lock-icon{width:48px;height:48px;border-radius:50%;background:var(--nav);margin:0 auto 1.25rem;display:flex;align-items:center;justify-content:center}
+.login-title{font-size:18px;font-weight:700;margin-bottom:6px;color:var(--text)}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:1.5rem;line-height:1.5}
+.login-input{width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:22px;text-align:center;letter-spacing:.18em;background:var(--bg);color:var(--text);margin-bottom:12px;outline:none;transition:border-color .2s;font-family:monospace}
+.login-input:focus{border-color:#3b82f6}
+.login-btn{width:100%;padding:12px;background:var(--nav);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s}
+.login-btn:hover{background:#2d3548}
+.login-error{font-size:12px;color:#ef4444;margin-top:8px;display:none}
+
+/* HEADER */
+.header{background:var(--nav);border-radius:14px;padding:1rem 1.5rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between}
+.h-empresa{font-size:18px;font-weight:700;color:#fff;letter-spacing:.02em}
+.h-brand{font-size:10px;color:#9aa3b8;text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+.h-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.h-fecha{font-size:12px;color:#fff;font-weight:600}
+.h-update{font-size:11px;color:#9aa3b8}
+.btn-refresh{font-size:11px;color:var(--accent);cursor:pointer;padding:4px 10px;border:1px solid var(--accent);border-radius:6px;background:transparent;margin-top:2px;transition:background .15s}
+.btn-refresh:hover{background:rgba(232,93,155,.1)}
+.btn-logout{font-size:11px;color:#9aa3b8;cursor:pointer;padding:4px 10px;border:1px solid #3a4255;border-radius:6px;background:transparent;margin-top:2px}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:1rem;background:#e8eaf0;padding:4px;border-radius:8px}
+.tab{flex:1;padding:8px;text-align:center;font-size:13px;font-weight:500;cursor:pointer;border-radius:6px;color:var(--muted);border:none;background:transparent;transition:all .15s}
+.tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* STATS */
+.cards-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;text-align:center;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.card.g::before{background:#22c27a}.card.p::before{background:var(--accent)}.card.t::before{background:#8b5cf6}
+.card-num{font-size:28px;font-weight:700;line-height:1}
+.card-label{font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.06em}
+.card.g .card-num{color:#065f46}.card.p .card-num{color:#9d174d}.card.t .card-num{color:#5b21b6}
+
+/* TURNO BAR */
+.turno-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 18px;margin-bottom:1rem;display:flex;align-items:center;gap:20px}
+.turno-item{display:flex;align-items:center;gap:8px}
+.turno-dot{width:8px;height:8px;border-radius:50%}
+.turno-num{font-size:18px;font-weight:700}
+.turno-lbl{font-size:12px;font-weight:600;margin-left:3px}
+.turno-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.turno-sep{width:1px;height:30px;background:var(--border)}
+
+/* PERSONAS */
+.section-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.pc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:8px}
+.pc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.pc-left{display:flex;align-items:center;gap:10px}
+.av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
+.p-name{font-size:14px;font-weight:600;color:var(--text)}
+.p-area{font-size:11px;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:5px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.b-d{background:#d1fae5;color:#065f46}.b-b{background:#dbeafe;color:#1e40af}
+.b-bn{background:#fef3c7;color:#92400e}.b-s{background:#fce7f3;color:#9d174d}
+.tp{padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600}
+.tp-d{background:#fef3c7;color:#92400e}.tp-n{background:#ede9fe;color:#5b21b6}
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding-top:10px;border-top:1px solid var(--border)}
+.si{display:flex;flex-direction:column;gap:2px}
+.si-l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.si-v{font-size:13px;font-weight:500;color:var(--text)}
+.si-v.m{color:var(--muted)}
+.pc-salio{opacity:.65}
+
+/* REPORTES */
+.filtros-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.fg input,.fg select{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text);outline:none}
+.fg input:focus,.fg select:focus{border-color:#3b82f6}
+.btn-buscar{padding:8px 18px;border-radius:8px;border:none;background:var(--nav);color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+.btn-dl{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;margin-left:auto}
+.btn-dl:hover{background:var(--bg)}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{padding:9px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);background:#f7f9fc}
+td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f7f9fc}
+.empty{text-align:center;color:var(--muted);padding:32px;font-size:13px}
+.loading{text-align:center;color:var(--muted);padding:40px;font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="v-login" class="view active">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="lock-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e85d9b" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div class="login-title">Acceso empresas</div>
+      <div class="login-sub">Ingresa el código que te compartió el supervisor de la operación</div>
+      <input class="login-input" id="cod" type="text" placeholder="••••••" maxlength="12" oninput="this.value=this.value.toUpperCase()" />
+      <button class="login-btn" onclick="login()">Ingresar</button>
+      <div class="login-error" id="login-err">Código incorrecto. Intenta nuevamente.</div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="v-dash" class="view">
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <div class="h-empresa" id="h-empresa">—</div>
+        <div class="h-brand">Control de Ingreso · Home Delivery</div>
+      </div>
+      <div class="h-right">
+        <div class="h-fecha" id="h-fecha">—</div>
+        <div class="h-update" id="h-update">—</div>
+        <div style="display:flex;gap:6px;margin-top:2px">
+          <button class="btn-refresh" onclick="cargarDatos()">↻ Actualizar</button>
+          <button class="btn-logout" onclick="logout()">Salir</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('rt',this)">Resumen actual</button>
+      <button class="tab" onclick="showTab('rep',this)">Reportes</button>
+    </div>
+
+    <!-- RESUMEN ACTUAL -->
+    <div id="tab-rt">
+      <div class="cards-row">
+        <div class="card g"><div class="card-num" id="rt-dentro">—</div><div class="card-label">Dentro</div></div>
+        <div class="card p"><div class="card-num" id="rt-salida">—</div><div class="card-label">Salieron</div></div>
+        <div class="card t"><div class="card-num" id="rt-total">—</div><div class="card-label">Total turno</div></div>
+      </div>
+
+      <div class="turno-bar">
+        <div class="turno-item">
+          <div class="turno-dot" style="background:#f59e0b"></div>
+          <div>
+            <div><span class="turno-num" id="rt-dia" style="color:#92400e">—</span><span class="turno-lbl" style="color:#92400e">Turno Día</span></div>
+            <div class="turno-sub">ingreso 6am — 9:59pm</div>
+          </div>
+        </div>
+        <div class="turno-sep"></div>
+        <div class="turno-item">
+          <div class="turno-dot" style="background:#8b5cf6"></div>
+          <div>
+            <div><span class="turno-num" id="rt-noche" style="color:#5b21b6">—</span><span class="turno-lbl" style="color:#5b21b6">Turno Noche</span></div>
+            <div class="turno-sub">ingreso 10pm — 5:59am</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-lbl">Personal</div>
+      <div id="rt-lista"><div class="loading">Cargando...</div></div>
+    </div>
+
+    <!-- REPORTES -->
+    <div id="tab-rep" style="display:none">
+      <div class="filtros-row">
+        <div class="fg"><label>Desde</label><input type="date" id="r-desde" style="width:140px"/></div>
+        <div class="fg"><label>Hasta</label><input type="date" id="r-hasta" style="width:140px"/></div>
+        <div class="fg">
+          <label>Turno</label>
+          <select id="r-turno" style="width:120px">
+            <option value="">Todos</option>
+            <option value="dia">Día</option>
+            <option value="noche">Noche</option>
+          </select>
+        </div>
+        <div class="fg" style="justify-content:flex-end"><label>&nbsp;</label><button class="btn-buscar" onclick="buscarReporte()">Buscar</button></div>
+        <div class="fg" style="justify-content:flex-end;margin-left:auto"><label>&nbsp;</label><button class="btn-dl" onclick="descargarReporte()">📥 Descargar Excel</button></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Nombre</th><th>Área</th><th>Turno</th><th>Ingreso</th><th>Salida</th><th>Break</th><th>Baño</th></tr></thead>
+          <tbody id="rep-body"><tr><td colspan="7" class="empty">Selecciona un rango y busca</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://lflenisloinbqyuptxzc.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbGVuaXNsb2luYnF5dXB0eHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MzAxNDQsImV4cCI6MjA5MTEwNjE0NH0.jcjKs2xCgxf4mvGbf9a5eRETWAOKf0SXg_JC0iy4UsI'
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+let empresaActual = ''
+let reporteData = []
+
+// ─── HELPERS ──────────────────────────────────────────
+const pad = n => String(n).padStart(2,'0')
+const today = () => {
+  const d = new Date(); d.setHours(d.getHours()-5)
+  if (d.getHours()<6) d.setDate(d.getDate()-1)
+  return d.toISOString().slice(0,10)
+}
+const todayLabel = () => {
+  const d = new Date(); d.setHours(d.getHours()-5)
+  if (d.getHours()<6) d.setDate(d.getDate()-1)
+  return d.toLocaleDateString('es-PE')
+}
+const horaStr = str => { if(!str) return null; const p=str.split(' '); return p.length>=2?parseInt(p[1].split(':')[0]):null }
+const esTurnoNoche = str => { const h=horaStr(str); return h!==null&&(h>=22||h<6) }
+const ini = n => n?.split(' ').map(x=>x[0]).slice(0,2).join('')||'?'
+
+const AVATARES_COLORS = ['#22c27a','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#06b6d4']
+let avatarMap={}, avatarIdx=0
+const getColor = emp => { if(!avatarMap[emp]) avatarMap[emp]=AVATARES_COLORS[avatarIdx++%AVATARES_COLORS.length]; return avatarMap[emp] }
+
+const ESTADO_BADGE = {dentro:{label:'Dentro',cls:'b-d'},break:{label:'Break',cls:'b-b'},banio:{label:'Baño',cls:'b-bn'},salida:{label:'Salió',cls:'b-s'}}
+
+// Calcular minutos entre dos strings "DD/MM/YYYY HH:MM"
+const minEntre = (a,b) => {
+  if(!a||!b) return null
+  try {
+    const parse = s => { const [f,h]=s.split(' ');const [d,m,y]=f.split('/');const [hh,mm]=h.split(':'); return new Date(`${y}-${m}-${d}T${hh}:${mm}:00-05:00`) }
+    return Math.max(0, Math.round((parse(b)-parse(a))/60000))
+  } catch { return null }
+}
+const fmtMin = m => { if(m===null||m===undefined) return null; if(m<60) return m+'min'; return Math.floor(m/60)+'h '+(m%60)+'min' }
+
+// ─── LOGIN ────────────────────────────────────────────
+async function login() {
+  const cod = document.getElementById('cod').value.trim()
+  if (!cod) return
+  const { data } = await db.from('empresas_codigos').select('empresa').eq('codigo',cod).single()
+  if (data?.empresa) {
+    empresaActual = data.empresa
+    document.getElementById('v-login').classList.remove('active')
+    document.getElementById('v-dash').classList.add('active')
+    document.getElementById('h-empresa').textContent = empresaActual
+    document.getElementById('h-fecha').textContent = 'Turno ' + todayLabel()
+    document.getElementById('login-err').style.display='none'
+    const t = today()
+    document.getElementById('r-desde').value = t
+    document.getElementById('r-hasta').value = t
+    cargarDatos()
+  } else {
+    document.getElementById('login-err').style.display='block'
+    document.getElementById('cod').value=''
+  }
+}
+
+function logout() {
+  empresaActual=''
+  document.getElementById('v-dash').classList.remove('active')
+  document.getElementById('v-login').classList.add('active')
+  document.getElementById('cod').value=''
+}
+
+document.getElementById('cod').addEventListener('keydown',e=>{ if(e.key==='Enter') login() })
+
+// ─── TABS ─────────────────────────────────────────────
+function showTab(name,el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'))
+  el.classList.add('active')
+  document.getElementById('tab-rt').style.display=name==='rt'?'block':'none'
+  document.getElementById('tab-rep').style.display=name==='rep'?'block':'none'
+}
+
+// ─── CARGAR DATOS TIEMPO REAL ─────────────────────────
+async function cargarDatos() {
+  const now = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false})
+  document.getElementById('h-update').textContent = 'Actualizado a las '+now
+
+  const { data } = await db.from('estado_hoy').select('*')
+    .eq('fecha', today()).eq('empresa', empresaActual)
+    .order('ingreso', {ascending:true})
+
+  if (!data) return
+  const personas = data
+
+  // Stats
+  const dentro = personas.filter(p=>p.estado!=='salida').length
+  const salida = personas.filter(p=>p.estado==='salida').length
+  const total = personas.length
+  const activos = personas.filter(p=>p.estado!=='salida')
+  const dia = activos.filter(p=>!esTurnoNoche(p.ingreso)).length
+  const noche = activos.filter(p=>esTurnoNoche(p.ingreso)).length
+
+  document.getElementById('rt-dentro').textContent = dentro
+  document.getElementById('rt-salida').textContent = salida
+  document.getElementById('rt-total').textContent = total
+  document.getElementById('rt-dia').textContent = dia
+  document.getElementById('rt-noche').textContent = noche
+
+  // Para calcular break/baño necesitamos eventos
+  const { data: eventos } = await db.from('eventos').select('*')
+    .eq('fecha', today()).eq('empresa', empresaActual)
+
+  const lista = document.getElementById('rt-lista')
+  if (!personas.length) { lista.innerHTML='<div class="empty">Sin registros para el turno actual</div>'; return }
+
+  lista.innerHTML = personas.map(p => {
+    const b = ESTADO_BADGE[p.estado]||{label:p.estado,cls:''}
+    const color = getColor(p.empresa)
+    const turno = esTurnoNoche(p.ingreso)
+    const turnoTag = turno
+      ? `<span class="tp tp-n">Noche</span>`
+      : `<span class="tp tp-d">Día</span>`
+
+    // Calcular break
+    const evBreakOut = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
+    const evBreakIn = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='break_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
+    let breakStr = 'Sin break'
+    if (evBreakOut?.length) {
+      if (p.estado==='break') {
+        breakStr = 'En curso'
+      } else if (evBreakIn?.length) {
+        const mins = minEntre(evBreakOut[0].fecha, evBreakIn[0].fecha)
+        breakStr = mins!==null ? fmtMin(mins) : 'Sin break'
+      }
+    }
+
+    // Calcular baño
+    const evBanioOut = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='banio_salida')||[]
+    const evBanioIn = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='banio_retorno')||[]
+    const banioVeces = evBanioOut.length
+    let banioMin = 0
+    evBanioOut.forEach((bo,i)=>{ const bi=evBanioIn[i]; if(bi){ const m=minEntre(bo.fecha,bi.fecha); if(m) banioMin+=m } })
+    const banioStr = banioVeces===0 ? '0 veces' : `${banioVeces} ${banioVeces===1?'vez':'veces'}${banioMin>0?' / '+fmtMin(banioMin):''}`
+
+    return `<div class="pc${p.estado==='salida'?' pc-salio':''}">
+      <div class="pc-top">
+        <div class="pc-left">
+          <div class="av" style="background:${color}">${ini(p.nombre)}</div>
+          <div>
+            <div class="p-name">${p.nombre}</div>
+            <div class="p-area">${p.area||'—'} &nbsp;${turnoTag}</div>
+          </div>
+        </div>
+        <span class="badge ${b.cls}">${b.label}</span>
+      </div>
+      <div class="sg">
+        <div class="si"><div class="si-l">Ingreso</div><div class="si-v">${p.ingreso||'—'}</div></div>
+        <div class="si"><div class="si-l">Salida</div><div class="si-v ${!p.salida?'m':''}">${p.salida||'—'}</div></div>
+        <div class="si"><div class="si-l">Break</div><div class="si-v ${breakStr==='Sin break'?'m':''}" ${breakStr==='En curso'?'style="color:#1e40af"':''}>${breakStr}</div></div>
+        <div class="si"><div class="si-l">Baño</div><div class="si-v ${banioVeces===0?'m':''}">${banioStr}</div></div>
+      </div>
+    </div>`
+  }).join('')
+}
+
+// ─── REPORTES ─────────────────────────────────────────
+async function buscarReporte() {
+  const desde = document.getElementById('r-desde').value
+  const hasta = document.getElementById('r-hasta').value
+  const turno = document.getElementById('r-turno').value
+  const tbody = document.getElementById('rep-body')
+  tbody.innerHTML = '<tr><td colspan="7" class="loading">Buscando...</td></tr>'
+
+  // Traer estado_hoy del rango
+  let q = db.from('estado_hoy').select('*').eq('empresa', empresaActual).order('ingreso',{ascending:true})
+  if (desde) q = q.gte('fecha', desde)
+  if (hasta) q = q.lte('fecha', hasta)
+  const { data: estados } = await q
+  if (!estados?.length) { tbody.innerHTML='<tr><td colspan="7" class="empty">Sin registros para este rango</td></tr>'; return }
+
+  // Traer eventos del mismo rango para calcular breaks/baños
+  let qe = db.from('eventos').select('*').eq('empresa', empresaActual)
+  if (desde) qe = qe.gte('fecha_iso', desde+'T05:00:00Z')
+  if (hasta) { const nd=new Date(hasta); nd.setDate(nd.getDate()+1); qe = qe.lte('fecha_iso', nd.toISOString().slice(0,10)+'T04:59:59Z') }
+  const { data: eventos } = await qe
+
+  let rows = estados.map(p => {
+    const esTN = esTurnoNoche(p.ingreso)
+    if (turno==='dia'&&esTN) return null
+    if (turno==='noche'&&!esTN) return null
+
+    const evs = eventos?.filter(e=>e.dni===p.dni&&e.fecha_iso?.slice(0,10)===p.fecha)||[]
+    const evBO = evs.filter(e=>e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
+    const evBI = evs.filter(e=>e.tipo==='break_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
+    let breakStr='Sin break'
+    if (evBO.length) { breakStr=p.estado==='break'?'En curso': (evBI.length? (fmtMin(minEntre(evBO[0].fecha,evBI[0].fecha))||'Sin break'):'Sin break') }
+
+    const evBOut = evs.filter(e=>e.tipo==='banio_salida')
+    const evBIn = evs.filter(e=>e.tipo==='banio_retorno')
+    let banioMin=0
+    evBOut.forEach((bo,i)=>{ const bi=evBIn[i]; if(bi){ const m=minEntre(bo.fecha,bi.fecha); if(m) banioMin+=m } })
+    const banioStr = evBOut.length===0?'0 veces':`${evBOut.length} ${evBOut.length===1?'vez':'veces'}${banioMin>0?' / '+fmtMin(banioMin):''}`
+
+    return { p, esTN, breakStr, banioStr }
+  }).filter(Boolean)
+
+  reporteData = rows
+
+  if (!rows.length) { tbody.innerHTML='<tr><td colspan="7" class="empty">Sin resultados con los filtros aplicados</td></tr>'; return }
+
+  tbody.innerHTML = rows.map(({p,esTN,breakStr,banioStr})=>`<tr>
+    <td>${p.nombre}</td>
+    <td>${p.area||'—'}</td>
+    <td><span class="tp ${esTN?'tp-n':'tp-d'}">${esTN?'Noche':'Día'}</span></td>
+    <td>${p.ingreso||'—'}</td>
+    <td>${p.salida||'—'}</td>
+    <td>${breakStr}</td>
+    <td>${banioStr}</td>
+  </tr>`).join('')
+}
+
+async function descargarReporte() {
+  if (!reporteData.length) { alert('Primero busca los datos'); return }
+  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
+  const rows = [['Nombre','Área','Turno','Ingreso','Salida','Break','Baño']]
+  reporteData.forEach(({p,esTN,breakStr,banioStr})=>{
+    rows.push([p.nombre, p.area||'', esTN?'Noche':'Día', p.ingreso||'', p.salida||'', breakStr, banioStr])
+  })
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols']=[{wch:24},{wch:16},{wch:10},{wch:20},{wch:20},{wch:14},{wch:18}]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb,ws,'Reporte')
+  XLSX.writeFile(wb,`reporte_${empresaActual}_${today()}.xlsx`)
+}
+</script>
+</body>
+</html>
