@@ -531,10 +531,6 @@ tr:hover td{background:#f7f9fc}
           <label style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:4px;display:block">Empresa</label>
           <select class="form-input" id="acta-empresa">
             <option value="">Selecciona empresa...</option>
-            <option>D&R</option>
-            <option>Touch</option>
-            <option>Nel</option>
-            <option>Movo</option>
           </select>
         </div>
         <div class="form-group" style="margin-bottom:10px">
@@ -1453,8 +1449,14 @@ let actaSupervisor = null
 let actaFiltros = {}
 
 // Inicializar fecha al entrar a la pestaña
-function initActas() {
+async function initActas() {
   document.getElementById('acta-fecha').value = today()
+  // Cargar empresas desde personas — mismo valor exacto que está en BD
+  const { data } = await db.from('personas').select('empresa')
+  const empresas = [...new Set((data||[]).map(x=>x.empresa).filter(Boolean))].sort()
+  const sel = document.getElementById('acta-empresa')
+  sel.innerHTML = '<option value="">Selecciona empresa...</option>' +
+    empresas.map(e => `<option value="${e}">${e}</option>`).join('')
 }
 
 async function generarActa() {
