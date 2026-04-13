@@ -386,7 +386,7 @@ tr:hover td{background:#f7f9fc}
       <div>
         <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#92400e" id="sa-dia">0</span>
         <span style="font-size:12px;font-weight:600;color:#92400e;margin-left:4px">Turno Día</span>
-        <div style="font-size:10px;color:var(--muted)">ingreso 6am — 9:59pm</div>
+        <div style="font-size:10px;color:var(--muted)">ingreso 6am — 8:59pm</div>
       </div>
     </div>
     <div style="width:1px;height:32px;background:var(--border)"></div>
@@ -395,7 +395,7 @@ tr:hover td{background:#f7f9fc}
       <div>
         <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#5b21b6" id="sa-noche">0</span>
         <span style="font-size:12px;font-weight:600;color:#5b21b6;margin-left:4px">Turno Noche</span>
-        <div style="font-size:10px;color:var(--muted)">ingreso 10pm — 5:59am</div>
+        <div style="font-size:10px;color:var(--muted)">ingreso 9pm — 5:59am</div>
       </div>
     </div>
   </div>
@@ -690,7 +690,7 @@ const horaIngreso = str => {
   const p = str.split(' ')
   return p.length >= 2 ? parseInt(p[1].split(':')[0]) : null
 }
-const esTurnoNoche = str => { const h = horaIngreso(str); return h !== null && (h >= 22 || h < 6) }
+const esTurnoNoche = str => { const h = horaIngreso(str); return h !== null && (h >= 21 || h < 6) }
 
 // alerta: persona dentro más de 10 horas (usando Lima UTC-5)
 const ALERTA_HORAS = 10
