@@ -1605,22 +1605,26 @@ async function enviarActaCorreo() {
           </div>
         </div>`
 
-      const res = await fetch('https://lflenisloinbqyuptxzc.supabase.co/functions/v1/clever-api', {
+      // Llamar directo a Resend via proxy para evitar CORS
+      const resendPayload = {
+        from: 'Control HD <onboarding@resend.dev>',
+        to: [c.correo],
+        subject: `Acta de Asistencia · ${actaFiltros.empresa} · ${fechaLabel} · Turno ${turnoLabel}`,
+        html,
+        attachments: [{
+          filename: `acta_${actaFiltros.empresa}_${actaFiltros.fecha}_${actaFiltros.turno}.pdf`,
+          content: pdfBase64
+        }]
+      }
+
+      const res = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://api.resend.com/emails'), {
         method: 'POST',
         headers: {
+          'Authorization': 'Bearer ' + RESEND_KEY,
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + SUPABASE_KEY
+          'x-requested-with': 'XMLHttpRequest'
         },
-        body: JSON.stringify({
-          from: 'Control HD <onboarding@resend.dev>',
-          to: [c.correo],
-          subject: `Acta de Asistencia · ${actaFiltros.empresa} · ${fechaLabel} · Turno ${turnoLabel}`,
-          html,
-          attachments: [{
-            filename: `acta_${actaFiltros.empresa}_${actaFiltros.fecha}_${actaFiltros.turno}.pdf`,
-            content: pdfBase64
-          }]
-        })
+        body: JSON.stringify(resendPayload)
       })
 
       const resJson = await res.json()
