@@ -1605,7 +1605,6 @@ async function enviarActaCorreo() {
           </div>
         </div>`
 
-      // Llamar directo a Resend via proxy para evitar CORS
       const resendPayload = {
         from: 'Control HD <onboarding@resend.dev>',
         to: [c.correo],
@@ -1617,13 +1616,9 @@ async function enviarActaCorreo() {
         }]
       }
 
-      const res = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://api.resend.com/emails'), {
+      const res = await fetch('/api/send-email', {
         method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + RESEND_KEY,
-          'Content-Type': 'application/json',
-          'x-requested-with': 'XMLHttpRequest'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(resendPayload)
       })
 
