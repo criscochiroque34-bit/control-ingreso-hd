@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Control de Ingreso — Home Delivery</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -188,12 +190,46 @@ tr:hover td{background:#f7f9fc}
 .toast.warning{border-left:4px solid var(--accent)}
 .toast.error{border-left:4px solid #ef4444}
 
+/* MODO MASIVO */
+.btn-masivo{width:36px;height:36px;border-radius:8px;border:2px solid var(--border);background:transparent;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;line-height:1}
+.btn-masivo:hover{border-color:var(--accent2)}
+.btn-masivo.active{background:var(--accent2);border-color:var(--accent2)}
+.masivo-feedback{border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:13px;font-weight:600;align-items:center;gap:8px;display:none}
+.masivo-feedback.show{display:flex}
+.masivo-feedback.ok{background:#d1fae5;color:#065f46}
+.masivo-feedback.err{background:#fce7f3;color:#9d174d}
+.masivo-feedback.proc{background:#dbeafe;color:#1e40af}
+.masivo-count{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.masivo-lista{max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px 0}
+.masivo-item{display:flex;align-items:center;gap:6px;padding:5px 10px;font-size:12px;color:var(--text);border-bottom:1px solid var(--border)}
+.masivo-item:last-child{border-bottom:none}
+.dni-input.dni-ok{border-color:var(--accent2)!important;box-shadow:0 0 0 3px rgba(34,194,122,.15)!important}
+.dni-input.dni-err{border-color:var(--accent)!important;box-shadow:0 0 0 3px rgba(232,93,155,.15)!important}
+.dni-input.dni-proc{border-color:var(--accent3)!important;opacity:.7}
+
+/* NAV CONSUMO */
+.nav-consumo{display:flex;align-items:center;gap:8px;cursor:pointer;padding:5px 10px;border-radius:6px;transition:background .2s;position:relative;user-select:none}
+.nav-consumo:hover{background:rgba(255,255,255,.07)}
+.consumo-label{font-size:10px;color:#9aa3b8;font-family:'Syne',sans-serif}
+.consumo-mini-bar{height:4px;border-radius:2px;background:#3a4255;width:50px;overflow:hidden}
+.consumo-mini-fill{height:100%;border-radius:2px;background:var(--accent2);transition:width .5s}
+.consumo-popup{position:absolute;top:calc(100% + 10px);right:0;background:#252d42;border:1px solid #3a4255;border-radius:12px;padding:16px;width:230px;z-index:300;display:none;box-shadow:0 8px 32px rgba(0,0,0,.35)}
+.consumo-popup.open{display:block}
+.consumo-popup-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#9aa3b8;margin-bottom:12px}
+.cp-row{margin-bottom:10px}
+.cp-row:last-child{margin-bottom:0}
+.cp-labels{display:flex;justify-content:space-between;font-size:11px;color:#9aa3b8;margin-bottom:4px}
+.cp-labels span:last-child{color:#fff;font-weight:600}
+.cp-bar{height:5px;border-radius:3px;background:#3a4255;overflow:hidden}
+.cp-fill{height:100%;border-radius:3px;transition:width .6s}
+
 @media(max-width:900px){
   .registro-grid{grid-template-columns:1fr}
   .page{padding:16px}
   nav{padding:0 16px}
   .nav-time{display:none}
   .stats-row{grid-template-columns:repeat(3,1fr)}
+  .nav-consumo{display:none}
 }
 </style>
 </head>
@@ -209,8 +245,32 @@ tr:hover td{background:#f7f9fc}
     <button class="nav-tab" onclick="showPage('situacion',this)">Situación Actual</button>
     <button class="nav-tab" onclick="showPage('reportes',this)">Reportes</button>
     <button class="nav-tab" onclick="showPage('personal',this)">Personal</button>
+    <button class="nav-tab" onclick="showPage('actas',this)">Actas</button>
   </div>
-  <div class="nav-time" id="reloj"></div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="nav-consumo" id="nav-consumo" onclick="toggleConsumo()">
+      <div>
+        <div class="consumo-label" id="consumo-pct">BD 0%</div>
+        <div class="consumo-mini-bar"><div class="consumo-mini-fill" id="consumo-fill" style="width:0%"></div></div>
+      </div>
+      <div class="consumo-popup" id="consumo-popup">
+        <div class="consumo-popup-title">Uso de recursos</div>
+        <div class="cp-row">
+          <div class="cp-labels"><span>Supabase DB</span><span id="cp-sb-txt">—</span></div>
+          <div class="cp-bar"><div class="cp-fill" id="cp-sb-fill" style="background:#22c27a;width:0%"></div></div>
+        </div>
+        <div class="cp-row">
+          <div class="cp-labels"><span>Registros totales</span><span id="cp-rows-txt">—</span></div>
+          <div class="cp-bar"><div class="cp-fill" id="cp-rows-fill" style="background:#3b82f6;width:0%"></div></div>
+        </div>
+        <div class="cp-row">
+          <div class="cp-labels"><span>Vercel Bandwidth</span><span style="color:#9aa3b8">~0 MB</span></div>
+          <div class="cp-bar"><div class="cp-fill" style="background:#8b5cf6;width:1%"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-time" id="reloj"></div>
+  </div>
 </nav>
 
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
@@ -263,7 +323,20 @@ tr:hover td{background:#f7f9fc}
       </div>
 
       <div class="divider"></div>
-      <div class="card-title">Marcar</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="card-title" style="margin-bottom:0">Marcar</div>
+        <button class="btn-masivo" id="btn-masivo" onclick="toggleMasivo()" title="Modo ingreso masivo">⚡</button>
+      </div>
+
+      <!-- FEEDBACK MASIVO -->
+      <div class="masivo-feedback" id="masivo-feedback"></div>
+
+      <!-- LISTA MASIVO -->
+      <div id="masivo-lista-wrap" style="display:none;margin-bottom:12px">
+        <div class="masivo-count" id="masivo-count">0 registrados</div>
+        <div class="masivo-lista" id="masivo-lista"></div>
+      </div>
+
       <div class="btns-grid">
         <button class="btn-marca btn-ingreso" id="btn-ingreso" disabled onclick="marcar('ingreso')">↓ Ingreso</button>
         <button class="btn-marca btn-break-out" id="btn-break-out" disabled onclick="marcar('break_salida')">⏸ Break Salida</button>
@@ -444,6 +517,108 @@ tr:hover td{background:#f7f9fc}
   </div>
 </div>
 
+<!-- ===================== ACTAS ===================== -->
+<div class="page" id="page-actas">
+  <div class="section-title"><div class="dot"></div> Actas de Turno</div>
+
+  <div style="display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start">
+
+    <!-- PANEL IZQUIERDO: FILTROS + FIRMA -->
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Generar acta</div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:4px;display:block">Empresa</label>
+          <select class="form-input" id="acta-empresa">
+            <option value="">Selecciona empresa...</option>
+            <option>D&R</option>
+            <option>Touch</option>
+            <option>Nel</option>
+            <option>Movo</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:4px;display:block">Fecha</label>
+          <input class="form-input" type="date" id="acta-fecha"/>
+        </div>
+        <div class="form-group" style="margin-bottom:16px">
+          <label style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:4px;display:block">Turno</label>
+          <select class="form-input" id="acta-turno">
+            <option value="dia">Día</option>
+            <option value="noche">Noche</option>
+          </select>
+        </div>
+        <button class="btn-form-save" onclick="generarActa()">Generar acta</button>
+      </div>
+
+      <div class="card" id="acta-firma-card" style="display:none">
+        <div class="card-title">Firma supervisor HD</div>
+        <div id="acta-firma-input-wrap">
+          <label style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:6px;display:block">DNI del supervisor</label>
+          <input class="form-input" type="text" id="acta-firma-dni" placeholder="Ingresa tu DNI" maxlength="8" style="font-family:monospace;letter-spacing:.1em;font-size:16px;text-align:center"/>
+          <button class="btn-form-save" style="margin-top:10px" onclick="confirmarFirma()">Confirmar firma</button>
+        </div>
+        <div id="acta-firma-resultado" style="display:none">
+          <div style="font-family:Georgia,serif;font-size:18px;font-weight:700;color:var(--text);border-bottom:2px solid var(--text);padding-bottom:4px;margin-bottom:6px" id="acta-firma-nombre">—</div>
+          <div style="font-size:12px;color:var(--muted)" id="acta-firma-cargo">—</div>
+          <button style="margin-top:12px;width:100%;padding:8px;border:1px solid var(--border);background:transparent;border-radius:8px;font-size:12px;cursor:pointer;color:var(--muted)" onclick="resetFirma()">Cambiar firma</button>
+        </div>
+        <div class="divider"></div>
+        <button class="btn-ingreso btn-marca" style="width:100%;margin-top:0" id="btn-descargar-acta" onclick="descargarActaPDF()">📄 Descargar acta PDF</button>
+      </div>
+    </div>
+
+    <!-- PANEL DERECHO: PREVIEW ACTA -->
+    <div class="card" id="acta-preview" style="display:none">
+      <!-- HEADER ACTA -->
+      <div style="background:var(--nav-bg);border-radius:10px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff" id="acta-preview-titulo">Acta de Asistencia</div>
+          <div style="font-size:11px;color:#9aa3b8;margin-top:2px" id="acta-preview-sub">Control de Ingreso · Home Delivery</div>
+        </div>
+        <div style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px" id="acta-preview-turno">Turno Día</div>
+      </div>
+
+      <!-- META -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="background:var(--bg);border-radius:8px;padding:10px 14px">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Empresa</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-top:2px" id="acta-meta-empresa">—</div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:10px 14px">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Fecha</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-top:2px" id="acta-meta-fecha">—</div>
+        </div>
+      </div>
+
+      <!-- RESUMEN -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+        <div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--text)" id="acta-total">0</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Asistieron</div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--accent2)" id="acta-con-salida">0</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Salida completa</div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--accent)" id="acta-sin-salida">0</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Sin salida</div>
+        </div>
+      </div>
+
+      <!-- TABLA -->
+      <div class="card-title">Detalle de personal</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Nombre</th><th>DNI</th><th>Ingreso</th><th>Salida</th></tr></thead>
+          <tbody id="acta-tabla-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL EDICION -->
 <div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
   <div class="modal">
@@ -549,6 +724,7 @@ function showPage(name, el) {
   if (name === 'reportes') initReportes()
   if (name === 'situacion') { updateEmpresaBtns(); renderSituacion() }
   if (name === 'personal') loadCatalogo()
+  if (name === 'actas') initActas()
 }
 
 let paginaActual = 'registro'
@@ -653,6 +829,16 @@ let modoEdicion = false
 
 document.getElementById('dni-input').addEventListener('input', async function() {
   const val = this.value.trim()
+
+  // MODO MASIVO — auto-trigger a los 8 dígitos
+  if (modoMasivo) {
+    if (val.length >= 8 && !masivoProcessing) {
+      await procesarDniMasivo(val)
+    }
+    return
+  }
+
+  // MODO NORMAL
   currentDni = val
   currentPersona = null
   modoEdicion = false
@@ -777,8 +963,17 @@ async function guardarPersona() {
   cerrarFormPersona()
   updatePersonaInfo(true)
   updateButtons()
-  if (!modoEdicion) await marcar('ingreso')
-  else showToast('Datos actualizados — '+nombre, 'success')
+
+  if (modoMasivo) {
+    // En modo masivo: siempre marcar ingreso y continuar
+    masivoProcessing = true
+    agregarALista(nombre, true)
+    await marcarMasivo()
+  } else if (!modoEdicion) {
+    await marcar('ingreso')
+  } else {
+    showToast('Datos actualizados — '+nombre, 'success')
+  }
 }
 
 // ─── SITUACIÓN ACTUAL ─────────────────────────────────
@@ -1115,6 +1310,400 @@ async function descargarPlantilla() {
   XLSX.utils.book_append_sheet(wb,ws,'Personal')
   XLSX.writeFile(wb,'plantilla_personal.xlsx')
 }
+
+// ─── MODO MASIVO ──────────────────────────────────────
+let modoMasivo = false
+let masivoRegistrados = []
+let masivoProcessing = false
+
+function toggleMasivo() {
+  modoMasivo = !modoMasivo
+  const btn = document.getElementById('btn-masivo')
+  btn.classList.toggle('active', modoMasivo)
+  btn.title = modoMasivo ? 'Modo masivo activo — click para salir' : 'Modo ingreso masivo'
+
+  if (!modoMasivo) {
+    // Salir del modo masivo
+    masivoRegistrados = []
+    masivoProcessing = false
+    document.getElementById('masivo-feedback').className = 'masivo-feedback'
+    document.getElementById('masivo-lista-wrap').style.display = 'none'
+    document.getElementById('dni-input').className = 'dni-input'
+    // Restaurar modo normal
+    currentDni = ''; currentPersona = null; modoEdicion = false
+    cerrarFormPersona(); updatePersonaInfo(); updateButtons()
+    document.getElementById('dni-input').focus()
+  } else {
+    // Entrar al modo masivo — limpiar estado
+    document.getElementById('dni-input').value = ''
+    currentDni = ''; currentPersona = null
+    cerrarFormPersona(); updatePersonaInfo(); updateButtons()
+    setFeedback('proc', '⚡ Modo masivo activo — escribe el DNI')
+    document.getElementById('dni-input').focus()
+  }
+}
+
+function setFeedback(tipo, msg) {
+  const el = document.getElementById('masivo-feedback')
+  el.className = 'masivo-feedback show ' + tipo
+  el.textContent = msg
+}
+
+function agregarALista(nombre, esNuevo) {
+  masivoRegistrados.unshift({ nombre, esNuevo })
+  const wrap = document.getElementById('masivo-lista-wrap')
+  const lista = document.getElementById('masivo-lista')
+  const count = document.getElementById('masivo-count')
+  wrap.style.display = 'block'
+  count.textContent = masivoRegistrados.length + ' registrado' + (masivoRegistrados.length !== 1 ? 's' : '')
+  lista.innerHTML = masivoRegistrados.slice(0, 10).map(r =>
+    `<div class="masivo-item"><span>${r.esNuevo ? '🆕' : '✅'}</span><span>${r.nombre}</span></div>`
+  ).join('')
+}
+
+async function procesarDniMasivo(dni) {
+  if (masivoProcessing || !modoMasivo) return
+  if (dni.length < 8) return
+  masivoProcessing = true
+
+  const input = document.getElementById('dni-input')
+  input.className = 'dni-input dni-proc'
+  input.disabled = true
+  setFeedback('proc', '⏳ Buscando...')
+
+  try {
+    const { data: persona } = await db.from('personas').select('*').eq('dni', dni).single()
+
+    if (persona) {
+      // Persona encontrada — marcar ingreso directo
+      currentPersona = persona
+      currentDni = dni
+      await marcarMasivo()
+    } else {
+      // No existe — abrir mini form
+      input.className = 'dni-input dni-err'
+      input.disabled = false
+      masivoProcessing = false
+      currentDni = dni
+      currentPersona = null
+      setFeedback('err', '⚠ DNI no encontrado — completa los datos')
+      abrirFormNuevo()
+      // En modo masivo el btn-form-save cambia comportamiento
+      document.getElementById('btn-form-save').textContent = 'Guardar e Ingresar'
+    }
+  } catch {
+    input.className = 'dni-input dni-err'
+    input.disabled = false
+    masivoProcessing = false
+    setFeedback('err', '❌ Error de conexión — intenta de nuevo')
+    setTimeout(() => {
+      if (modoMasivo) {
+        input.value = ''; input.className = 'dni-input'
+        setFeedback('proc', '⚡ Modo masivo activo — escribe el DNI')
+        input.focus()
+      }
+    }, 2000)
+  }
+}
+
+async function marcarMasivo() {
+  if (!currentPersona || !modoMasivo) return
+  const input = document.getElementById('dni-input')
+  const ahora = fmt(new Date())
+  const existente = estadoHoy.find(e => e.dni === currentPersona.dni)
+
+  await db.from('estado_hoy').upsert({
+    dni: currentPersona.dni, nombre: currentPersona.nombre,
+    empresa: currentPersona.empresa, area: currentPersona.area || '',
+    estado: 'dentro', fecha: today(),
+    ingreso: ahora, salida: '',
+    break_inicio: null, banio_count: existente?.banio_count || 0,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'dni,fecha' })
+
+  await db.from('eventos').insert({
+    dni: currentPersona.dni, nombre: currentPersona.nombre,
+    empresa: currentPersona.empresa, area: currentPersona.area || '',
+    tipo: 'ingreso', fecha: ahora, fecha_iso: new Date().toISOString()
+  })
+
+  agregarALista(currentPersona.nombre, false)
+  input.className = 'dni-input dni-ok'
+  setFeedback('ok', '✓ ' + currentPersona.nombre + ' — Ingreso registrado')
+  loadEstadoHoy()
+
+  setTimeout(() => {
+    if (!modoMasivo) return
+    input.value = ''; input.className = 'dni-input'; input.disabled = false
+    currentDni = ''; currentPersona = null; modoEdicion = false
+    cerrarFormPersona(); updatePersonaInfo(); updateButtons()
+    masivoProcessing = false
+    setFeedback('proc', '⚡ Modo masivo activo — escribe el DNI')
+    input.focus()
+  }, 1200)
+}
+
+// Override guardarPersona en modo masivo
+const _guardarPersonaOrig = guardarPersona
+// Se parchea abajo después de la definición original
+
+// ─── ACTAS ────────────────────────────────────────────
+let actaData = []
+let actaSupervisor = null
+let actaFiltros = {}
+
+// Inicializar fecha al entrar a la pestaña
+function initActas() {
+  document.getElementById('acta-fecha').value = today()
+}
+
+async function generarActa() {
+  const empresa = document.getElementById('acta-empresa').value
+  const fecha = document.getElementById('acta-fecha').value
+  const turno = document.getElementById('acta-turno').value
+  if (!empresa || !fecha) { showToast('Selecciona empresa y fecha', 'error'); return }
+
+  actaFiltros = { empresa, fecha, turno }
+
+  const { data } = await db.from('estado_hoy').select('*')
+    .eq('empresa', empresa).eq('fecha', fecha)
+    .order('ingreso', { ascending: true })
+
+  if (!data?.length) { showToast('Sin registros para este filtro', 'warning'); return }
+
+  // Filtrar por turno
+  actaData = data.filter(p => {
+    const esTN = esTurnoNoche(p.ingreso)
+    if (turno === 'dia') return !esTN
+    if (turno === 'noche') return esTN
+    return true
+  })
+
+  if (!actaData.length) { showToast('Sin personal para este turno', 'warning'); return }
+
+  // Mostrar preview
+  const turnoLabel = turno === 'dia' ? 'Turno Día' : 'Turno Noche'
+  const fechaLabel = new Date(fecha + 'T12:00:00').toLocaleDateString('es-PE')
+
+  document.getElementById('acta-preview-titulo').textContent = 'Acta de Asistencia · ' + empresa
+  document.getElementById('acta-preview-turno').textContent = turnoLabel
+  document.getElementById('acta-meta-empresa').textContent = empresa
+  document.getElementById('acta-meta-fecha').textContent = fechaLabel
+
+  const total = actaData.length
+  const conSalida = actaData.filter(p => p.salida).length
+  document.getElementById('acta-total').textContent = total
+  document.getElementById('acta-con-salida').textContent = conSalida
+  document.getElementById('acta-sin-salida').textContent = total - conSalida
+
+  document.getElementById('acta-tabla-body').innerHTML = actaData.map((p, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${p.nombre}</td>
+      <td style="font-family:monospace">${p.dni}</td>
+      <td>${p.ingreso || '—'}</td>
+      <td>${p.salida || '<span class="td-muted">—</span>'}</td>
+    </tr>`).join('')
+
+  document.getElementById('acta-preview').style.display = 'block'
+  document.getElementById('acta-firma-card').style.display = 'block'
+  document.getElementById('acta-preview').scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+async function confirmarFirma() {
+  const dni = document.getElementById('acta-firma-dni').value.trim()
+  if (!dni) return
+  const { data } = await db.from('supervisores').select('*').eq('dni', dni).single()
+  if (!data) { showToast('DNI no encontrado en supervisores', 'error'); return }
+  actaSupervisor = data
+  document.getElementById('acta-firma-nombre').textContent = data.nombre
+  document.getElementById('acta-firma-cargo').textContent = data.cargo
+  document.getElementById('acta-firma-input-wrap').style.display = 'none'
+  document.getElementById('acta-firma-resultado').style.display = 'block'
+}
+
+function resetFirma() {
+  actaSupervisor = null
+  document.getElementById('acta-firma-dni').value = ''
+  document.getElementById('acta-firma-input-wrap').style.display = 'block'
+  document.getElementById('acta-firma-resultado').style.display = 'none'
+}
+
+function descargarActaPDF() {
+  if (!actaData.length) { showToast('Primero genera el acta', 'error'); return }
+
+  const { jsPDF } = window.jspdf
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+
+  const NAV = [30, 36, 51]
+  const ACCENT = [232, 93, 155]
+  const GREEN = [34, 194, 122]
+  const MUTED = [122, 130, 153]
+  const BG = [247, 249, 252]
+  const turnoLabel = actaFiltros.turno === 'dia' ? 'Turno Día' : 'Turno Noche'
+  const fechaLabel = new Date(actaFiltros.fecha + 'T12:00:00').toLocaleDateString('es-PE')
+
+  const W = 210, M = 15, CW = W - M * 2
+
+  // ── HEADER ──
+  doc.setFillColor(...NAV)
+  doc.roundedRect(M, 12, CW, 22, 3, 3, 'F')
+  doc.setFontSize(14); doc.setFont('helvetica', 'bold')
+  doc.setTextColor(255, 255, 255)
+  doc.text('Acta de Asistencia · ' + actaFiltros.empresa, M + 6, 21)
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal')
+  doc.setTextColor(154, 163, 184)
+  doc.text('Control de Ingreso · Home Delivery', M + 6, 28)
+  // Badge turno
+  doc.setFillColor(...ACCENT)
+  doc.roundedRect(W - M - 28, 15, 27, 8, 2, 2, 'F')
+  doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255)
+  doc.text(turnoLabel, W - M - 14.5, 20.2, { align: 'center' })
+
+  // ── META ──
+  let y = 40
+  doc.setFillColor(...BG)
+  doc.roundedRect(M, y, CW / 2 - 3, 14, 2, 2, 'F')
+  doc.roundedRect(M + CW / 2 + 3, y, CW / 2 - 3, 14, 2, 2, 'F')
+  doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MUTED)
+  doc.text('EMPRESA', M + 4, y + 5)
+  doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(...NAV)
+  doc.text(actaFiltros.empresa, M + 4, y + 11)
+  doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MUTED)
+  doc.text('FECHA', M + CW / 2 + 7, y + 5)
+  doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(...NAV)
+  doc.text(fechaLabel, M + CW / 2 + 7, y + 11)
+
+  // ── RESUMEN ──
+  y = 60
+  const total = actaData.length
+  const conSalida = actaData.filter(p => p.salida).length
+  const sinSalida = total - conSalida
+  const cols3 = CW / 3
+  const resData = [
+    { num: total, lbl: 'ASISTIERON', color: NAV },
+    { num: conSalida, lbl: 'SALIDA COMPLETA', color: GREEN },
+    { num: sinSalida, lbl: 'SIN SALIDA', color: ACCENT },
+  ]
+  resData.forEach((r, i) => {
+    const rx = M + i * (cols3 + 1.5)
+    doc.setFillColor(...BG)
+    doc.roundedRect(rx, y, cols3 - 2, 18, 2, 2, 'F')
+    doc.setFontSize(20); doc.setFont('helvetica', 'bold'); doc.setTextColor(...r.color)
+    doc.text(String(r.num), rx + (cols3 - 2) / 2, y + 11, { align: 'center' })
+    doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MUTED)
+    doc.text(r.lbl, rx + (cols3 - 2) / 2, y + 16, { align: 'center' })
+  })
+
+  // ── TABLA ──
+  y = 84
+  doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(...MUTED)
+  doc.text('DETALLE DE PERSONAL', M, y - 2)
+
+  doc.autoTable({
+    startY: y,
+    head: [['#', 'Nombre completo', 'DNI', 'Ingreso', 'Salida']],
+    body: actaData.map((p, i) => [i + 1, p.nombre, p.dni, p.ingreso || '—', p.salida || '—']),
+    theme: 'grid',
+    headStyles: { fillColor: NAV, textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold', cellPadding: 4 },
+    bodyStyles: { fontSize: 9, cellPadding: 3.5, textColor: NAV },
+    alternateRowStyles: { fillColor: BG },
+    columnStyles: { 0: { cellWidth: 8, halign: 'center' }, 2: { cellWidth: 25, halign: 'center' }, 3: { cellWidth: 20, halign: 'center' }, 4: { cellWidth: 20, halign: 'center' } },
+    margin: { left: M, right: M },
+  })
+
+  // ── FIRMA ──
+  y = doc.lastAutoTable.finalY + 10
+  doc.setDrawColor(...MUTED); doc.setLineWidth(0.3)
+  doc.line(M, y, W - M, y)
+  y += 8
+
+  // Firma supervisor
+  doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(...MUTED)
+  doc.text('CONFORMIDAD Y FIRMA', M, y)
+  y += 6
+  if (actaSupervisor) {
+    doc.setFontSize(13); doc.setFont('helvetica', 'bolditalic'); doc.setTextColor(...NAV)
+    doc.text(actaSupervisor.nombre, M, y + 4)
+    doc.setDrawColor(...NAV); doc.setLineWidth(0.8)
+    doc.line(M, y + 6, M + 70, y + 6)
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MUTED)
+    doc.text(actaSupervisor.cargo, M, y + 11)
+  } else {
+    doc.setFillColor(...BG)
+    doc.rect(M, y, 70, 12, 'F')
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MUTED)
+    doc.text('Sin firma registrada', M + 2, y + 7)
+  }
+
+  // Fecha generado
+  doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(...MUTED)
+  doc.text('DOCUMENTO GENERADO', M + CW / 2, y)
+  doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(...NAV)
+  doc.text(fechaLabel, M + CW / 2, y + 8)
+  doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MUTED)
+  doc.text('Control de Ingreso · Home Delivery', M + CW / 2, y + 14)
+
+  // Pie
+  const pageH = doc.internal.pageSize.height
+  doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MUTED)
+  doc.text(`Documento generado automáticamente · Control de Ingreso HD · ${fechaLabel}`, W / 2, pageH - 8, { align: 'center' })
+
+  doc.save(`acta_${actaFiltros.empresa}_${actaFiltros.fecha}_${actaFiltros.turno}.pdf`)
+}
+
+// ─── ACTAS ── FIN ─────────────────────────────────────
+let consumoPopupOpen = false
+
+function toggleConsumo() {
+  consumoPopupOpen = !consumoPopupOpen
+  document.getElementById('consumo-popup').classList.toggle('open', consumoPopupOpen)
+  if (consumoPopupOpen) calcularConsumo()
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#nav-consumo') && consumoPopupOpen) {
+    consumoPopupOpen = false
+    document.getElementById('consumo-popup').classList.remove('open')
+  }
+})
+
+async function calcularConsumo() {
+  // Contar filas de cada tabla
+  const [{ count: cPersonas }, { count: cEstado }, { count: cEventos }] = await Promise.all([
+    db.from('personas').select('*', { count: 'exact', head: true }),
+    db.from('estado_hoy').select('*', { count: 'exact', head: true }),
+    db.from('eventos').select('*', { count: 'exact', head: true }),
+  ])
+
+  // Estimado de bytes por fila
+  const bytesPersonas = (cPersonas || 0) * 200
+  const bytesEstado = (cEstado || 0) * 280
+  const bytesEventos = (cEventos || 0) * 300
+  const totalBytes = bytesPersonas + bytesEstado + bytesEventos
+  const totalMB = totalBytes / (1024 * 1024)
+  const limiteMB = 500
+  const pct = Math.min(Math.round((totalMB / limiteMB) * 100 * 10) / 10, 100)
+
+  const totalRows = (cPersonas || 0) + (cEstado || 0) + (cEventos || 0)
+  const rowsLimit = 100000 // estimado razonable
+  const rowsPct = Math.min(Math.round((totalRows / rowsLimit) * 100), 100)
+
+  // Actualizar UI
+  document.getElementById('consumo-pct').textContent = 'BD ' + pct + '%'
+  document.getElementById('consumo-fill').style.width = pct + '%'
+  document.getElementById('consumo-fill').style.background = pct > 70 ? '#ef4444' : pct > 40 ? '#f59e0b' : '#22c27a'
+
+  document.getElementById('cp-sb-txt').textContent = totalMB.toFixed(2) + ' / 500 MB'
+  document.getElementById('cp-sb-fill').style.width = pct + '%'
+  document.getElementById('cp-sb-fill').style.background = pct > 70 ? '#ef4444' : pct > 40 ? '#f59e0b' : '#22c27a'
+
+  document.getElementById('cp-rows-txt').textContent = totalRows.toLocaleString() + ' filas'
+  document.getElementById('cp-rows-fill').style.width = rowsPct + '%'
+}
+
+// Calcular al cargar
+setTimeout(calcularConsumo, 2000)
 
 // ─── INIT ─────────────────────────────────────────────
 loadEstadoHoy()
