@@ -561,8 +561,7 @@ tr:hover td{background:#f7f9fc}
         </div>
         <div class="divider"></div>
         <button class="btn-ingreso btn-marca" style="width:100%;margin-top:0" id="btn-descargar-acta" onclick="descargarActaPDF()">📄 Descargar acta PDF</button>
-        <button class="btn-marca btn-break-out" style="width:100%;margin-top:8px;padding:13px;grid-column:auto" id="btn-enviar-acta" onclick="enviarActaCorreo()">📧 Enviar por correo</button>
-        <button class="btn-marca btn-break-out" style="width:100%;margin-top:8px;grid-column:span 2;padding:12px" id="btn-enviar-acta" onclick="enviarActaCorreo()">📧 Enviar por correo</button>
+        <button class="btn-marca btn-break-out" style="width:100%;margin-top:8px;padding:13px" id="btn-enviar-acta" onclick="enviarActaCorreo()">📧 Enviar por correo</button>
       </div>
     </div>
 
@@ -1500,14 +1499,18 @@ async function generarActa() {
   document.getElementById('acta-con-salida').textContent = conSalida
   document.getElementById('acta-sin-salida').textContent = total - conSalida
 
-  document.getElementById('acta-tabla-body').innerHTML = actaData.map((p, i) => `
-    <tr>
+  document.getElementById('acta-tabla-body').innerHTML = actaData.map((p, i) => {
+    // Extraer solo la hora del string "DD/MM/YYYY HH:MM"
+    const soloHoraIngreso = p.ingreso ? p.ingreso.split(' ').slice(-1)[0] : '—'
+    const soloHoraSalida = p.salida ? p.salida.split(' ').slice(-1)[0] : '—'
+    return `<tr>
       <td>${i + 1}</td>
       <td>${p.nombre}</td>
       <td style="font-family:monospace">${p.dni}</td>
-      <td>${p.ingreso || '—'}</td>
-      <td>${p.salida || '<span class="td-muted">—</span>'}</td>
-    </tr>`).join('')
+      <td>${soloHoraIngreso}</td>
+      <td>${soloHoraSalida !== '—' ? soloHoraSalida : '<span class="td-muted">—</span>'}</td>
+    </tr>`
+  }).join('')
 
   document.getElementById('acta-preview').style.display = 'block'
   document.getElementById('acta-firma-card').style.display = 'block'
@@ -1620,7 +1623,10 @@ async function enviarActaCorreo() {
         })
       })
 
+      const resJson = await res.json()
+      console.log('Resend status:', res.status, resJson)
       if (res.ok) enviados++
+      else console.error('Resend error:', resJson.message || resJson)
     }
 
     if (enviados === correos.length) {
@@ -1691,7 +1697,11 @@ function generarActaPDFBase64() {
   doc.autoTable({
     startY: y,
     head:[['#','Nombre completo','DNI','Ingreso','Salida']],
-    body: actaData.map((p,i)=>[i+1, p.nombre, p.dni, p.ingreso||'—', p.salida||'—']),
+    body: actaData.map((p,i)=>{
+      const hi = p.ingreso ? p.ingreso.split(' ').slice(-1)[0] : '—'
+      const hs = p.salida ? p.salida.split(' ').slice(-1)[0] : '—'
+      return [i+1, p.nombre, p.dni, hi, hs]
+    }),
     theme:'grid',
     headStyles:{fillColor:NAV,textColor:[255,255,255],fontSize:8,fontStyle:'bold',cellPadding:4},
     bodyStyles:{fontSize:9,cellPadding:3.5,textColor:NAV},
