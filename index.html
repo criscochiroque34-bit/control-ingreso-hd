@@ -561,6 +561,7 @@ tr:hover td{background:#f7f9fc}
         </div>
         <div class="divider"></div>
         <button class="btn-ingreso btn-marca" style="width:100%;margin-top:0" id="btn-descargar-acta" onclick="descargarActaPDF()">📄 Descargar acta PDF</button>
+        <button class="btn-marca btn-break-out" style="width:100%;margin-top:8px;padding:13px;grid-column:auto" id="btn-enviar-acta" onclick="enviarActaCorreo()">📧 Enviar por correo</button>
         <button class="btn-marca btn-break-out" style="width:100%;margin-top:8px;grid-column:span 2;padding:12px" id="btn-enviar-acta" onclick="enviarActaCorreo()">📧 Enviar por correo</button>
       </div>
     </div>
@@ -1727,6 +1728,185 @@ function generarActaPDFBase64() {
 }
 
 // ─── ACTAS ── FIN ─────────────────────────────────────
+
+// ─── ENVÍO CORREO ACTA ────────────────────────────────
+const RESEND_KEY = 're_HtTzGxoP_9SuGxSaZ7Fb7Bjr4jFZw1kA5'
+
+async function enviarActaCorreo() {
+  if (!actaData.length) { showToast('Primero genera el acta', 'error'); return }
+
+  const btn = document.getElementById('btn-enviar-acta')
+  btn.textContent = '⏳ Enviando...'
+  btn.disabled = true
+
+  try {
+    // 1. Buscar correos de la empresa
+    const { data: correos } = await db.from('empresas_correos')
+      .select('*').eq('empresa', actaFiltros.empresa)
+
+    if (!correos?.length) {
+      showToast('No hay correos registrados para esta empresa', 'error')
+      btn.textContent = '📧 Enviar por correo'; btn.disabled = false
+      return
+    }
+
+    // 2. Generar PDF como base64
+    const pdfBase64 = generarActaPDFBase64()
+
+    // 3. Preparar datos del acta para el cuerpo del correo
+    const turnoLabel = actaFiltros.turno === 'dia' ? 'Día' : 'Noche'
+    const fechaLabel = new Date(actaFiltros.fecha + 'T12:00:00').toLocaleDateString('es-PE')
+    const total = actaData.length
+    const conSalida = actaData.filter(p => p.salida).length
+    const supervisor = actaSupervisor ? actaSupervisor.nombre : 'Sin firma'
+
+    // 4. Enviar a cada correo registrado
+    let enviados = 0
+    for (const dest of correos) {
+      const nombreContacto = dest.nombre_contacto || actaFiltros.empresa
+      const html = `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+          <div style="background:#1e2433;padding:20px 24px;border-radius:8px 8px 0 0">
+            <div style="font-size:18px;font-weight:bold;color:#fff">Acta de Asistencia</div>
+            <div style="font-size:12px;color:#9aa3b8;margin-top:4px">Control de Ingreso · Home Delivery</div>
+          </div>
+          <div style="background:#f7f9fc;padding:20px 24px;border-radius:0 0 8px 8px;border:1px solid #dde2ed;border-top:none">
+            <p style="color:#1e2433;font-size:14px;margin:0 0 16px">
+              Hola <strong>${nombreContacto}</strong>, se adjunta el acta de asistencia digital correspondiente al turno del <strong>${fechaLabel}</strong>.
+            </p>
+            <div style="background:#fff;border:1px solid #dde2ed;border-radius:8px;padding:16px;margin-bottom:16px">
+              <table style="width:100%;font-size:13px;color:#1e2433">
+                <tr><td style="color:#7a8299;padding:4px 0">Empresa</td><td style="font-weight:bold;text-align:right">${actaFiltros.empresa}</td></tr>
+                <tr><td style="color:#7a8299;padding:4px 0">Fecha</td><td style="font-weight:bold;text-align:right">${fechaLabel}</td></tr>
+                <tr><td style="color:#7a8299;padding:4px 0">Turno</td><td style="font-weight:bold;text-align:right">${turnoLabel}</td></tr>
+                <tr><td style="color:#7a8299;padding:4px 0">Asistieron</td><td style="font-weight:bold;text-align:right">${total}</td></tr>
+                <tr><td style="color:#7a8299;padding:4px 0">Salida completa</td><td style="font-weight:bold;text-align:right">${conSalida}</td></tr>
+                <tr><td style="color:#7a8299;padding:4px 0">Supervisor HD</td><td style="font-weight:bold;text-align:right">${supervisor}</td></tr>
+              </table>
+            </div>
+            <p style="color:#7a8299;font-size:12px;margin:0">El acta completa se encuentra adjunta en formato PDF.</p>
+          </div>
+        </div>`
+
+      const resp = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + RESEND_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: 'Control HD <onboarding@resend.dev>',
+          to: [dest.correo],
+          subject: `Acta de Asistencia · ${actaFiltros.empresa} · ${fechaLabel} · Turno ${turnoLabel}`,
+          html,
+          attachments: [{
+            filename: `acta_${actaFiltros.empresa}_${actaFiltros.fecha}_${turnoLabel}.pdf`,
+            content: pdfBase64
+          }]
+        })
+      })
+
+      if (resp.ok) enviados++
+    }
+
+    if (enviados > 0) {
+      showToast(`✓ Acta enviada a ${enviados} correo${enviados > 1 ? 's' : ''}`, 'success')
+    } else {
+      showToast('Error al enviar el correo', 'error')
+    }
+  } catch (e) {
+    console.error(e)
+    showToast('Error de conexión al enviar', 'error')
+  }
+
+  btn.textContent = '📧 Enviar por correo'
+  btn.disabled = false
+}
+
+function generarActaPDFBase64() {
+  const { jsPDF } = window.jspdf
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+
+  const NAV = [30, 36, 51], ACCENT = [232, 93, 155], GREEN = [34, 194, 122]
+  const MUTED = [122, 130, 153], BG = [247, 249, 252]
+  const turnoLabel = actaFiltros.turno === 'dia' ? 'Turno Día' : 'Turno Noche'
+  const fechaLabel = new Date(actaFiltros.fecha + 'T12:00:00').toLocaleDateString('es-PE')
+  const W = 210, M = 15, CW = W - M * 2
+
+  doc.setFillColor(...NAV)
+  doc.roundedRect(M, 12, CW, 22, 3, 3, 'F')
+  doc.setFontSize(14); doc.setFont('helvetica', 'bold'); doc.setTextColor(255,255,255)
+  doc.text('Acta de Asistencia · ' + actaFiltros.empresa, M+6, 21)
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(154,163,184)
+  doc.text('Control de Ingreso · Home Delivery', M+6, 28)
+  doc.setFillColor(...ACCENT)
+  doc.roundedRect(W-M-28, 15, 27, 8, 2, 2, 'F')
+  doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(255,255,255)
+  doc.text(turnoLabel, W-M-14.5, 20.2, { align:'center' })
+
+  let y = 40
+  doc.setFillColor(...BG)
+  doc.roundedRect(M, y, CW/2-3, 14, 2, 2, 'F')
+  doc.roundedRect(M+CW/2+3, y, CW/2-3, 14, 2, 2, 'F')
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...MUTED)
+  doc.text('EMPRESA', M+4, y+5)
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...NAV)
+  doc.text(actaFiltros.empresa, M+4, y+11)
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...MUTED)
+  doc.text('FECHA', M+CW/2+7, y+5)
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...NAV)
+  doc.text(fechaLabel, M+CW/2+7, y+11)
+
+  y = 60
+  const total = actaData.length, conSalida = actaData.filter(p=>p.salida).length
+  const cols3 = CW/3
+  ;[[total,'ASISTIERON',NAV],[conSalida,'SALIDA COMPLETA',GREEN],[total-conSalida,'SIN SALIDA',ACCENT]].forEach((r,i)=>{
+    const rx = M + i*(cols3+1.5)
+    doc.setFillColor(...BG); doc.roundedRect(rx, y, cols3-2, 18, 2, 2, 'F')
+    doc.setFontSize(20); doc.setFont('helvetica','bold'); doc.setTextColor(...r[2])
+    doc.text(String(r[0]), rx+(cols3-2)/2, y+11, {align:'center'})
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...MUTED)
+    doc.text(r[1], rx+(cols3-2)/2, y+16, {align:'center'})
+  })
+
+  y = 84
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...MUTED)
+  doc.text('DETALLE DE PERSONAL', M, y-2)
+  doc.autoTable({
+    startY: y,
+    head: [['#','Nombre completo','DNI','Ingreso','Salida']],
+    body: actaData.map((p,i)=>[i+1, p.nombre, p.dni, p.ingreso||'—', p.salida||'—']),
+    theme:'grid',
+    headStyles:{fillColor:NAV,textColor:[255,255,255],fontSize:8,fontStyle:'bold',cellPadding:4},
+    bodyStyles:{fontSize:9,cellPadding:3.5,textColor:NAV},
+    alternateRowStyles:{fillColor:BG},
+    columnStyles:{0:{cellWidth:8,halign:'center'},2:{cellWidth:25,halign:'center'},3:{cellWidth:20,halign:'center'},4:{cellWidth:20,halign:'center'}},
+    margin:{left:M,right:M}
+  })
+
+  y = doc.lastAutoTable.finalY + 10
+  doc.setDrawColor(...MUTED); doc.setLineWidth(0.3); doc.line(M,y,W-M,y); y+=8
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...MUTED)
+  doc.text('CONFORMIDAD Y FIRMA', M, y); y+=6
+  if (actaSupervisor) {
+    doc.setFontSize(13); doc.setFont('helvetica','bolditalic'); doc.setTextColor(...NAV)
+    doc.text(actaSupervisor.nombre, M, y+4)
+    doc.setDrawColor(...NAV); doc.setLineWidth(0.8); doc.line(M,y+6,M+70,y+6)
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...MUTED)
+    doc.text(actaSupervisor.cargo, M, y+11)
+  }
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...MUTED)
+  doc.text('DOCUMENTO GENERADO', M+CW/2, y)
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...NAV)
+  doc.text(fechaLabel, M+CW/2, y+8)
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...MUTED)
+  doc.text('Control de Ingreso · Home Delivery', M+CW/2, y+14)
+  const pageH = doc.internal.pageSize.height
+  doc.setFontSize(7); doc.setTextColor(...MUTED)
+  doc.text(`Documento generado automáticamente · Control de Ingreso HD · ${fechaLabel}`, W/2, pageH-8, {align:'center'})
+
+  return doc.output('datauristring').split(',')[1]
+}
 let consumoPopupOpen = false
 
 function toggleConsumo() {
