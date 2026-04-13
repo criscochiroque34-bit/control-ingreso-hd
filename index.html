@@ -1605,11 +1605,11 @@ async function enviarActaCorreo() {
           </div>
         </div>`
 
-      const res = await fetch('https://api.resend.com/emails', {
+      const res = await fetch('https://lflenisloinbqyuptxzc.supabase.co/functions/v1/clever-api', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer ' + RESEND_KEY,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + SUPABASE_KEY
         },
         body: JSON.stringify({
           from: 'Control HD <onboarding@resend.dev>',
