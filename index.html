@@ -677,26 +677,19 @@ let avatarIdx = 0
 
 // ─── HELPERS ──────────────────────────────────────────
 const today = () => {
-  // Calcular fecha en Lima (UTC-5) de forma correcta sin depender del timezone del browser
-  const now = new Date()
-  const limaMins = now.getTime() + (-5 * 60 - now.getTimezoneOffset()) * 60000
-  const lima = new Date(limaMins)
-  // Antes de las 6am Lima → sigue siendo el turno del día anterior
-  if (lima.getHours() < 6) lima.setDate(lima.getDate() - 1)
+  // Restar exactamente 5 horas al UTC para obtener hora Lima — sin depender del browser
+  const lima = new Date(Date.now() - 5 * 60 * 60 * 1000)
+  if (lima.getUTCHours() < 6) lima.setUTCDate(lima.getUTCDate() - 1)
   return lima.toISOString().slice(0, 10)
 }
 
 const todayLima = () => {
-  // Devuelve la fecha REAL de Lima (sin el corte de 6am) — para detectar turno noche pendiente
-  const now = new Date()
-  const limaMins = now.getTime() + (-5 * 60 - now.getTimezoneOffset()) * 60000
-  return new Date(limaMins).toISOString().slice(0, 10)
+  const lima = new Date(Date.now() - 5 * 60 * 60 * 1000)
+  return lima.toISOString().slice(0, 10)
 }
 
 const horaLima = () => {
-  const now = new Date()
-  const limaMins = now.getTime() + (-5 * 60 - now.getTimezoneOffset()) * 60000
-  return new Date(limaMins).getHours()
+  return new Date(Date.now() - 5 * 60 * 60 * 1000).getUTCHours()
 }
 const fmt = d => {
   // Formato manual DD/MM/YYYY HH:MM — no depende del locale del browser
@@ -727,9 +720,9 @@ const horasDesdeIngreso = str => {
     const [fecha, hora] = str.split(' ')
     const [d,m,a] = fecha.split('/')
     const [hh,mm] = hora.split(':')
-    // Crear fecha como Lima local (UTC-5) usando offset explícito
-    const dt = new Date(`${a}-${m}-${d}T${hh}:${mm}:00-05:00`)
-    return (Date.now() - dt.getTime()) / 3600000
+    // Construir timestamp Lima usando UTC explícito — sin depender del browser
+    const utcMs = Date.UTC(+a, +m-1, +d, +hh+5, +mm, 0)
+    return (Date.now() - utcMs) / 3600000
   } catch { return 0 }
 }
 
