@@ -154,7 +154,7 @@ tr:hover td{background:#f7f9fc}
           <div class="turno-dot" style="background:#f59e0b"></div>
           <div>
             <div><span class="turno-num" id="rt-dia" style="color:#92400e">—</span><span class="turno-lbl" style="color:#92400e">Turno Día</span></div>
-            <div class="turno-sub">ingreso 6am — 9:59pm</div>
+            <div class="turno-sub">ingreso 6am — 8:59pm</div>
           </div>
         </div>
         <div class="turno-sep"></div>
@@ -162,7 +162,7 @@ tr:hover td{background:#f7f9fc}
           <div class="turno-dot" style="background:#8b5cf6"></div>
           <div>
             <div><span class="turno-num" id="rt-noche" style="color:#5b21b6">—</span><span class="turno-lbl" style="color:#5b21b6">Turno Noche</span></div>
-            <div class="turno-sub">ingreso 10pm — 5:59am</div>
+            <div class="turno-sub">ingreso 9pm — 5:59am</div>
           </div>
         </div>
       </div>
@@ -219,7 +219,7 @@ const todayLabel = () => {
   return d.toLocaleDateString('es-PE')
 }
 const horaStr = str => { if(!str) return null; const p=str.split(' '); return p.length>=2?parseInt(p[1].split(':')[0]):null }
-const esTurnoNoche = str => { const h=horaStr(str); return h!==null&&(h>=22||h<6) }
+const esTurnoNoche = str => { const h=horaStr(str); return h!==null&&(h>=21||h<6) }
 const ini = n => n?.split(' ').map(x=>x[0]).slice(0,2).join('')||'?'
 
 const AVATARES_COLORS = ['#22c27a','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#06b6d4']
