@@ -348,7 +348,10 @@ tr:hover td{background:#f7f9fc}
     </div>
 
     <div class="card">
-      <div class="card-title">Actividad de hoy — Tiempo real</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="card-title" style="margin-bottom:0">Actividad de hoy — Tiempo real</div>
+        <button onclick="loadEstadoHoy()" style="padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;font-family:'DM Sans',sans-serif" onmouseover="this.style.background='var(--nav-bg)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">↻ Actualizar</button>
+      </div>
       <div class="table-search-wrap">
         <span class="table-search-icon">🔍</span>
         <input class="table-search" type="text" id="busqueda-tabla" placeholder="Buscar por nombre, DNI o empresa..." oninput="renderTablaRegistro()" />
@@ -561,7 +564,6 @@ tr:hover td{background:#f7f9fc}
         </div>
         <div class="divider"></div>
         <button class="btn-ingreso btn-marca" style="width:100%;margin-top:0" id="btn-descargar-acta" onclick="descargarActaPDF()">📄 Descargar acta PDF</button>
-        <button class="btn-marca btn-break-out" style="width:100%;margin-top:8px;padding:13px" id="btn-enviar-acta" onclick="enviarActaCorreo()">📧 Enviar por correo</button>
       </div>
     </div>
 
@@ -675,12 +677,36 @@ let avatarIdx = 0
 
 // ─── HELPERS ──────────────────────────────────────────
 const today = () => {
-  const d = new Date()
-  d.setHours(d.getHours() - 5) // UTC-5 Peru
-  if (d.getHours() < 6) d.setDate(d.getDate() - 1) // antes de 6am = turno anterior
-  return d.toISOString().slice(0,10)
+  // Calcular fecha en Lima (UTC-5) de forma correcta sin depender del timezone del browser
+  const now = new Date()
+  const limaMins = now.getTime() + (-5 * 60 - now.getTimezoneOffset()) * 60000
+  const lima = new Date(limaMins)
+  // Antes de las 6am Lima → sigue siendo el turno del día anterior
+  if (lima.getHours() < 6) lima.setDate(lima.getDate() - 1)
+  return lima.toISOString().slice(0, 10)
 }
-const fmt = d => d.toLocaleDateString('es-PE') + ' ' + d.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false})
+
+const todayLima = () => {
+  // Devuelve la fecha REAL de Lima (sin el corte de 6am) — para detectar turno noche pendiente
+  const now = new Date()
+  const limaMins = now.getTime() + (-5 * 60 - now.getTimezoneOffset()) * 60000
+  return new Date(limaMins).toISOString().slice(0, 10)
+}
+
+const horaLima = () => {
+  const now = new Date()
+  const limaMins = now.getTime() + (-5 * 60 - now.getTimezoneOffset()) * 60000
+  return new Date(limaMins).getHours()
+}
+const fmt = d => {
+  // Formato manual DD/MM/YYYY HH:MM — no depende del locale del browser
+  const dd = String(d.getDate()).padStart(2,'0')
+  const mm = String(d.getMonth()+1).padStart(2,'0')
+  const yyyy = d.getFullYear()
+  const hh = String(d.getHours()).padStart(2,'0')
+  const min = String(d.getMinutes()).padStart(2,'0')
+  return `${dd}/${mm}/${yyyy} ${hh}:${min}`
+}
 const ini = n => n.split(' ').map(x=>x[0]).slice(0,2).join('')
 const pad = n => String(n).padStart(2,'0')
 const getAvatar = emp => { if (!avatarMap[emp]) { avatarMap[emp] = AVATARES[avatarIdx++ % AVATARES.length] } return avatarMap[emp] }
@@ -739,18 +765,42 @@ function showToast(msg, type='success') {
 
 // ─── CARGAR ESTADO HOY ────────────────────────────────
 async function loadEstadoHoy() {
-  const { data } = await db.from('estado_hoy').select('*')
-    .eq('fecha', today()).order('updated_at',{ascending:false})
-  if (data) {
-    data.forEach(e => {
-      if (['break','banio'].includes(e.estado) && e.break_inicio) {
+  const fechaHoy = today()
+  const hora = horaLima()
+
+  // Query principal: turno activo
+  const { data: dataHoy } = await db.from('estado_hoy').select('*')
+    .eq('fecha', fechaHoy).order('updated_at', { ascending: false })
+
+  // Si estamos entre 6am y 10am, también traer pendientes del turno noche anterior (sin salida)
+  let dataPendientes = []
+  if (hora >= 6 && hora < 10) {
+    const ayer = new Date(Date.now() + (-5 * 60 - new Date().getTimezoneOffset()) * 60000)
+    ayer.setDate(ayer.getDate() - 1)
+    const fechaAyer = ayer.toISOString().slice(0, 10)
+    const { data: pendientes } = await db.from('estado_hoy').select('*')
+      .eq('fecha', fechaAyer)
+      .neq('estado', 'salida')
+    dataPendientes = pendientes || []
+  }
+
+  // Combinar — los de hoy tienen prioridad, los pendientes de ayer se agregan si no están ya
+  const dnisHoy = new Set((dataHoy || []).map(e => e.dni))
+  const combinado = [
+    ...(dataHoy || []),
+    ...dataPendientes.filter(e => !dnisHoy.has(e.dni))
+  ]
+
+  if (combinado.length || dataHoy !== null) {
+    combinado.forEach(e => {
+      if (['break', 'banio'].includes(e.estado) && e.break_inicio) {
         empresaTimers[e.dni] = new Date(e.break_inicio).getTime()
       }
-      if (!['break','banio'].includes(e.estado)) {
+      if (!['break', 'banio'].includes(e.estado)) {
         delete empresaTimers[e.dni]
       }
     })
-    estadoHoy = data
+    estadoHoy = combinado
     updateStatsRegistro()
     renderTablaRegistro()
     if (enPagina('situacion')) renderSituacion()
@@ -773,7 +823,10 @@ function renderTablaRegistro() {
 
 // ─── REALTIME ─────────────────────────────────────────
 db.channel('estado_hoy_rt')
-  .on('postgres_changes',{event:'*',schema:'public',table:'estado_hoy'}, loadEstadoHoy)
+  .on('postgres_changes', {
+    event: '*', schema: 'public', table: 'estado_hoy',
+    filter: `fecha=eq.${today()}`
+  }, loadEstadoHoy)
   .subscribe()
 
 // ─── AUTOCOMPLETE ─────────────────────────────────────
@@ -913,6 +966,10 @@ async function marcar(tipo) {
   const nuevoEstado = ESTADO_MAP[tipo]
   const existente = estadoHoy.find(e=>e.dni===currentPersona.dni)
 
+  // CRÍTICO: usar la fecha real del registro existente para no crear duplicados
+  // Ejemplo: Carlos entró 14/04 10pm, sale 15/04 8am → debe actualizar fecha=14/04
+  const fechaRegistro = existente?.fecha || today()
+
   const esAusencia = ['break_salida','banio_salida'].includes(tipo)
   const esBanioSalida = tipo === 'banio_salida'
   const ausenciaInicio = esAusencia ? new Date().toISOString() : null
@@ -921,7 +978,7 @@ async function marcar(tipo) {
   await db.from('estado_hoy').upsert({
     dni:currentPersona.dni, nombre:currentPersona.nombre,
     empresa:currentPersona.empresa, area:currentPersona.area||'',
-    estado:nuevoEstado, fecha:today(),
+    estado:nuevoEstado, fecha:fechaRegistro,
     ingreso: tipo==='ingreso'?ahora:(existente?.ingreso||ahora),
     salida: tipo==='salida'?ahora:(existente?.salida||''),
     break_inicio: esAusencia ? ausenciaInicio : null,
@@ -1172,7 +1229,9 @@ async function guardarEdicion() {
   const salida = document.getElementById('modal-salida').value.trim()
   const existente = estadoHoy.find(e=>e.dni===editDni)
 
-  // Fix: si se edita a break/baño manualmente, setear break_inicio ahora
+  // CRÍTICO: usar la fecha real del registro, no today()
+  const fechaRegistro = existente?.fecha || today()
+
   const eraAusencia = ['break','banio'].includes(existente?.estado)
   const esAusencia = ['break','banio'].includes(estado)
   const breakInicio = esAusencia && !eraAusencia ? new Date().toISOString()
@@ -1183,7 +1242,7 @@ async function guardarEdicion() {
     estado, ingreso, salida,
     break_inicio: breakInicio,
     updated_at: new Date().toISOString()
-  }).eq('dni', editDni).eq('fecha', today())
+  }).eq('dni', editDni).eq('fecha', fechaRegistro)
 
   document.getElementById('modal-overlay').classList.remove('open')
   editDni = null
@@ -1539,167 +1598,50 @@ function resetFirma() {
 function descargarActaPDF() {
   if (!actaData.length) { showToast('Primero genera el acta', 'error'); return }
   const { jsPDF } = window.jspdf
-  const turnoLabel = actaFiltros.turno === 'dia' ? 'Turno Día' : 'Turno Noche'
-  const fechaLabel = new Date(actaFiltros.fecha + 'T12:00:00').toLocaleDateString('es-PE')
-  // Reusar generarActaPDFBase64 y descargar
-  const b64 = generarActaPDFBase64()
-  const link = document.createElement('a')
-  link.href = 'data:application/pdf;base64,' + b64
-  link.download = `acta_${actaFiltros.empresa}_${actaFiltros.fecha}_${actaFiltros.turno}.pdf`
-  link.click()
-}
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' })
+  const NAV=[30,36,51], ACCENT=[232,93,155], GREEN=[34,194,122], MUTED=[122,130,153], BG=[247,249,252]
+  const turnoLabel = actaFiltros.turno==='dia' ? 'Turno Día' : 'Turno Noche'
+  const fechaLabel = new Date(actaFiltros.fecha+'T12:00:00').toLocaleDateString('es-PE')
+  const W=210, M=15, CW=W-M*2
 
-// ─── ENVIAR CORREO ────────────────────────────────────
-const RESEND_KEY = 're_HtTzGxoP_9SuGxSaZ7Fb7Bjr4jFZw1kA5'
-
-async function enviarActaCorreo() {
-  if (!actaData.length) { showToast('Primero genera el acta', 'error'); return }
-
-  const btn = document.getElementById('btn-enviar-acta')
-  btn.textContent = '⏳ Enviando...'
-  btn.disabled = true
-
-  try {
-    // 1. Buscar correos de la empresa
-    const { data: correos } = await db.from('empresas_correos')
-      .select('*').eq('empresa', actaFiltros.empresa)
-
-    if (!correos?.length) {
-      showToast('No hay correos registrados para ' + actaFiltros.empresa, 'error')
-      btn.textContent = '📧 Enviar por correo'; btn.disabled = false
-      return
-    }
-
-    // 2. Generar PDF como base64
-    const pdfBase64 = generarActaPDFBase64()
-
-    // 3. Enviar a cada correo
-    const turnoLabel = actaFiltros.turno === 'dia' ? 'Día' : 'Noche'
-    const fechaLabel = new Date(actaFiltros.fecha + 'T12:00:00').toLocaleDateString('es-PE')
-    const firmaNombre = actaSupervisor?.nombre || 'Supervisor HD'
-    const firmaCargo = actaSupervisor?.cargo || 'Home Delivery'
-
-    let enviados = 0
-    for (const c of correos) {
-      const saludo = c.nombre_contacto ? `Hola ${c.nombre_contacto}` : `Hola ${actaFiltros.empresa}`
-      const html = `
-        <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
-          <div style="background:#1e2433;padding:20px 24px;border-radius:8px 8px 0 0">
-            <h2 style="color:#fff;margin:0;font-size:18px">Acta de Asistencia · ${actaFiltros.empresa}</h2>
-            <p style="color:#9aa3b8;margin:4px 0 0;font-size:13px">Control de Ingreso · Home Delivery</p>
-          </div>
-          <div style="background:#f7f9fc;padding:24px;border-radius:0 0 8px 8px;border:1px solid #dde2ed">
-            <p style="color:#1e2433;font-size:14px;margin:0 0 16px">${saludo},</p>
-            <p style="color:#1e2433;font-size:14px;margin:0 0 16px">Se adjunta el acta de asistencia digital correspondiente al <strong>Turno ${turnoLabel}</strong> del <strong>${fechaLabel}</strong>.</p>
-            <div style="background:#fff;border:1px solid #dde2ed;border-radius:8px;padding:14px;margin-bottom:16px">
-              <table style="width:100%;border-collapse:collapse;font-size:13px">
-                <tr><td style="color:#7a8299;padding:3px 0">Empresa</td><td style="font-weight:600;color:#1e2433;text-align:right">${actaFiltros.empresa}</td></tr>
-                <tr><td style="color:#7a8299;padding:3px 0">Fecha</td><td style="font-weight:600;color:#1e2433;text-align:right">${fechaLabel}</td></tr>
-                <tr><td style="color:#7a8299;padding:3px 0">Turno</td><td style="font-weight:600;color:#1e2433;text-align:right">${turnoLabel}</td></tr>
-                <tr><td style="color:#7a8299;padding:3px 0">Total asistieron</td><td style="font-weight:600;color:#1e2433;text-align:right">${actaData.length} personas</td></tr>
-              </table>
-            </div>
-            <p style="color:#7a8299;font-size:12px;margin:0">El acta se adjunta en formato PDF a este correo.</p>
-            <hr style="border:none;border-top:1px solid #dde2ed;margin:16px 0"/>
-            <p style="color:#7a8299;font-size:11px;margin:0">${firmaNombre} · ${firmaCargo}<br/>Control de Ingreso · Home Delivery</p>
-          </div>
-        </div>`
-
-      const resendPayload = {
-        from: 'Control HD <onboarding@resend.dev>',
-        to: [c.correo],
-        subject: `Acta de Asistencia · ${actaFiltros.empresa} · ${fechaLabel} · Turno ${turnoLabel}`,
-        html,
-        attachments: [{
-          filename: `acta_${actaFiltros.empresa}_${actaFiltros.fecha}_${actaFiltros.turno}.pdf`,
-          content: pdfBase64
-        }]
-      }
-
-      const res = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(resendPayload)
-      })
-
-      const resJson = await res.json()
-      console.log('Resend status:', res.status, resJson)
-      if (res.ok) enviados++
-      else console.error('Resend error:', resJson.message || resJson)
-    }
-
-    if (enviados === correos.length) {
-      showToast(`✓ Acta enviada a ${enviados} correo${enviados > 1 ? 's' : ''} de ${actaFiltros.empresa}`, 'success')
-    } else {
-      showToast(`Enviado a ${enviados} de ${correos.length} correos`, 'warning')
-    }
-  } catch (e) {
-    console.error(e)
-    showToast('Error al enviar el correo', 'error')
-  }
-
-  btn.textContent = '📧 Enviar por correo'
-  btn.disabled = false
-}
-
-function generarActaPDFBase64() {
-  const { jsPDF } = window.jspdf
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-
-  const NAV = [30, 36, 51], ACCENT = [232, 93, 155], GREEN = [34, 194, 122]
-  const MUTED = [122, 130, 153], BG = [247, 249, 252]
-  const turnoLabel = actaFiltros.turno === 'dia' ? 'Turno Día' : 'Turno Noche'
-  const fechaLabel = new Date(actaFiltros.fecha + 'T12:00:00').toLocaleDateString('es-PE')
-  const W = 210, M = 15, CW = W - M * 2
-
-  doc.setFillColor(...NAV)
-  doc.roundedRect(M, 12, CW, 22, 3, 3, 'F')
-  doc.setFontSize(14); doc.setFont('helvetica', 'bold'); doc.setTextColor(255,255,255)
-  doc.text('Acta de Asistencia · ' + actaFiltros.empresa, M+6, 21)
-  doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(154,163,184)
+  doc.setFillColor(...NAV); doc.roundedRect(M,12,CW,22,3,3,'F')
+  doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255)
+  doc.text('Acta de Asistencia · '+actaFiltros.empresa, M+6, 21)
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(154,163,184)
   doc.text('Control de Ingreso · Home Delivery', M+6, 28)
-  doc.setFillColor(...ACCENT)
-  doc.roundedRect(W-M-28, 15, 27, 8, 2, 2, 'F')
-  doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(255,255,255)
-  doc.text(turnoLabel, W-M-14.5, 20.2, { align:'center' })
+  doc.setFillColor(...ACCENT); doc.roundedRect(W-M-28,15,27,8,2,2,'F')
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255)
+  doc.text(turnoLabel, W-M-14.5, 20.2, {align:'center'})
 
-  let y = 40
+  let y=40
   doc.setFillColor(...BG)
-  doc.roundedRect(M, y, CW/2-3, 14, 2, 2, 'F')
-  doc.roundedRect(M+CW/2+3, y, CW/2-3, 14, 2, 2, 'F')
+  doc.roundedRect(M,y,CW/2-3,14,2,2,'F'); doc.roundedRect(M+CW/2+3,y,CW/2-3,14,2,2,'F')
   doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...MUTED)
-  doc.text('EMPRESA', M+4, y+5)
+  doc.text('EMPRESA',M+4,y+5); doc.text('FECHA',M+CW/2+7,y+5)
   doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...NAV)
-  doc.text(actaFiltros.empresa, M+4, y+11)
-  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...MUTED)
-  doc.text('FECHA', M+CW/2+7, y+5)
-  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...NAV)
-  doc.text(fechaLabel, M+CW/2+7, y+11)
+  doc.text(actaFiltros.empresa,M+4,y+11); doc.text(fechaLabel,M+CW/2+7,y+11)
 
-  y = 60
-  const total = actaData.length
-  const conSalida = actaData.filter(p=>p.salida).length
-  const cols3 = CW/3
-  const resData = [{num:total,lbl:'ASISTIERON',color:NAV},{num:conSalida,lbl:'SALIDA COMPLETA',color:GREEN},{num:total-conSalida,lbl:'SIN SALIDA',color:ACCENT}]
-  resData.forEach((r,i) => {
-    const rx = M + i*(cols3+1.5)
-    doc.setFillColor(...BG); doc.roundedRect(rx, y, cols3-2, 18, 2, 2, 'F')
-    doc.setFontSize(20); doc.setFont('helvetica','bold'); doc.setTextColor(...r.color)
-    doc.text(String(r.num), rx+(cols3-2)/2, y+11, {align:'center'})
+  y=60
+  const total=actaData.length, conSalida=actaData.filter(p=>p.salida).length, cols3=CW/3
+  ;[[total,'ASISTIERON',NAV],[conSalida,'SALIDA COMPLETA',GREEN],[total-conSalida,'SIN SALIDA',ACCENT]].forEach((r,i)=>{
+    const rx=M+i*(cols3+1.5)
+    doc.setFillColor(...BG); doc.roundedRect(rx,y,cols3-2,18,2,2,'F')
+    doc.setFontSize(20); doc.setFont('helvetica','bold'); doc.setTextColor(...r[2])
+    doc.text(String(r[0]),rx+(cols3-2)/2,y+11,{align:'center'})
     doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...MUTED)
-    doc.text(r.lbl, rx+(cols3-2)/2, y+16, {align:'center'})
+    doc.text(r[1],rx+(cols3-2)/2,y+16,{align:'center'})
   })
 
-  y = 84
+  y=84
   doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...MUTED)
-  doc.text('DETALLE DE PERSONAL', M, y-2)
+  doc.text('DETALLE DE PERSONAL',M,y-2)
   doc.autoTable({
-    startY: y,
+    startY:y,
     head:[['#','Nombre completo','DNI','Ingreso','Salida']],
-    body: actaData.map((p,i)=>{
-      const hi = p.ingreso ? p.ingreso.split(' ').slice(-1)[0] : '—'
-      const hs = p.salida ? p.salida.split(' ').slice(-1)[0] : '—'
-      return [i+1, p.nombre, p.dni, hi, hs]
+    body:actaData.map((p,i)=>{
+      const hi=p.ingreso?p.ingreso.split(' ').slice(-1)[0]:'—'
+      const hs=p.salida?p.salida.split(' ').slice(-1)[0]:'—'
+      return [i+1,p.nombre,p.dni,hi,hs]
     }),
     theme:'grid',
     headStyles:{fillColor:NAV,textColor:[255,255,255],fontSize:8,fontStyle:'bold',cellPadding:4},
@@ -1709,31 +1651,28 @@ function generarActaPDFBase64() {
     margin:{left:M,right:M}
   })
 
-  y = doc.lastAutoTable.finalY + 10
-  doc.setDrawColor(...MUTED); doc.setLineWidth(0.3); doc.line(M, y, W-M, y)
-  y += 8
+  y=doc.lastAutoTable.finalY+10
+  doc.setDrawColor(...MUTED); doc.setLineWidth(0.3); doc.line(M,y,W-M,y); y+=8
   doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...MUTED)
-  doc.text('CONFORMIDAD Y FIRMA', M, y)
-  y += 6
-  if (actaSupervisor) {
+  doc.text('CONFORMIDAD Y FIRMA',M,y); y+=6
+  if(actaSupervisor){
     doc.setFontSize(13); doc.setFont('helvetica','bolditalic'); doc.setTextColor(...NAV)
-    doc.text(actaSupervisor.nombre, M, y+4)
-    doc.setDrawColor(...NAV); doc.setLineWidth(0.8); doc.line(M, y+6, M+70, y+6)
+    doc.text(actaSupervisor.nombre,M,y+4)
+    doc.setDrawColor(...NAV); doc.setLineWidth(0.8); doc.line(M,y+6,M+70,y+6)
     doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...MUTED)
-    doc.text(actaSupervisor.cargo, M, y+11)
+    doc.text(actaSupervisor.cargo,M,y+11)
   }
   doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...MUTED)
-  doc.text('DOCUMENTO GENERADO', M+CW/2, y)
+  doc.text('DOCUMENTO GENERADO',M+CW/2,y)
   doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...NAV)
-  doc.text(fechaLabel, M+CW/2, y+8)
+  doc.text(fechaLabel,M+CW/2,y+8)
   doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...MUTED)
-  doc.text('Control de Ingreso · Home Delivery', M+CW/2, y+14)
+  doc.text('Control de Ingreso · Home Delivery',M+CW/2,y+14)
+  const pageH=doc.internal.pageSize.height
+  doc.setFontSize(7); doc.setTextColor(...MUTED)
+  doc.text(`Documento generado automáticamente · Control de Ingreso HD · ${fechaLabel}`,W/2,pageH-8,{align:'center'})
 
-  const pageH = doc.internal.pageSize.height
-  doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...MUTED)
-  doc.text(`Documento generado automáticamente · Control de Ingreso HD · ${fechaLabel}`, W/2, pageH-8, {align:'center'})
-
-  return doc.output('datauristring').split(',')[1]
+  doc.save(`acta_${actaFiltros.empresa}_${actaFiltros.fecha}_${actaFiltros.turno}.pdf`)
 }
 
 let consumoPopupOpen = false
