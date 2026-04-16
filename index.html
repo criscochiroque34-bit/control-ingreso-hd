@@ -275,6 +275,11 @@ tr:hover td{background:#f7f9fc}
 
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
 
+<!-- BANNER DE ZONA CRÍTICA (transición de turno) -->
+<div id="banner-transicion" style="display:none;background:linear-gradient(90deg,#f59e0b,#d97706);color:#fff;padding:10px 20px;text-align:center;font-size:13px;font-weight:600;position:sticky;top:58px;z-index:99">
+  ⚡ Zona de transición de turno — Si ves datos faltantes, haz clic en <b>Sincronizar</b>
+</div>
+
 <!-- ===================== REGISTRO ===================== -->
 <div class="page active" id="page-registro">
   <div class="section-title"><div class="dot"></div> Registro de Acceso</div>
@@ -350,7 +355,7 @@ tr:hover td{background:#f7f9fc}
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <div class="card-title" style="margin-bottom:0">Actividad de hoy — Tiempo real</div>
-        <button onclick="loadEstadoHoy()" style="padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;font-family:'DM Sans',sans-serif" onmouseover="this.style.background='var(--nav-bg)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">↻ Actualizar</button>
+        <button id="btn-sync" onclick="forzarSincronizacion()" style="padding:6px 14px;border-radius:7px;border:1.5px solid var(--accent3);background:transparent;font-size:12px;font-weight:700;cursor:pointer;color:var(--accent3);transition:all .15s;font-family:'Syne',sans-serif;display:flex;align-items:center;gap:6px" onmouseover="this.style.background='var(--accent3)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--accent3)'"><span id="sync-icon">↻</span> Sincronizar</button>
       </div>
       <div class="table-search-wrap">
         <span class="table-search-icon">🔍</span>
@@ -761,21 +766,28 @@ async function loadEstadoHoy() {
   const fechaHoy = today()
   const hora = horaLima()
 
-  // Query principal: turno activo
+  // Query principal: registros del día operativo actual
   const { data: dataHoy } = await db.from('estado_hoy').select('*')
     .eq('fecha', fechaHoy).order('updated_at', { ascending: false })
 
-  // Si estamos entre 6am y 10am, también traer pendientes del turno noche anterior (sin salida)
+  // Calcular fecha de ayer (calendario Lima)
+  const limaAhora = new Date(Date.now() - 5 * 60 * 60 * 1000)
+  const ayerDate = new Date(limaAhora)
+  ayerDate.setDate(ayerDate.getDate() - 1)
+  const fechaAyer = ayerDate.toISOString().slice(0, 10)
+
   let dataPendientes = []
+
+  // LÓGICA TURNO NOCHE:
+  // Entre 6am-10am: mostrar pendientes de ayer SIN SALIDA (para que puedan marcar salida)
+  // Después de 10am: NO mostrar nada de ayer (ya pasó el tiempo)
   if (hora >= 6 && hora < 10) {
-    const ayer = new Date(Date.now() + (-5 * 60 - new Date().getTimezoneOffset()) * 60000)
-    ayer.setDate(ayer.getDate() - 1)
-    const fechaAyer = ayer.toISOString().slice(0, 10)
     const { data: pendientes } = await db.from('estado_hoy').select('*')
       .eq('fecha', fechaAyer)
-      .neq('estado', 'salida')
+      .neq('estado', 'salida')  // Solo los que AÚN no tienen salida
     dataPendientes = pendientes || []
   }
+  // NOTA: Después de las 10am, dataPendientes queda vacío = no se muestran registros de ayer
 
   // Combinar — los de hoy tienen prioridad, los pendientes de ayer se agregan si no están ya
   const dnisHoy = new Set((dataHoy || []).map(e => e.dni))
@@ -784,21 +796,28 @@ async function loadEstadoHoy() {
     ...dataPendientes.filter(e => !dnisHoy.has(e.dni))
   ]
 
-  if (combinado.length || dataHoy !== null) {
-    combinado.forEach(e => {
-      if (['break', 'banio'].includes(e.estado) && e.break_inicio) {
-        empresaTimers[e.dni] = new Date(e.break_inicio).getTime()
-      }
-      if (!['break', 'banio'].includes(e.estado)) {
-        delete empresaTimers[e.dni]
-      }
-    })
-    estadoHoy = combinado
-    updateStatsRegistro()
-    renderTablaRegistro()
-    if (enPagina('situacion')) renderSituacion()
-    updateEmpresaBtns()
-  }
+  // FIX: Limpiar timers de personas que ya no están en la lista
+  const dnisActuales = new Set(combinado.map(e => e.dni))
+  Object.keys(empresaTimers).forEach(dni => {
+    if (!dnisActuales.has(dni)) delete empresaTimers[dni]
+  })
+
+  // Actualizar timers para personas en break/banio
+  combinado.forEach(e => {
+    if (['break', 'banio'].includes(e.estado) && e.break_inicio) {
+      empresaTimers[e.dni] = new Date(e.break_inicio).getTime()
+    }
+    if (!['break', 'banio'].includes(e.estado)) {
+      delete empresaTimers[e.dni]
+    }
+  })
+
+  // FIX: SIEMPRE actualizar estadoHoy (incluso si está vacío)
+  estadoHoy = combinado
+  updateStatsRegistro()
+  renderTablaRegistro()
+  if (enPagina('situacion')) renderSituacion()
+  updateEmpresaBtns()
 }
 
 function updateStatsRegistro() {}
@@ -814,13 +833,194 @@ function renderTablaRegistro() {
   }).join('')
 }
 
-// ─── REALTIME ─────────────────────────────────────────
+// ─── REALTIME + SISTEMA DE SINCRONIZACIÓN ROBUSTO ─────
+// Escuchar todos los cambios en la tabla
 db.channel('estado_hoy_rt')
   .on('postgres_changes', {
-    event: '*', schema: 'public', table: 'estado_hoy',
-    filter: `fecha=eq.${today()}`
-  }, loadEstadoHoy)
+    event: '*', schema: 'public', table: 'estado_hoy'
+  }, () => {
+    ultimaSync = Date.now()
+    loadEstadoHoy()
+  })
   .subscribe()
+
+// === VARIABLES DE CONTROL ===
+let ultimaFechaOperativa = today()
+let ultimaSync = Date.now()
+let ultimoConteo = 0
+let syncRetries = 0
+const MAX_RETRIES = 3
+
+// === 1. DETECTOR DE CAMBIO DE DÍA OPERATIVO ===
+// Verifica cada 30 segundos si cambió la fecha
+setInterval(() => {
+  const fechaActual = today()
+  if (fechaActual !== ultimaFechaOperativa) {
+    console.log('🔄 Cambio de día operativo:', ultimaFechaOperativa, '→', fechaActual)
+    ultimaFechaOperativa = fechaActual
+    // NO limpiar estadoHoy aquí - dejar que loadEstadoHoy traiga los pendientes
+    empresaTimers = {}
+    loadEstadoHoy()
+  }
+}, 30000)
+
+// === 2. POLLING AGRESIVO DURANTE TRANSICIÓN DE TURNO ===
+// Entre 5:45am y 6:15am, sincronizar cada 15 segundos
+setInterval(() => {
+  const hora = horaLima()
+  const minutos = new Date(Date.now() - 5 * 60 * 60 * 1000).getUTCMinutes()
+  
+  // Zona crítica: 5:45am - 6:15am
+  const enZonaCritica = (hora === 5 && minutos >= 45) || (hora === 6 && minutos <= 15)
+  
+  if (enZonaCritica) {
+    console.log('⚡ Zona crítica de transición - sincronizando...')
+    loadEstadoHoy()
+  }
+}, 15000)
+
+// === 3. DETECTOR DE PÉRDIDA DE DATOS + AUTO-RECOVERY ===
+// Si los datos desaparecen abruptamente, reintentar
+setInterval(async () => {
+  const conteoActual = estadoHoy.length
+  const tiempoSinSync = Date.now() - ultimaSync
+  
+  // Si teníamos datos y ahora no hay, es sospechoso
+  if (ultimoConteo > 5 && conteoActual === 0) {
+    console.warn('⚠️ Pérdida de datos detectada! Conteo anterior:', ultimoConteo, '→ Actual:', conteoActual)
+    showToast('Reconectando con la base de datos...', 'warning')
+    
+    // Reintentar hasta 3 veces
+    if (syncRetries < MAX_RETRIES) {
+      syncRetries++
+      await new Promise(r => setTimeout(r, 2000))  // Esperar 2 segundos
+      await loadEstadoHoy()
+      
+      if (estadoHoy.length > 0) {
+        showToast('✓ Datos recuperados correctamente', 'success')
+        syncRetries = 0
+      }
+    } else {
+      showToast('Error de conexión. Click en Actualizar.', 'error')
+    }
+  }
+  
+  // Si pasan más de 5 minutos sin sync, forzar recarga
+  if (tiempoSinSync > 300000) {
+    console.log('⏱️ 5 min sin sync - forzando recarga...')
+    loadEstadoHoy()
+  }
+  
+  ultimoConteo = conteoActual
+}, 10000)
+
+// === 4. HEARTBEAT - PING CADA 2 MINUTOS ===
+// Mantener la conexión activa
+setInterval(() => {
+  loadEstadoHoy()
+  ultimaSync = Date.now()
+}, 120000)
+
+// === 5. INDICADOR DE ÚLTIMA SINCRONIZACIÓN ===
+// Actualizar el reloj con info de sync
+const updateSyncIndicator = () => {
+  const relojEl = document.getElementById('reloj')
+  if (!relojEl) return
+  
+  const ahora = new Date()
+  const horaStr = ahora.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit', second:'2-digit'})
+  
+  const segsDesdeSync = Math.floor((Date.now() - ultimaSync) / 1000)
+  let syncStatus = ''
+  
+  if (segsDesdeSync < 30) {
+    syncStatus = ' ● '  // Verde implícito - todo bien
+  } else if (segsDesdeSync < 120) {
+    syncStatus = ' ◐ '  // Hace un rato
+  } else {
+    syncStatus = ' ○ '  // Desactualizado
+  }
+  
+  relojEl.innerHTML = horaStr + `<span style="opacity:0.5;font-size:10px">${syncStatus}</span>`
+}
+setInterval(updateSyncIndicator, 1000)
+
+// === 6. FUNCIÓN DE SINCRONIZACIÓN FORZADA ===
+// Botón manual que hace una recarga completa y agresiva
+async function forzarSincronizacion() {
+  const btn = document.getElementById('btn-sync')
+  const icon = document.getElementById('sync-icon')
+  
+  // Feedback visual
+  btn.disabled = true
+  btn.style.opacity = '0.6'
+  icon.style.animation = 'spin 0.5s linear infinite'
+  icon.innerHTML = '⟳'
+  
+  try {
+    // 1. Limpiar estado actual
+    estadoHoy = []
+    empresaTimers = {}
+    syncRetries = 0
+    
+    // 2. Forzar recarga de la fecha operativa
+    ultimaFechaOperativa = today()
+    
+    // 3. Recargar datos
+    await loadEstadoHoy()
+    
+    // 4. También recargar listas de autocompletado
+    await loadAcListas()
+    
+    // 5. Actualizar timestamp
+    ultimaSync = Date.now()
+    ultimoConteo = estadoHoy.length
+    
+    // Feedback
+    showToast(`✓ Sincronizado — ${estadoHoy.length} registros`, 'success')
+    icon.innerHTML = '✓'
+    
+    setTimeout(() => {
+      icon.innerHTML = '↻'
+      icon.style.animation = ''
+    }, 1500)
+    
+  } catch (err) {
+    console.error('Error en sincronización:', err)
+    showToast('Error al sincronizar. Intenta de nuevo.', 'error')
+    icon.innerHTML = '✗'
+    
+    setTimeout(() => {
+      icon.innerHTML = '↻'
+      icon.style.animation = ''
+    }, 2000)
+  }
+  
+  btn.disabled = false
+  btn.style.opacity = '1'
+}
+
+// CSS para animación de spin
+const styleEl = document.createElement('style')
+styleEl.textContent = `
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`
+document.head.appendChild(styleEl)
+
+// === 7. BANNER DE ZONA CRÍTICA ===
+// Mostrar banner entre 5:45am y 6:15am
+setInterval(() => {
+  const hora = horaLima()
+  const minutos = new Date(Date.now() - 5 * 60 * 60 * 1000).getUTCMinutes()
+  const banner = document.getElementById('banner-transicion')
+  if (!banner) return
+  
+  const enZonaCritica = (hora === 5 && minutos >= 45) || (hora === 6 && minutos <= 15)
+  banner.style.display = enZonaCritica ? 'block' : 'none'
+}, 10000)
 
 // ─── AUTOCOMPLETE ─────────────────────────────────────
 let acListas = { empresa: [], area: [] }
@@ -1134,13 +1334,23 @@ async function buscarEventos() {
   const search = document.getElementById('f-search').value.trim()
   const empresa = document.getElementById('f-empresa').value.trim()
 
+  // FIX TURNO NOCHE: Extender "hasta" +1 día a las 10am para capturar salidas del turno noche
+  // Ejemplo: Si filtras 15/04, captura salidas hasta 16/04 10:00 AM Lima
   let q = db.from('eventos').select('*').order('fecha_iso',{ascending:true})
-  if (desde) q = q.gte('fecha_iso', desde+'T05:00:00Z')
+  
+  if (desde) {
+    // Desde las 00:00 Lima del día seleccionado = 05:00 UTC
+    q = q.gte('fecha_iso', desde + 'T05:00:00Z')
+  }
+  
   if (hasta) {
+    // Hasta las 10:00 AM Lima del día SIGUIENTE = captura salidas turno noche
+    // 10:00 AM Lima = 15:00 UTC
     const nextDay = new Date(hasta)
     nextDay.setDate(nextDay.getDate() + 1)
-    q = q.lte('fecha_iso', nextDay.toISOString().slice(0,10)+'T04:59:59Z')
+    q = q.lte('fecha_iso', nextDay.toISOString().slice(0, 10) + 'T15:00:00Z')
   }
+  
   if (search) q = q.or(`dni.ilike.%${search}%,nombre.ilike.%${search}%`)
   if (empresa) q = q.ilike('empresa',`%${empresa}%`)
 
@@ -1168,12 +1378,42 @@ async function descargar(tipo) {
 
   if (tipo === 'asistencia') {
     // Agrupar por DNI: una fila con ingreso + salida
-    const ingresos = eventosResumen.filter(e=>e.tipo==='ingreso')
-    const salidas = eventosResumen.filter(e=>e.tipo==='salida')
-    rows = [['DNI','Nombre','Empresa','Área','Fecha y Hora Ingreso','Fecha y Hora Salida']]
+    // FIX: Usar fecha_iso para match correcto en turno noche (ingreso día X, salida día X+1)
+    const ingresos = eventosResumen.filter(e => e.tipo === 'ingreso')
+    const salidas = eventosResumen.filter(e => e.tipo === 'salida')
+    
+    rows = [['DNI', 'Nombre', 'Empresa', 'Área', 'Fecha y Hora Ingreso', 'Fecha y Hora Salida']]
+    
+    // Ordenar ingresos por fecha_iso para procesar cronológicamente
+    ingresos.sort((a, b) => new Date(a.fecha_iso) - new Date(b.fecha_iso))
+    
+    // Set para marcar salidas ya usadas (evitar duplicados)
+    const salidasUsadas = new Set()
+    
     ingresos.forEach(ing => {
-      const sal = salidas.find(s=>s.dni===ing.dni && s.fecha.slice(0,10)===ing.fecha.slice(0,10))
-      rows.push([ing.dni, ing.nombre, ing.empresa, ing.area||'', ing.fecha, sal?.fecha||'—'])
+      const ingresoTime = new Date(ing.fecha_iso).getTime()
+      
+      // Buscar la salida correspondiente:
+      // - Mismo DNI
+      // - Posterior al ingreso
+      // - Dentro de las siguientes 24 horas (jornada máxima razonable)
+      // - Que no haya sido usada ya
+      const sal = salidas.find(s => {
+        if (s.dni !== ing.dni) return false
+        if (salidasUsadas.has(s.fecha_iso + s.dni)) return false
+        
+        const salidaTime = new Date(s.fecha_iso).getTime()
+        const diffHoras = (salidaTime - ingresoTime) / 3600000
+        
+        // Salida debe ser posterior al ingreso y dentro de 24 horas
+        return diffHoras > 0 && diffHoras <= 24
+      })
+      
+      if (sal) {
+        salidasUsadas.add(sal.fecha_iso + sal.dni)
+      }
+      
+      rows.push([ing.dni, ing.nombre, ing.empresa, ing.area || '', ing.fecha, sal?.fecha || '—'])
     })
     sheetName = 'Asistencia'
   } else {
