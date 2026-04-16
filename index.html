@@ -662,6 +662,19 @@ tr:hover td{background:#f7f9fc}
   </div>
 </div>
 
+<!-- MODAL CONFIRMACIÓN (salida rápida, reingreso, etc) -->
+<div class="modal-overlay" id="modal-confirmar" onclick="cerrarConfirmar(event)">
+  <div class="modal" style="max-width:380px">
+    <div style="font-size:32px;text-align:center;margin-bottom:12px" id="confirmar-icon">⚠️</div>
+    <div class="modal-title" style="text-align:center" id="confirmar-titulo">¿Confirmar acción?</div>
+    <div class="modal-sub" style="text-align:center" id="confirmar-mensaje">—</div>
+    <div class="modal-actions" style="margin-top:24px">
+      <button class="btn-modal-cancel" onclick="cerrarConfirmar()">Cancelar</button>
+      <button class="btn-modal-save" id="confirmar-btn" onclick="ejecutarAccionConfirmada()">Sí, confirmar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ─── CONFIG ───────────────────────────────────────────
 const SUPABASE_URL = 'https://lflenisloinbqyuptxzc.supabase.co'
@@ -1170,14 +1183,126 @@ function updateButtons() {
 }
 
 // ─── MARCAR ───────────────────────────────────────────
+// Constantes de tiempo mínimo (en minutos)
+const TIEMPO_MIN_SALIDA = 30      // Salida definitiva
+const TIEMPO_MIN_BREAK_RETORNO = 2  // Retorno de break
+const TIEMPO_MIN_BANIO_RETORNO = 1  // Retorno de baño
+
+// Variables para confirmación pendiente
+let accionPendiente = null
+
+function calcularMinutosDesde(fechaStr) {
+  if (!fechaStr) return 9999
+  try {
+    const [fecha, hora] = fechaStr.split(' ')
+    const [d, m, a] = fecha.split('/')
+    const [hh, mm] = hora.split(':')
+    const timestamp = new Date(+a, +m - 1, +d, +hh, +mm).getTime()
+    return (Date.now() - timestamp) / 60000
+  } catch { return 9999 }
+}
+
+function mostrarConfirmacion(icono, titulo, mensaje, accion) {
+  document.getElementById('confirmar-icon').textContent = icono
+  document.getElementById('confirmar-titulo').textContent = titulo
+  document.getElementById('confirmar-mensaje').textContent = mensaje
+  document.getElementById('modal-confirmar').classList.add('open')
+  accionPendiente = accion
+}
+
+function cerrarConfirmar(e) {
+  if (e && e.target !== document.getElementById('modal-confirmar')) return
+  document.getElementById('modal-confirmar').classList.remove('open')
+  accionPendiente = null
+}
+
+async function ejecutarAccionConfirmada() {
+  if (!accionPendiente) return
+  cerrarConfirmar()
+  await ejecutarMarcar(accionPendiente)
+}
+
 async function marcar(tipo) {
+  if (!currentPersona) return
+  
+  const existente = estadoHoy.find(e => e.dni === currentPersona.dni)
+  const hora = horaLima()
+  
+  // === VALIDACIÓN 1: Reingreso (estado = salida) ===
+  if (tipo === 'ingreso' && existente?.estado === 'salida') {
+    // Entre 6am-10am permitir reingreso de turno noche sin confirmar
+    const esHorarioTransicion = hora >= 6 && hora < 10
+    const esTurnoNocheAnterior = existente?.fecha !== today()
+    
+    if (esHorarioTransicion && esTurnoNocheAnterior) {
+      // Turno noche anterior, permitir sin confirmar
+      await ejecutarMarcar(tipo)
+    } else {
+      // Reingreso mismo día, pedir confirmación
+      const minutos = calcularMinutosDesde(existente?.salida)
+      mostrarConfirmacion(
+        '🔄',
+        '¿Confirmar reingreso?',
+        `${currentPersona.nombre} ya salió hace ${Math.floor(minutos)} minutos. ¿Desea registrar un nuevo ingreso?`,
+        tipo
+      )
+    }
+    return
+  }
+  
+  // === VALIDACIÓN 2: Salida muy rápida (< 30 min) ===
+  if (tipo === 'salida' && existente?.ingreso) {
+    const minutos = calcularMinutosDesde(existente.ingreso)
+    if (minutos < TIEMPO_MIN_SALIDA) {
+      mostrarConfirmacion(
+        '⚠️',
+        '¿Salida muy rápida?',
+        `${currentPersona.nombre} ingresó hace solo ${Math.floor(minutos)} minutos. ¿Confirmar salida?`,
+        tipo
+      )
+      return
+    }
+  }
+  
+  // === VALIDACIÓN 3: Retorno de break muy rápido (< 2 min) ===
+  if (tipo === 'break_retorno' && existente?.break_inicio) {
+    const minutos = (Date.now() - new Date(existente.break_inicio).getTime()) / 60000
+    if (minutos < TIEMPO_MIN_BREAK_RETORNO) {
+      mostrarConfirmacion(
+        '⏱️',
+        '¿Retorno muy rápido?',
+        `El break de ${currentPersona.nombre} duró menos de ${Math.floor(minutos * 60)} segundos. ¿Confirmar retorno?`,
+        tipo
+      )
+      return
+    }
+  }
+  
+  // === VALIDACIÓN 4: Retorno de baño muy rápido (< 1 min) ===
+  if (tipo === 'banio_retorno' && existente?.break_inicio) {
+    const minutos = (Date.now() - new Date(existente.break_inicio).getTime()) / 60000
+    if (minutos < TIEMPO_MIN_BANIO_RETORNO) {
+      mostrarConfirmacion(
+        '🚻',
+        '¿Retorno muy rápido?',
+        `${currentPersona.nombre} salió al baño hace menos de 1 minuto. ¿Confirmar retorno?`,
+        tipo
+      )
+      return
+    }
+  }
+  
+  // Sin validación pendiente, ejecutar directamente
+  await ejecutarMarcar(tipo)
+}
+
+async function ejecutarMarcar(tipo) {
   if (!currentPersona) return
   const ahora = fmt(new Date())
   const nuevoEstado = ESTADO_MAP[tipo]
   const existente = estadoHoy.find(e=>e.dni===currentPersona.dni)
 
   // CRÍTICO: usar la fecha real del registro existente para no crear duplicados
-  // Ejemplo: Carlos entró 14/04 10pm, sale 15/04 8am → debe actualizar fecha=14/04
   const fechaRegistro = existente?.fecha || today()
 
   const esAusencia = ['break_salida','banio_salida'].includes(tipo)
@@ -1185,33 +1310,43 @@ async function marcar(tipo) {
   const ausenciaInicio = esAusencia ? new Date().toISOString() : null
   const banioCount = esBanioSalida ? ((existente?.banio_count||0) + 1) : (existente?.banio_count||0)
 
-  await db.from('estado_hoy').upsert({
-    dni:currentPersona.dni, nombre:currentPersona.nombre,
-    empresa:currentPersona.empresa, area:currentPersona.area||'',
-    estado:nuevoEstado, fecha:fechaRegistro,
-    ingreso: tipo==='ingreso'?ahora:(existente?.ingreso||ahora),
-    salida: tipo==='salida'?ahora:(existente?.salida||''),
-    break_inicio: esAusencia ? ausenciaInicio : null,
-    banio_count: banioCount,
-    updated_at: new Date().toISOString()
-  },{onConflict:'dni,fecha'})
+  try {
+    const { error: errEstado } = await db.from('estado_hoy').upsert({
+      dni:currentPersona.dni, nombre:currentPersona.nombre,
+      empresa:currentPersona.empresa, area:currentPersona.area||'',
+      estado:nuevoEstado, fecha:fechaRegistro,
+      ingreso: tipo==='ingreso'?ahora:(existente?.ingreso||ahora),
+      salida: tipo==='salida'?ahora:(existente?.salida||''),
+      break_inicio: esAusencia ? ausenciaInicio : null,
+      banio_count: banioCount,
+      updated_at: new Date().toISOString()
+    },{onConflict:'dni,fecha'})
 
-  await db.from('eventos').insert({
-    dni:currentPersona.dni, nombre:currentPersona.nombre,
-    empresa:currentPersona.empresa, area:currentPersona.area||'',
-    tipo, fecha:ahora, fecha_iso:new Date().toISOString()
-  })
+    if (errEstado) throw errEstado
 
-  showToast(ACCION_LABEL[tipo]+' — '+currentPersona.nombre, tipo==='salida'?'warning':'success')
-  loadEstadoHoy()
+    const { error: errEvento } = await db.from('eventos').insert({
+      dni:currentPersona.dni, nombre:currentPersona.nombre,
+      empresa:currentPersona.empresa, area:currentPersona.area||'',
+      tipo, fecha:ahora, fecha_iso:new Date().toISOString()
+    })
 
-  setTimeout(() => {
-    document.getElementById('dni-input').value=''
-    currentDni=''; currentPersona=null; modoEdicion=false
-    cerrarFormPersona()
-    updatePersonaInfo(); updateButtons()
-    document.getElementById('dni-input').focus()
-  }, 1500)
+    if (errEvento) throw errEvento
+
+    showToast(ACCION_LABEL[tipo]+' — '+currentPersona.nombre, tipo==='salida'?'warning':'success')
+    loadEstadoHoy()
+
+    setTimeout(() => {
+      document.getElementById('dni-input').value=''
+      currentDni=''; currentPersona=null; modoEdicion=false
+      cerrarFormPersona()
+      updatePersonaInfo(); updateButtons()
+      document.getElementById('dni-input').focus()
+    }, 1500)
+    
+  } catch (err) {
+    console.error('Error al marcar:', err)
+    showToast('Error al registrar. Intenta de nuevo.', 'error')
+  }
 }
 
 async function guardarPersona() {
@@ -1742,36 +1877,52 @@ async function marcarMasivo() {
   const input = document.getElementById('dni-input')
   const ahora = fmt(new Date())
   const existente = estadoHoy.find(e => e.dni === currentPersona.dni)
+  
+  // CRÍTICO: usar fecha del registro existente (igual que ejecutarMarcar)
+  const fechaRegistro = existente?.fecha || today()
 
-  await db.from('estado_hoy').upsert({
-    dni: currentPersona.dni, nombre: currentPersona.nombre,
-    empresa: currentPersona.empresa, area: currentPersona.area || '',
-    estado: 'dentro', fecha: today(),
-    ingreso: ahora, salida: '',
-    break_inicio: null, banio_count: existente?.banio_count || 0,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'dni,fecha' })
+  try {
+    const { error: errEstado } = await db.from('estado_hoy').upsert({
+      dni: currentPersona.dni, nombre: currentPersona.nombre,
+      empresa: currentPersona.empresa, area: currentPersona.area || '',
+      estado: 'dentro', fecha: fechaRegistro,
+      ingreso: ahora, salida: '',
+      break_inicio: null, banio_count: existente?.banio_count || 0,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'dni,fecha' })
 
-  await db.from('eventos').insert({
-    dni: currentPersona.dni, nombre: currentPersona.nombre,
-    empresa: currentPersona.empresa, area: currentPersona.area || '',
-    tipo: 'ingreso', fecha: ahora, fecha_iso: new Date().toISOString()
-  })
+    if (errEstado) throw errEstado
 
-  agregarALista(currentPersona.nombre, false)
-  input.className = 'dni-input dni-ok'
-  setFeedback('ok', '✓ ' + currentPersona.nombre + ' — Ingreso registrado')
-  loadEstadoHoy()
+    const { error: errEvento } = await db.from('eventos').insert({
+      dni: currentPersona.dni, nombre: currentPersona.nombre,
+      empresa: currentPersona.empresa, area: currentPersona.area || '',
+      tipo: 'ingreso', fecha: ahora, fecha_iso: new Date().toISOString()
+    })
 
-  setTimeout(() => {
-    if (!modoMasivo) return
-    input.value = ''; input.className = 'dni-input'; input.disabled = false
-    currentDni = ''; currentPersona = null; modoEdicion = false
-    cerrarFormPersona(); updatePersonaInfo(); updateButtons()
+    if (errEvento) throw errEvento
+
+    agregarALista(currentPersona.nombre, false)
+    input.className = 'dni-input dni-ok'
+    setFeedback('ok', '✓ ' + currentPersona.nombre + ' — Ingreso registrado')
+    loadEstadoHoy()
+
+    setTimeout(() => {
+      if (!modoMasivo) return
+      input.value = ''; input.className = 'dni-input'; input.disabled = false
+      currentDni = ''; currentPersona = null; modoEdicion = false
+      cerrarFormPersona(); updatePersonaInfo(); updateButtons()
+      masivoProcessing = false
+      setFeedback('proc', '⚡ Modo masivo activo — escribe el DNI')
+      input.focus()
+    }, 1200)
+    
+  } catch (err) {
+    console.error('Error en modo masivo:', err)
+    input.className = 'dni-input dni-err'
+    setFeedback('err', '❌ Error al registrar — intenta de nuevo')
     masivoProcessing = false
-    setFeedback('proc', '⚡ Modo masivo activo — escribe el DNI')
-    input.focus()
-  }, 1200)
+    input.disabled = false
+  }
 }
 
 // Override guardarPersona en modo masivo
