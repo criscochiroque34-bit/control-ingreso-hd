@@ -275,8 +275,8 @@ tr:hover td{background:#f7f9fc}
 
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
 
-<!-- BANNER DE ZONA CRÍTICA (transición de turno) -->
-<div id="banner-transicion" style="display:none;background:linear-gradient(90deg,#f59e0b,#d97706);color:#fff;padding:10px 20px;text-align:center;font-size:13px;font-weight:600;position:sticky;top:58px;z-index:99">
+<!-- BANNER ZONA CRÍTICA (transición de turno 5:45am - 6:15am) -->
+<div id="banner-transicion" style="display:none;background:linear-gradient(90deg,#f59e0b,#d97706);color:#fff;padding:12px 20px;text-align:center;font-size:13px;font-weight:600;position:fixed;top:58px;left:0;right:0;z-index:99;box-shadow:0 2px 8px rgba(0,0,0,0.15)">
   ⚡ Zona de transición de turno — Si ves datos faltantes, haz clic en <b>Sincronizar</b>
 </div>
 
@@ -355,7 +355,7 @@ tr:hover td{background:#f7f9fc}
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <div class="card-title" style="margin-bottom:0">Actividad de hoy — Tiempo real</div>
-        <button id="btn-sync" onclick="forzarSincronizacion()" style="padding:6px 14px;border-radius:7px;border:1.5px solid var(--accent3);background:transparent;font-size:12px;font-weight:700;cursor:pointer;color:var(--accent3);transition:all .15s;font-family:'Syne',sans-serif;display:flex;align-items:center;gap:6px" onmouseover="this.style.background='var(--accent3)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--accent3)'"><span id="sync-icon">↻</span> Sincronizar</button>
+        <button id="btn-sync" onclick="forzarSincronizacion()" style="padding:6px 14px;border-radius:8px;border:1.5px solid var(--accent3);background:transparent;font-size:12px;font-weight:700;cursor:pointer;color:var(--accent3);transition:all .15s;font-family:'Syne',sans-serif;display:flex;align-items:center;gap:6px" onmouseover="this.style.background='var(--accent3)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--accent3)'"><span id="sync-icon">↻</span> Sincronizar</button>
       </div>
       <div class="table-search-wrap">
         <span class="table-search-icon">🔍</span>
@@ -375,19 +375,21 @@ tr:hover td{background:#f7f9fc}
 <div class="page" id="page-situacion">
   <div class="section-title"><div class="dot"></div> Situación Actual</div>
 
-  <!-- FILTROS: Empresa + Turno -->
-  <div style="display:flex;gap:20px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
-    <div class="filtro-bar" style="margin-bottom:0">
+  <!-- FILTROS -->
+  <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:18px">
+    <!-- Filtro Empresa (multi-selección) -->
+    <div class="filtro-bar" style="margin-bottom:0;flex:1">
       <span class="filtro-bar-label">Empresa:</span>
-      <button class="emp-btn active" onclick="filtrarEmpresa('todas',this)">Todas</button>
-      <div id="emp-btns" style="display:inline-flex;gap:4px"></div>
+      <button class="emp-btn active" id="btn-emp-todas" onclick="toggleEmpresa('todas')">Todas</button>
+      <div id="emp-btns" style="display:inline-flex;flex-wrap:wrap;gap:4px"></div>
     </div>
-    <div style="width:1px;height:24px;background:var(--border)"></div>
+    
+    <!-- Filtro Turno -->
     <div class="filtro-bar" style="margin-bottom:0">
       <span class="filtro-bar-label">Turno:</span>
-      <button class="emp-btn active" id="turno-todos" onclick="filtrarTurno('todos')">Todos</button>
-      <button class="emp-btn" id="turno-dia" onclick="filtrarTurno('dia')" style="background:#fef3c7;border-color:#f59e0b;color:#92400e">☀ Día</button>
-      <button class="emp-btn" id="turno-noche" onclick="filtrarTurno('noche')" style="background:#ede9fe;border-color:#8b5cf6;color:#5b21b6">🌙 Noche</button>
+      <button class="emp-btn active" id="btn-turno-todos" onclick="filtrarTurno('todos')">Todos</button>
+      <button class="emp-btn" id="btn-turno-dia" onclick="filtrarTurno('dia')" style="background:#fef3c7;border-color:#f59e0b;color:#92400e">☀️ Día</button>
+      <button class="emp-btn" id="btn-turno-noche" onclick="filtrarTurno('noche')" style="background:#ede9fe;border-color:#8b5cf6;color:#5b21b6">🌙 Noche</button>
     </div>
   </div>
 
@@ -428,6 +430,7 @@ tr:hover td{background:#f7f9fc}
 <div class="page" id="page-reportes">
   <div class="section-title"><div class="dot"></div> Reportes</div>
 
+  <!-- Filtros principales -->
   <div class="card" style="margin-bottom:20px">
     <div class="card-title">Filtros</div>
     <div class="filtros-row">
@@ -443,32 +446,66 @@ tr:hover td{background:#f7f9fc}
         <label>DNI o Nombre</label>
         <input class="filtro-input" type="text" id="f-search" placeholder="Buscar..." style="width:160px" />
       </div>
-      <div class="filtro-group">
-        <label>Empresa</label>
-        <input class="filtro-input" type="text" id="f-empresa" placeholder="Empresa..." style="width:140px" />
-      </div>
       <div class="filtro-group" style="justify-content:flex-end">
         <label>&nbsp;</label>
-        <button class="btn-buscar" onclick="buscarEventos()" id="btn-buscar-rep">Buscar</button>
+        <button class="btn-buscar" onclick="buscarTodo()" id="btn-buscar-rep">Buscar</button>
       </div>
     </div>
   </div>
 
-  <div class="download-row">
-    <button class="btn-dl" onclick="descargar('asistencia')">📥 Asistencia</button>
+  <!-- Tarjetas de estadísticas -->
+  <div class="stats-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+    <div class="stat-card" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">
+      <div class="stat-num" id="res-total">0</div>
+      <div class="stat-label">Total Asistencia</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-num" id="res-completos">0</div>
+      <div class="stat-label">Salida Completa</div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+      <div class="stat-num" id="res-pendientes">0</div>
+      <div class="stat-label">Sin Salida</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-num" id="res-empresas">0</div>
+      <div class="stat-label">Empresas</div>
+    </div>
+  </div>
+
+  <!-- Filtros: Empresa + Turno -->
+  <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:18px">
+    <div class="filtro-bar" style="margin-bottom:0;flex:1">
+      <span class="filtro-bar-label">Empresa:</span>
+      <button class="emp-btn active" id="res-emp-todas" onclick="toggleEmpresaResumen('todas')">Todas</button>
+      <div id="res-emp-btns" style="display:inline-flex;flex-wrap:wrap;gap:4px"></div>
+    </div>
+    
+    <div class="filtro-bar" style="margin-bottom:0">
+      <span class="filtro-bar-label">Turno:</span>
+      <button class="emp-btn active" id="res-turno-todos" onclick="filtrarTurnoResumen('todos')">Todos</button>
+      <button class="emp-btn" id="res-turno-dia" onclick="filtrarTurnoResumen('dia')" style="background:#fef3c7;border-color:#f59e0b;color:#92400e">☀️ Día</button>
+      <button class="emp-btn" id="res-turno-noche" onclick="filtrarTurnoResumen('noche')" style="background:#ede9fe;border-color:#8b5cf6;color:#5b21b6">🌙 Noche</button>
+    </div>
+  </div>
+
+  <!-- Tabla de resultados -->
+  <div class="card">
+    <div class="card-title" id="res-titulo">Selecciona fechas y presiona Buscar</div>
+    <div class="table-wrap" style="max-height:400px">
+      <table>
+        <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Área</th><th>Turno</th><th>Ingreso</th><th>Salida</th><th>Estado</th></tr></thead>
+        <tbody id="res-tabla"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Botones de descarga -->
+  <div class="download-row" style="margin-top:16px">
+    <button class="btn-dl" onclick="descargarResumen()" style="background:var(--accent2);color:#fff;border-color:var(--accent2)">📥 Resumen</button>
     <button class="btn-dl" onclick="descargar('break')">📥 Breaks</button>
     <button class="btn-dl" onclick="descargar('banio')">📥 Baños</button>
     <button class="btn-dl" onclick="descargar('general')">📥 General</button>
-  </div>
-
-  <div class="card">
-    <div class="card-title" id="rep-count">Registros</div>
-    <div class="table-wrap" style="max-height:520px">
-      <table>
-        <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Área</th><th>Tipo</th><th>Fecha y Hora</th></tr></thead>
-        <tbody id="tabla-reportes"></tbody>
-      </table>
-    </div>
   </div>
 </div>
 
@@ -662,12 +699,12 @@ tr:hover td{background:#f7f9fc}
   </div>
 </div>
 
-<!-- MODAL CONFIRMACIÓN (salida rápida, reingreso, etc) -->
+<!-- MODAL CONFIRMACIÓN (salida rápida, reingreso) -->
 <div class="modal-overlay" id="modal-confirmar" onclick="cerrarConfirmar(event)">
-  <div class="modal" style="max-width:380px">
-    <div style="font-size:32px;text-align:center;margin-bottom:12px" id="confirmar-icon">⚠️</div>
+  <div class="modal" style="max-width:400px">
+    <div style="font-size:36px;text-align:center;margin-bottom:12px" id="confirmar-icon">⚠️</div>
     <div class="modal-title" style="text-align:center" id="confirmar-titulo">¿Confirmar acción?</div>
-    <div class="modal-sub" style="text-align:center" id="confirmar-mensaje">—</div>
+    <div class="modal-sub" style="text-align:center;font-size:14px;line-height:1.5" id="confirmar-mensaje">—</div>
     <div class="modal-actions" style="margin-top:24px">
       <button class="btn-modal-cancel" onclick="cerrarConfirmar()">Cancelar</button>
       <button class="btn-modal-save" id="confirmar-btn" onclick="ejecutarAccionConfirmada()">Sí, confirmar</button>
@@ -691,6 +728,11 @@ const ACCION_LABEL = {ingreso:'Ingreso registrado',salida:'Salida registrada',br
 const TOLERANCIA_BREAK_MS = 45 * 60 * 1000  // 45 min para break
 const TOLERANCIA_BANIO_MS = 10 * 60 * 1000  // 10 min para baño
 const BANIO_ALERTA = 3                        // alerta mayor a partir de 3ra salida
+
+// Validaciones de seguridad
+const TIEMPO_MIN_SALIDA = 30      // Minutos mínimos para salida (evitar errores)
+const TIEMPO_MIN_BREAK_RETORNO = 2  // Minutos mínimos para retorno de break
+const TIEMPO_MIN_BANIO_RETORNO = 1  // Minutos mínimos para retorno de baño
 const AVATARES = ['av-g','av-b','av-p','av-o','av-r']
 
 // ─── ESTADO ───────────────────────────────────────────
@@ -698,7 +740,7 @@ let estadoHoy = []
 let eventosResumen = []
 let currentDni = ''
 let currentPersona = null
-let filtroEmpresa = 'todas'
+let filtroEmpresas = []  // Array vacío = todas, o lista de empresas seleccionadas
 let filtroTurno = 'todos'  // 'todos', 'dia', 'noche'
 let empresaTimers = {} // { dni: Date cuando entró a break/baño }
 let avatarMap = {}
@@ -790,28 +832,21 @@ async function loadEstadoHoy() {
   const fechaHoy = today()
   const hora = horaLima()
 
-  // Query principal: registros del día operativo actual
+  // Query principal: turno activo
   const { data: dataHoy } = await db.from('estado_hoy').select('*')
     .eq('fecha', fechaHoy).order('updated_at', { ascending: false })
 
-  // Calcular fecha de ayer (calendario Lima)
-  const limaAhora = new Date(Date.now() - 5 * 60 * 60 * 1000)
-  const ayerDate = new Date(limaAhora)
-  ayerDate.setDate(ayerDate.getDate() - 1)
-  const fechaAyer = ayerDate.toISOString().slice(0, 10)
-
+  // Si estamos entre 6am y 12pm, también traer pendientes del turno noche anterior (sin salida)
   let dataPendientes = []
-
-  // LÓGICA TURNO NOCHE:
-  // Entre 6am-10am: mostrar pendientes de ayer SIN SALIDA (para que puedan marcar salida)
-  // Después de 10am: NO mostrar nada de ayer (ya pasó el tiempo)
-  if (hora >= 6 && hora < 10) {
+  if (hora >= 6 && hora < 12) {
+    const ayer = new Date(Date.now() + (-5 * 60 - new Date().getTimezoneOffset()) * 60000)
+    ayer.setDate(ayer.getDate() - 1)
+    const fechaAyer = ayer.toISOString().slice(0, 10)
     const { data: pendientes } = await db.from('estado_hoy').select('*')
       .eq('fecha', fechaAyer)
-      .neq('estado', 'salida')  // Solo los que AÚN no tienen salida
-    dataPendientes = pendientes || []
+      .neq('estado', 'salida')
+    dataPendientes = (pendientes || []).map(p => ({ ...p, esPendiente: true }))  // Marcar como pendiente
   }
-  // NOTA: Después de las 10am, dataPendientes queda vacío = no se muestran registros de ayer
 
   // Combinar — los de hoy tienen prioridad, los pendientes de ayer se agregan si no están ya
   const dnisHoy = new Set((dataHoy || []).map(e => e.dni))
@@ -820,45 +855,73 @@ async function loadEstadoHoy() {
     ...dataPendientes.filter(e => !dnisHoy.has(e.dni))
   ]
 
-  // FIX: Limpiar timers de personas que ya no están en la lista
-  const dnisActuales = new Set(combinado.map(e => e.dni))
-  Object.keys(empresaTimers).forEach(dni => {
-    if (!dnisActuales.has(dni)) delete empresaTimers[dni]
-  })
-
-  // Actualizar timers para personas en break/banio
-  combinado.forEach(e => {
-    if (['break', 'banio'].includes(e.estado) && e.break_inicio) {
-      empresaTimers[e.dni] = new Date(e.break_inicio).getTime()
-    }
-    if (!['break', 'banio'].includes(e.estado)) {
-      delete empresaTimers[e.dni]
-    }
-  })
-
-  // FIX: SIEMPRE actualizar estadoHoy (incluso si está vacío)
-  estadoHoy = combinado
-  updateStatsRegistro()
-  renderTablaRegistro()
-  if (enPagina('situacion')) renderSituacion()
-  updateEmpresaBtns()
+  if (combinado.length || dataHoy !== null) {
+    combinado.forEach(e => {
+      if (['break', 'banio'].includes(e.estado) && e.break_inicio) {
+        empresaTimers[e.dni] = new Date(e.break_inicio).getTime()
+      }
+      if (!['break', 'banio'].includes(e.estado)) {
+        delete empresaTimers[e.dni]
+      }
+    })
+    estadoHoy = combinado
+    updateStatsRegistro()
+    renderTablaRegistro()
+    if (enPagina('situacion')) renderSituacion()
+    updateEmpresaBtns()
+  }
 }
 
 function updateStatsRegistro() {}
 
 function renderTablaRegistro() {
   const q = document.getElementById('busqueda-tabla').value.toLowerCase()
-  const rows = estadoHoy.filter(e=>!q||e.nombre.toLowerCase().includes(q)||e.dni.includes(q)||e.empresa.toLowerCase().includes(q))
+  const rows = estadoHoy.filter(e => !q || e.nombre.toLowerCase().includes(q) || e.dni.includes(q) || e.empresa.toLowerCase().includes(q))
   const tbody = document.getElementById('tabla-registro')
-  if (!rows.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px">Sin registros por el momento</td></tr>'; return }
+  if (!rows.length) { 
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px">Sin registros por el momento</td></tr>'
+    return 
+  }
   tbody.innerHTML = rows.map(e => {
-    const b = ESTADO_BADGE[e.estado]||{label:e.estado,cls:''}
-    return `<tr><td><b>${e.dni}</b></td><td>${e.nombre}</td><td>${e.empresa}</td><td>${e.area||'<span class="td-muted">—</span>'}</td><td>${e.ingreso||'<span class="td-muted">—</span>'}</td><td>${e.salida||'<span class="td-muted">—</span>'}</td><td><span class="badge ${b.cls}">${b.label}</span></td><td><button class="btn-edit" onclick="abrirModal('${e.dni}')">Editar</button></td></tr>`
+    const b = ESTADO_BADGE[e.estado] || { label: e.estado, cls: '' }
+    
+    // Badge de pendiente (turno anterior sin salida)
+    const pendienteBadge = e.esPendiente 
+      ? '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#fef3c7;color:#92400e;margin-left:4px">⚠ PENDIENTE</span>' 
+      : ''
+    
+    // Badge de jornada (solo si > 1)
+    const jornadaBadge = (e.jornada || 1) > 1
+      ? `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#dbeafe;color:#1e40af;margin-left:4px">J${e.jornada}</span>`
+      : ''
+    
+    // Resaltar fila si es pendiente
+    const rowStyle = e.esPendiente ? 'background:#fffbeb;' : ''
+    
+    // ID único para el modal (dni + jornada)
+    const registroId = `${e.dni}_${e.jornada || 1}`
+    
+    return `<tr style="${rowStyle}">
+      <td><b>${e.dni}</b></td>
+      <td>${e.nombre}${jornadaBadge}${pendienteBadge}</td>
+      <td>${e.empresa}</td>
+      <td>${e.area || '<span class="td-muted">—</span>'}</td>
+      <td>${e.ingreso || '<span class="td-muted">—</span>'}</td>
+      <td>${e.salida || '<span class="td-muted">—</span>'}</td>
+      <td><span class="badge ${b.cls}">${b.label}</span></td>
+      <td><button class="btn-edit" onclick="abrirModal('${registroId}')">Editar</button></td>
+    </tr>`
   }).join('')
 }
 
-// ─── REALTIME + SISTEMA DE SINCRONIZACIÓN ROBUSTO ─────
-// Escuchar todos los cambios en la tabla
+// ─── REALTIME + SINCRONIZACIÓN ROBUSTA ───────────────
+let ultimaFechaOperativa = today()
+let ultimaSync = Date.now()
+let ultimoConteo = 0
+let syncRetries = 0
+const MAX_RETRIES = 3
+
+// Escuchar cambios sin filtro de fecha (el filtrado se hace en loadEstadoHoy)
 db.channel('estado_hoy_rt')
   .on('postgres_changes', {
     event: '*', schema: 'public', table: 'estado_hoy'
@@ -868,33 +931,21 @@ db.channel('estado_hoy_rt')
   })
   .subscribe()
 
-// === VARIABLES DE CONTROL ===
-let ultimaFechaOperativa = today()
-let ultimaSync = Date.now()
-let ultimoConteo = 0
-let syncRetries = 0
-const MAX_RETRIES = 3
-
-// === 1. DETECTOR DE CAMBIO DE DÍA OPERATIVO ===
-// Verifica cada 30 segundos si cambió la fecha
+// 1. DETECTOR DE CAMBIO DE DÍA (cada 30 seg)
 setInterval(() => {
   const fechaActual = today()
   if (fechaActual !== ultimaFechaOperativa) {
     console.log('🔄 Cambio de día operativo:', ultimaFechaOperativa, '→', fechaActual)
     ultimaFechaOperativa = fechaActual
-    // NO limpiar estadoHoy aquí - dejar que loadEstadoHoy traiga los pendientes
     empresaTimers = {}
     loadEstadoHoy()
   }
 }, 30000)
 
-// === 2. POLLING AGRESIVO DURANTE TRANSICIÓN DE TURNO ===
-// Entre 5:45am y 6:15am, sincronizar cada 15 segundos
+// 2. POLLING AGRESIVO EN ZONA CRÍTICA (5:45am - 6:15am)
 setInterval(() => {
   const hora = horaLima()
   const minutos = new Date(Date.now() - 5 * 60 * 60 * 1000).getUTCMinutes()
-  
-  // Zona crítica: 5:45am - 6:15am
   const enZonaCritica = (hora === 5 && minutos >= 45) || (hora === 6 && minutos <= 15)
   
   if (enZonaCritica) {
@@ -903,119 +954,81 @@ setInterval(() => {
   }
 }, 15000)
 
-// === 3. DETECTOR DE PÉRDIDA DE DATOS + AUTO-RECOVERY ===
-// Si los datos desaparecen abruptamente, reintentar
+// 3. AUTO-RECOVERY SI LOS DATOS DESAPARECEN
 setInterval(async () => {
   const conteoActual = estadoHoy.length
-  const tiempoSinSync = Date.now() - ultimaSync
   
-  // Si teníamos datos y ahora no hay, es sospechoso
+  // Si teníamos datos y ahora no hay, algo falló
   if (ultimoConteo > 5 && conteoActual === 0) {
-    console.warn('⚠️ Pérdida de datos detectada! Conteo anterior:', ultimoConteo, '→ Actual:', conteoActual)
-    showToast('Reconectando con la base de datos...', 'warning')
+    console.warn('⚠️ Pérdida de datos detectada! Anterior:', ultimoConteo, '→ Actual:', conteoActual)
     
-    // Reintentar hasta 3 veces
     if (syncRetries < MAX_RETRIES) {
       syncRetries++
-      await new Promise(r => setTimeout(r, 2000))  // Esperar 2 segundos
+      showToast('Reconectando...', 'warning')
+      await new Promise(r => setTimeout(r, 2000))
       await loadEstadoHoy()
       
       if (estadoHoy.length > 0) {
-        showToast('✓ Datos recuperados correctamente', 'success')
+        showToast('✓ Datos recuperados', 'success')
         syncRetries = 0
       }
-    } else {
-      showToast('Error de conexión. Click en Actualizar.', 'error')
     }
   }
   
   // Si pasan más de 5 minutos sin sync, forzar recarga
+  const tiempoSinSync = Date.now() - ultimaSync
   if (tiempoSinSync > 300000) {
     console.log('⏱️ 5 min sin sync - forzando recarga...')
     loadEstadoHoy()
+    ultimaSync = Date.now()
   }
   
   ultimoConteo = conteoActual
 }, 10000)
 
-// === 4. HEARTBEAT - PING CADA 2 MINUTOS ===
-// Mantener la conexión activa
+// 4. HEARTBEAT CADA 2 MINUTOS (mantener conexión activa)
 setInterval(() => {
   loadEstadoHoy()
   ultimaSync = Date.now()
 }, 120000)
 
-// === 5. INDICADOR DE ÚLTIMA SINCRONIZACIÓN ===
-// Actualizar el reloj con info de sync
-const updateSyncIndicator = () => {
-  const relojEl = document.getElementById('reloj')
-  if (!relojEl) return
-  
-  const ahora = new Date()
-  const horaStr = ahora.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit', second:'2-digit'})
-  
-  const segsDesdeSync = Math.floor((Date.now() - ultimaSync) / 1000)
-  let syncStatus = ''
-  
-  if (segsDesdeSync < 30) {
-    syncStatus = ' ● '  // Verde implícito - todo bien
-  } else if (segsDesdeSync < 120) {
-    syncStatus = ' ◐ '  // Hace un rato
-  } else {
-    syncStatus = ' ○ '  // Desactualizado
-  }
-  
-  relojEl.innerHTML = horaStr + `<span style="opacity:0.5;font-size:10px">${syncStatus}</span>`
-}
-setInterval(updateSyncIndicator, 1000)
-
-// === 6. FUNCIÓN DE SINCRONIZACIÓN FORZADA ===
-// Botón manual que hace una recarga completa y agresiva
+// 5. FUNCIÓN DE SINCRONIZACIÓN FORZADA (botón mejorado)
 async function forzarSincronizacion() {
   const btn = document.getElementById('btn-sync')
   const icon = document.getElementById('sync-icon')
   
-  // Feedback visual
   btn.disabled = true
   btn.style.opacity = '0.6'
   icon.style.animation = 'spin 0.5s linear infinite'
-  icon.innerHTML = '⟳'
+  icon.textContent = '⟳'
   
   try {
-    // 1. Limpiar estado actual
     estadoHoy = []
     empresaTimers = {}
     syncRetries = 0
-    
-    // 2. Forzar recarga de la fecha operativa
     ultimaFechaOperativa = today()
     
-    // 3. Recargar datos
     await loadEstadoHoy()
-    
-    // 4. También recargar listas de autocompletado
     await loadAcListas()
     
-    // 5. Actualizar timestamp
     ultimaSync = Date.now()
     ultimoConteo = estadoHoy.length
     
-    // Feedback
     showToast(`✓ Sincronizado — ${estadoHoy.length} registros`, 'success')
-    icon.innerHTML = '✓'
+    icon.textContent = '✓'
     
     setTimeout(() => {
-      icon.innerHTML = '↻'
+      icon.textContent = '↻'
       icon.style.animation = ''
     }, 1500)
     
   } catch (err) {
     console.error('Error en sincronización:', err)
-    showToast('Error al sincronizar. Intenta de nuevo.', 'error')
-    icon.innerHTML = '✗'
+    showToast('Error al sincronizar', 'error')
+    icon.textContent = '✗'
     
     setTimeout(() => {
-      icon.innerHTML = '↻'
+      icon.textContent = '↻'
       icon.style.animation = ''
     }, 2000)
   }
@@ -1025,17 +1038,11 @@ async function forzarSincronizacion() {
 }
 
 // CSS para animación de spin
-const styleEl = document.createElement('style')
-styleEl.textContent = `
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-`
-document.head.appendChild(styleEl)
+const styleSync = document.createElement('style')
+styleSync.textContent = `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`
+document.head.appendChild(styleSync)
 
-// === 7. BANNER DE ZONA CRÍTICA ===
-// Mostrar banner entre 5:45am y 6:15am
+// 6. BANNER DE ZONA CRÍTICA (mostrar entre 5:45am y 6:15am)
 setInterval(() => {
   const hora = horaLima()
   const minutos = new Date(Date.now() - 5 * 60 * 60 * 1000).getUTCMinutes()
@@ -1044,6 +1051,11 @@ setInterval(() => {
   
   const enZonaCritica = (hora === 5 && minutos >= 45) || (hora === 6 && minutos <= 15)
   banner.style.display = enZonaCritica ? 'block' : 'none'
+  
+  // Ajustar padding-top de las páginas si el banner está visible
+  document.querySelectorAll('.page').forEach(p => {
+    p.style.paddingTop = enZonaCritica ? '50px' : '0'
+  })
 }, 10000)
 
 // ─── AUTOCOMPLETE ─────────────────────────────────────
@@ -1166,29 +1178,25 @@ function updatePersonaInfo(found=false) {
 }
 
 function updateButtons() {
-  const registro = estadoHoy.find(e => e.dni === currentDni)
+  // Buscar el registro de la ÚLTIMA jornada de este DNI
+  const registros = estadoHoy.filter(e => e.dni === currentDni)
+  const registro = registros.sort((a, b) => (b.jornada || 1) - (a.jornada || 1))[0]
+  
   const estado = registro?.estado || null
-  const tieneIngreso = !!registro?.ingreso  // VALIDACIÓN: debe tener ingreso registrado
-  const p = !!currentPersona
+  const tieneIngreso = !!registro?.ingreso
 
   // Ingreso: permitido si no hay estado o si ya salió (reingreso)
-  document.getElementById('btn-ingreso').disabled = !p || (!!estado && estado !== 'salida')
+  document.getElementById('btn-ingreso').disabled = !currentPersona || (!!estado && estado !== 'salida')
   
   // Break/Baño/Salida: SOLO si tiene ingreso Y está dentro
-  document.getElementById('btn-break-out').disabled = !p || !tieneIngreso || estado !== 'dentro'
-  document.getElementById('btn-break-in').disabled = !p || !tieneIngreso || estado !== 'break'
-  document.getElementById('btn-banio-out').disabled = !p || !tieneIngreso || estado !== 'dentro'
-  document.getElementById('btn-banio-in').disabled = !p || !tieneIngreso || estado !== 'banio'
-  document.getElementById('btn-salida').disabled = !p || !tieneIngreso || estado !== 'dentro'
+  document.getElementById('btn-break-out').disabled = !currentPersona || !tieneIngreso || estado !== 'dentro'
+  document.getElementById('btn-break-in').disabled = !currentPersona || !tieneIngreso || estado !== 'break'
+  document.getElementById('btn-banio-out').disabled = !currentPersona || !tieneIngreso || estado !== 'dentro'
+  document.getElementById('btn-banio-in').disabled = !currentPersona || !tieneIngreso || estado !== 'banio'
+  document.getElementById('btn-salida').disabled = !currentPersona || !tieneIngreso || estado !== 'dentro'
 }
 
-// ─── MARCAR ───────────────────────────────────────────
-// Constantes de tiempo mínimo (en minutos)
-const TIEMPO_MIN_SALIDA = 30      // Salida definitiva
-const TIEMPO_MIN_BREAK_RETORNO = 2  // Retorno de break
-const TIEMPO_MIN_BANIO_RETORNO = 1  // Retorno de baño
-
-// Variables para confirmación pendiente
+// ─── SISTEMA DE CONFIRMACIÓN ─────────────────────────
 let accionPendiente = null
 
 function calcularMinutosDesde(fechaStr) {
@@ -1211,27 +1219,31 @@ function mostrarConfirmacion(icono, titulo, mensaje, accion) {
 }
 
 function cerrarConfirmar(e) {
-  if (e && e.target !== document.getElementById('modal-confirmar')) return
+  if (e && e.target.id !== 'modal-confirmar') return
   document.getElementById('modal-confirmar').classList.remove('open')
   accionPendiente = null
 }
 
 async function ejecutarAccionConfirmada() {
   if (!accionPendiente) return
+  const accion = accionPendiente
   cerrarConfirmar()
-  await ejecutarMarcar(accionPendiente)
+  await ejecutarMarcar(accion)
 }
 
+// ─── MARCAR CON VALIDACIONES ─────────────────────────
 async function marcar(tipo) {
   if (!currentPersona) return
   
-  const existente = estadoHoy.find(e => e.dni === currentPersona.dni)
+  // Buscar el registro de la ÚLTIMA jornada de este DNI
+  const registros = estadoHoy.filter(e => e.dni === currentPersona.dni)
+  const existente = registros.sort((a, b) => (b.jornada || 1) - (a.jornada || 1))[0]
   const hora = horaLima()
   
   // === VALIDACIÓN 1: Reingreso (estado = salida) ===
   if (tipo === 'ingreso' && existente?.estado === 'salida') {
-    // Entre 6am-10am permitir reingreso de turno noche sin confirmar
-    const esHorarioTransicion = hora >= 6 && hora < 10
+    // Entre 6am-12pm permitir reingreso de turno noche sin confirmar
+    const esHorarioTransicion = hora >= 6 && hora < 12
     const esTurnoNocheAnterior = existente?.fecha !== today()
     
     if (esHorarioTransicion && esTurnoNocheAnterior) {
@@ -1240,10 +1252,13 @@ async function marcar(tipo) {
     } else {
       // Reingreso mismo día, pedir confirmación
       const minutos = calcularMinutosDesde(existente?.salida)
+      const tiempoTexto = minutos < 60 
+        ? `hace ${Math.floor(minutos)} minutos` 
+        : `hace ${Math.floor(minutos/60)}h ${Math.floor(minutos%60)}min`
       mostrarConfirmacion(
         '🔄',
         '¿Confirmar reingreso?',
-        `${currentPersona.nombre} ya salió hace ${Math.floor(minutos)} minutos. ¿Desea registrar un nuevo ingreso?`,
+        `${currentPersona.nombre} ya registró salida ${tiempoTexto}. Se creará una nueva jornada.`,
         tipo
       )
     }
@@ -1271,7 +1286,7 @@ async function marcar(tipo) {
       mostrarConfirmacion(
         '⏱️',
         '¿Retorno muy rápido?',
-        `El break de ${currentPersona.nombre} duró menos de ${Math.floor(minutos * 60)} segundos. ¿Confirmar retorno?`,
+        `El break de ${currentPersona.nombre} duró menos de ${Math.ceil(minutos * 60)} segundos. ¿Confirmar retorno?`,
         tipo
       )
       return
@@ -1296,48 +1311,71 @@ async function marcar(tipo) {
   await ejecutarMarcar(tipo)
 }
 
+// ─── EJECUTAR MARCADO (lógica original) ──────────────
 async function ejecutarMarcar(tipo) {
   if (!currentPersona) return
   const ahora = fmt(new Date())
   const nuevoEstado = ESTADO_MAP[tipo]
-  const existente = estadoHoy.find(e=>e.dni===currentPersona.dni)
+  const existente = estadoHoy.find(e => e.dni === currentPersona.dni)
 
-  // CRÍTICO: usar la fecha real del registro existente para no crear duplicados
-  const fechaRegistro = existente?.fecha || today()
+  // Determinar si es REINGRESO (ingreso cuando ya tiene salida)
+  const esReingreso = tipo === 'ingreso' && existente?.estado === 'salida'
+  
+  let fechaRegistro, jornada
 
-  const esAusencia = ['break_salida','banio_salida'].includes(tipo)
+  if (esReingreso) {
+    // REINGRESO: Crear nuevo registro con jornada incrementada
+    fechaRegistro = today()
+    
+    // Buscar la jornada máxima de este DNI en esta fecha
+    const { data: jornadasHoy } = await db.from('estado_hoy')
+      .select('jornada')
+      .eq('dni', currentPersona.dni)
+      .eq('fecha', fechaRegistro)
+      .order('jornada', { ascending: false })
+      .limit(1)
+    
+    jornada = (jornadasHoy?.[0]?.jornada || 0) + 1
+  } else {
+    // Normal: usar fecha y jornada del registro existente
+    fechaRegistro = existente?.fecha || today()
+    jornada = existente?.jornada || 1
+  }
+
+  const esAusencia = ['break_salida', 'banio_salida'].includes(tipo)
   const esBanioSalida = tipo === 'banio_salida'
   const ausenciaInicio = esAusencia ? new Date().toISOString() : null
-  const banioCount = esBanioSalida ? ((existente?.banio_count||0) + 1) : (existente?.banio_count||0)
+  const banioCount = esBanioSalida ? ((existente?.banio_count || 0) + 1) : (esReingreso ? 0 : (existente?.banio_count || 0))
 
   try {
     const { error: errEstado } = await db.from('estado_hoy').upsert({
-      dni:currentPersona.dni, nombre:currentPersona.nombre,
-      empresa:currentPersona.empresa, area:currentPersona.area||'',
-      estado:nuevoEstado, fecha:fechaRegistro,
-      ingreso: tipo==='ingreso'?ahora:(existente?.ingreso||ahora),
-      salida: tipo==='salida'?ahora:(existente?.salida||''),
+      dni: currentPersona.dni, nombre: currentPersona.nombre,
+      empresa: currentPersona.empresa, area: currentPersona.area || '',
+      estado: nuevoEstado, fecha: fechaRegistro, jornada: jornada,
+      ingreso: tipo === 'ingreso' ? ahora : (existente?.ingreso || ahora),
+      salida: tipo === 'salida' ? ahora : (esReingreso ? '' : (existente?.salida || '')),
       break_inicio: esAusencia ? ausenciaInicio : null,
       banio_count: banioCount,
       updated_at: new Date().toISOString()
-    },{onConflict:'dni,fecha'})
+    }, { onConflict: 'dni,fecha,jornada' })
 
     if (errEstado) throw errEstado
 
     const { error: errEvento } = await db.from('eventos').insert({
-      dni:currentPersona.dni, nombre:currentPersona.nombre,
-      empresa:currentPersona.empresa, area:currentPersona.area||'',
-      tipo, fecha:ahora, fecha_iso:new Date().toISOString()
+      dni: currentPersona.dni, nombre: currentPersona.nombre,
+      empresa: currentPersona.empresa, area: currentPersona.area || '',
+      tipo, fecha: ahora, fecha_iso: new Date().toISOString()
     })
 
     if (errEvento) throw errEvento
 
-    showToast(ACCION_LABEL[tipo]+' — '+currentPersona.nombre, tipo==='salida'?'warning':'success')
+    const msgExtra = esReingreso ? ` (Jornada ${jornada})` : ''
+    showToast(ACCION_LABEL[tipo] + ' — ' + currentPersona.nombre + msgExtra, tipo === 'salida' ? 'warning' : 'success')
     loadEstadoHoy()
 
     setTimeout(() => {
-      document.getElementById('dni-input').value=''
-      currentDni=''; currentPersona=null; modoEdicion=false
+      document.getElementById('dni-input').value = ''
+      currentDni = ''; currentPersona = null; modoEdicion = false
       cerrarFormPersona()
       updatePersonaInfo(); updateButtons()
       document.getElementById('dni-input').focus()
@@ -1377,37 +1415,55 @@ async function guardarPersona() {
 
 // ─── SITUACIÓN ACTUAL ─────────────────────────────────
 function updateEmpresaBtns() {
-  const empresas = [...new Set(estadoHoy.map(e=>e.empresa).filter(Boolean))].sort()
-  // Fix bug: sync Todas button visual state
-  document.querySelector('.emp-btn[onclick*="todas"]')?.classList.toggle('active', filtroEmpresa==='todas')
+  const empresas = [...new Set(estadoHoy.map(e => e.empresa).filter(Boolean))].sort()
+  
+  // Actualizar botón "Todas"
+  const todasActivo = filtroEmpresas.length === 0
+  document.getElementById('btn-emp-todas')?.classList.toggle('active', todasActivo)
+  
+  // Generar botones de empresas
   const cont = document.getElementById('emp-btns')
-  cont.innerHTML = empresas.map(emp =>
-    `<button class="emp-btn ${filtroEmpresa===emp?'active':''}" onclick="filtrarEmpresa('${emp}',this)" style="margin-left:4px">${emp}</button>`
-  ).join('')
+  cont.innerHTML = empresas.map(emp => {
+    const activo = filtroEmpresas.includes(emp)
+    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleEmpresa('${emp}')">${emp}</button>`
+  }).join('')
 }
 
-function filtrarEmpresa(empresa, btn) {
-  filtroEmpresa = empresa
-  // Solo desactivar los botones de empresa (no los de turno)
-  document.querySelectorAll('#emp-btns .emp-btn, .filtro-bar .emp-btn[onclick*="todas"]').forEach(b => b.classList.remove('active'))
-  btn.classList.add('active')
+function toggleEmpresa(empresa) {
+  if (empresa === 'todas') {
+    // Limpiar selección = mostrar todas
+    filtroEmpresas = []
+  } else {
+    // Toggle: agregar o quitar del array
+    const idx = filtroEmpresas.indexOf(empresa)
+    if (idx >= 0) {
+      filtroEmpresas.splice(idx, 1)  // Quitar
+    } else {
+      filtroEmpresas.push(empresa)    // Agregar
+    }
+  }
+  updateEmpresaBtns()
   renderSituacion()
 }
 
 function filtrarTurno(turno) {
   filtroTurno = turno
-  // Actualizar estado visual de botones de turno
-  document.getElementById('turno-todos').classList.toggle('active', turno === 'todos')
-  document.getElementById('turno-dia').classList.toggle('active', turno === 'dia')
-  document.getElementById('turno-noche').classList.toggle('active', turno === 'noche')
+  
+  // Actualizar botones
+  document.getElementById('btn-turno-todos').classList.toggle('active', turno === 'todos')
+  document.getElementById('btn-turno-dia').classList.toggle('active', turno === 'dia')
+  document.getElementById('btn-turno-noche').classList.toggle('active', turno === 'noche')
+  
   renderSituacion()
 }
 
 function renderSituacion() {
-  // Aplicar filtro de empresa
-  let data = filtroEmpresa === 'todas' ? [...estadoHoy] : estadoHoy.filter(e => e.empresa === filtroEmpresa)
+  // Filtrar por empresa(s)
+  let data = filtroEmpresas.length === 0 
+    ? [...estadoHoy] 
+    : estadoHoy.filter(e => filtroEmpresas.includes(e.empresa))
   
-  // Aplicar filtro de turno
+  // Filtrar por turno
   if (filtroTurno === 'dia') {
     data = data.filter(e => !esTurnoNoche(e.ingreso))
   } else if (filtroTurno === 'noche') {
@@ -1415,6 +1471,8 @@ function renderSituacion() {
   }
   
   const activos = data.filter(e => e.estado !== 'salida')
+  
+  // Stats
   document.getElementById('sa-dentro').textContent = data.filter(e => e.estado === 'dentro').length
   document.getElementById('sa-break').textContent = data.filter(e => ['break', 'banio'].includes(e.estado)).length
   document.getElementById('sa-salida').textContent = data.filter(e => e.estado === 'salida').length
@@ -1422,43 +1480,56 @@ function renderSituacion() {
   document.getElementById('sa-noche').textContent = activos.filter(e => esTurnoNoche(e.ingreso)).length
   
   // Título dinámico
-  let titulo = filtroEmpresa === 'todas' ? 'Todas las personas' : filtroEmpresa
+  let titulo = filtroEmpresas.length === 0 ? 'Todas las empresas' : filtroEmpresas.join(', ')
   if (filtroTurno !== 'todos') {
     titulo += ` — Turno ${filtroTurno === 'dia' ? 'Día' : 'Noche'}`
   }
   document.getElementById('sa-titulo').textContent = titulo
 
   const lista = document.getElementById('sa-lista')
-  if (!data.length) { lista.innerHTML='<div style="text-align:center;color:var(--muted);padding:28px;font-size:13px">Sin registros por el momento</div>'; return }
+  if (!data.length) { 
+    lista.innerHTML = '<div style="text-align:center;color:var(--muted);padding:28px;font-size:13px">Sin registros para los filtros seleccionados</div>'
+    return 
+  }
 
   lista.innerHTML = data.map(e => {
-    const b = ESTADO_BADGE[e.estado]||{label:e.estado,cls:''}
+    const b = ESTADO_BADGE[e.estado] || { label: e.estado, cls: '' }
     const av = getAvatar(e.empresa)
-    // Fix: timer class based on actual estado
-    const timerClass = e.estado==='break' ? 'tok' : 'tbok'
-    const timerHtml = ['break','banio'].includes(e.estado)
+    const timerClass = e.estado === 'break' ? 'tok' : 'tbok'
+    const timerHtml = ['break', 'banio'].includes(e.estado)
       ? `<span class="timer ${timerClass}" id="tmr-${e.dni}">--:--</span>` : ''
     const horas = horasDesdeIngreso(e.ingreso)
-    const alertaLarga = e.estado==='dentro' && horas > ALERTA_HORAS
+    const alertaLarga = e.estado === 'dentro' && horas > ALERTA_HORAS
     const turnoTag = esTurnoNoche(e.ingreso)
       ? `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:#ede9fe;color:#5b21b6">Noche</span>`
       : `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:#fef3c7;color:#92400e">Día</span>`
     const alertaHtml = alertaLarga
       ? `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:#fef3c7;color:#92400e">+${Math.floor(horas)}h sin salida</span>` : ''
-    // Contador baño
-    const banioCount = e.banio_count||0
+    const banioCount = e.banio_count || 0
     const banioBadge = banioCount > 0
-      ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:${banioCount>=BANIO_ALERTA?'#fee2e2':'#ede9fe'};color:${banioCount>=BANIO_ALERTA?'#991b1b':'#5b21b6'}">🚻 x${banioCount}${banioCount>=BANIO_ALERTA?' ⚠':''}</span>` : ''
-    return `<div class="persona-row" style="${alertaLarga?'background:#fffbeb;border-left:3px solid #f59e0b;border-radius:0':''}">
+      ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:${banioCount >= BANIO_ALERTA ? '#fee2e2' : '#ede9fe'};color:${banioCount >= BANIO_ALERTA ? '#991b1b' : '#5b21b6'}">🚻 x${banioCount}${banioCount >= BANIO_ALERTA ? ' ⚠' : ''}</span>` : ''
+    
+    // Badge de pendiente (turno anterior sin salida)
+    const pendienteBadge = e.esPendiente 
+      ? `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:#fee2e2;color:#991b1b">⚠ PENDIENTE</span>` 
+      : ''
+    
+    // Resaltar si es pendiente
+    const rowStyle = e.esPendiente 
+      ? 'background:#fee2e2;border-left:3px solid #ef4444;border-radius:0' 
+      : (alertaLarga ? 'background:#fffbeb;border-left:3px solid #f59e0b;border-radius:0' : '')
+    
+    return `<div class="persona-row" style="${rowStyle}">
       <div class="persona-left">
         <div class="p-avatar ${av}">${ini(e.nombre)}</div>
-        <div><div class="p-name">${e.nombre}</div><div class="p-meta">${e.empresa}${e.area?' · '+e.area:''}</div></div>
+        <div><div class="p-name">${e.nombre}</div><div class="p-meta">${e.empresa}${e.area ? ' · ' + e.area : ''}</div></div>
       </div>
       <div class="persona-right">
+        ${pendienteBadge}
         ${turnoTag}
         ${banioBadge}
         ${alertaHtml}
-        <span class="desde">desde ${e.ingreso||'—'}</span>
+        <span class="desde">desde ${e.ingreso || '—'}</span>
         <span class="badge ${b.cls}">${b.label}</span>
         ${timerHtml}
       </div>
@@ -1496,55 +1567,84 @@ setInterval(() => {
 }, 1000)
 
 // ─── REPORTES ─────────────────────────────────────────
+let asistenciaResumen = []  // De estado_hoy (sincronizado con Situación Actual)
+
 function initReportes() {
   const t = today()
   document.getElementById('f-desde').value = t
   document.getElementById('f-hasta').value = t
-  buscarEventos()
+  buscarTodo()
 }
 
-async function buscarEventos() {
+// Buscar de ambas tablas
+async function buscarTodo() {
   const btn = document.getElementById('btn-buscar-rep')
   btn.textContent = 'Buscando...'
+  
+  await Promise.all([
+    cargarResumen(),  // Carga datos para tabla y stats
+    buscarEventos()   // Carga eventos para breaks/baños/general
+  ])
+  
+  btn.textContent = 'Buscar'
+}
+
+// Buscar de estado_hoy para Asistencia (sincronizado con Situación Actual)
+async function buscarAsistencia() {
   const desde = document.getElementById('f-desde').value
   const hasta = document.getElementById('f-hasta').value
   const search = document.getElementById('f-search').value.trim()
   const empresa = document.getElementById('f-empresa').value.trim()
 
-  // FIX TURNO NOCHE: Extender "hasta" +1 día a las 10am para capturar salidas del turno noche
-  // Ejemplo: Si filtras 15/04, captura salidas hasta 16/04 10:00 AM Lima
-  let q = db.from('eventos').select('*').order('fecha_iso',{ascending:true})
+  let q = db.from('estado_hoy').select('*').order('ingreso', { ascending: true })
   
-  if (desde) {
-    // Desde las 00:00 Lima del día seleccionado = 05:00 UTC
-    q = q.gte('fecha_iso', desde + 'T05:00:00Z')
-  }
+  if (desde) q = q.gte('fecha', desde)
+  if (hasta) q = q.lte('fecha', hasta)
+  if (search) q = q.or(`dni.ilike.%${search}%,nombre.ilike.%${search}%`)
+  if (empresa) q = q.ilike('empresa', `%${empresa}%`)
+
+  const { data } = await q
+  asistenciaResumen = data || []
+}
+
+// Buscar de eventos para Breaks/Baños/General
+async function buscarEventos() {
+  const desde = document.getElementById('f-desde').value
+  const hasta = document.getElementById('f-hasta').value
+  const search = document.getElementById('f-search').value.trim()
+  const empresa = document.getElementById('f-empresa').value.trim()
+
+  let q = db.from('eventos').select('*').order('fecha_iso', { ascending: true })
   
+  if (desde) q = q.gte('fecha_iso', desde + 'T05:00:00Z')
   if (hasta) {
-    // Hasta las 10:00 AM Lima del día SIGUIENTE = captura salidas turno noche
-    // 10:00 AM Lima = 15:00 UTC
     const nextDay = new Date(hasta)
     nextDay.setDate(nextDay.getDate() + 1)
     q = q.lte('fecha_iso', nextDay.toISOString().slice(0, 10) + 'T15:00:00Z')
   }
-  
   if (search) q = q.or(`dni.ilike.%${search}%,nombre.ilike.%${search}%`)
-  if (empresa) q = q.ilike('empresa',`%${empresa}%`)
+  if (empresa) q = q.ilike('empresa', `%${empresa}%`)
 
   const { data } = await q
-  eventosResumen = data||[]
-  renderReportes()
-  btn.textContent = 'Buscar'
+  eventosResumen = data || []
 }
 
 function renderReportes() {
-  document.getElementById('rep-count').textContent = `Registros (${eventosResumen.length})`
+  document.getElementById('rep-count').textContent = `Asistencia (${asistenciaResumen.length})`
+  
   const tbody = document.getElementById('tabla-reportes')
-  if (!eventosResumen.length) { tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Sin registros para este rango de fechas</td></tr>'; return }
-  tbody.innerHTML = eventosResumen.map(e=>`<tr>
-    <td><b>${e.dni}</b></td><td>${e.nombre}</td><td>${e.empresa}</td><td>${e.area||'<span class="td-muted">—</span>'}</td>
-    <td><span class="badge ${TIPO_BADGE[e.tipo]||''}">${TIPO_LABEL[e.tipo]||e.tipo}</span></td>
-    <td>${e.fecha}</td>
+  if (!asistenciaResumen.length) { 
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Sin registros para este rango de fechas</td></tr>'
+    return 
+  }
+  
+  tbody.innerHTML = asistenciaResumen.map(e => `<tr>
+    <td><b>${e.dni}</b></td>
+    <td>${e.nombre}</td>
+    <td>${e.empresa}</td>
+    <td>${e.area || '<span class="td-muted">—</span>'}</td>
+    <td>${e.ingreso || '<span class="td-muted">—</span>'}</td>
+    <td>${e.salida || '<span class="td-muted">—</span>'}</td>
   </tr>`).join('')
 }
 
@@ -1554,71 +1654,68 @@ async function descargar(tipo) {
   let rows, sheetName
 
   if (tipo === 'asistencia') {
-    // Agrupar por DNI: una fila con ingreso + salida
-    // FIX: Usar fecha_iso para match correcto en turno noche (ingreso día X, salida día X+1)
-    const ingresos = eventosResumen.filter(e => e.tipo === 'ingreso')
-    const salidas = eventosResumen.filter(e => e.tipo === 'salida')
-    
+    // Lee de estado_hoy (sincronizado con Situación Actual)
     rows = [['DNI', 'Nombre', 'Empresa', 'Área', 'Fecha y Hora Ingreso', 'Fecha y Hora Salida']]
     
-    // Ordenar ingresos por fecha_iso para procesar cronológicamente
-    ingresos.sort((a, b) => new Date(a.fecha_iso) - new Date(b.fecha_iso))
-    
-    // Set para marcar salidas ya usadas (evitar duplicados)
-    const salidasUsadas = new Set()
-    
-    ingresos.forEach(ing => {
-      const ingresoTime = new Date(ing.fecha_iso).getTime()
-      
-      // Buscar la salida correspondiente:
-      // - Mismo DNI
-      // - Posterior al ingreso
-      // - Dentro de las siguientes 24 horas (jornada máxima razonable)
-      // - Que no haya sido usada ya
-      const sal = salidas.find(s => {
-        if (s.dni !== ing.dni) return false
-        if (salidasUsadas.has(s.fecha_iso + s.dni)) return false
-        
-        const salidaTime = new Date(s.fecha_iso).getTime()
-        const diffHoras = (salidaTime - ingresoTime) / 3600000
-        
-        // Salida debe ser posterior al ingreso y dentro de 24 horas
-        return diffHoras > 0 && diffHoras <= 24
-      })
-      
-      if (sal) {
-        salidasUsadas.add(sal.fecha_iso + sal.dni)
-      }
-      
-      rows.push([ing.dni, ing.nombre, ing.empresa, ing.area || '', ing.fecha, sal?.fecha || '—'])
+    asistenciaResumen.forEach(e => {
+      rows.push([
+        e.dni, 
+        e.nombre, 
+        e.empresa, 
+        e.area || '', 
+        e.ingreso || '—',
+        e.salida || '—'
+      ])
     })
     sheetName = 'Asistencia'
+    
+    const ws = XLSX.utils.aoa_to_sheet(rows)
+    ws['!cols'] = [{ wch: 12 }, { wch: 28 }, { wch: 18 }, { wch: 14 }, { wch: 20 }, { wch: 20 }]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, sheetName)
+    XLSX.writeFile(wb, `asistencia_${today()}.xlsx`)
+    
   } else {
-    const filtros = {break:['break_salida','break_retorno'],banio:['banio_salida','banio_retorno'],general:[]}
+    // Breaks, Baños, General: leen de eventos
+    const filtros = { break: ['break_salida', 'break_retorno'], banio: ['banio_salida', 'banio_retorno'], general: [] }
     const filtro = filtros[tipo]
-    const data = filtro?.length ? eventosResumen.filter(e=>filtro.includes(e.tipo)) : eventosResumen
-    rows = [['DNI','Nombre','Empresa','Área','Tipo','Fecha y Hora']]
-    data.forEach(e=>rows.push([e.dni,e.nombre,e.empresa,e.area||'',TIPO_LABEL[e.tipo]||e.tipo,e.fecha]))
-    sheetName = tipo.charAt(0).toUpperCase()+tipo.slice(1)
+    const data = filtro?.length ? eventosResumen.filter(e => filtro.includes(e.tipo)) : eventosResumen
+    
+    rows = [['DNI', 'Nombre', 'Empresa', 'Área', 'Tipo', 'Fecha y Hora']]
+    data.forEach(e => rows.push([e.dni, e.nombre, e.empresa, e.area || '', TIPO_LABEL[e.tipo] || e.tipo, e.fecha]))
+    sheetName = tipo.charAt(0).toUpperCase() + tipo.slice(1)
+    
+    const ws = XLSX.utils.aoa_to_sheet(rows)
+    ws['!cols'] = [{ wch: 12 }, { wch: 24 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 20 }]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, sheetName)
+    XLSX.writeFile(wb, `reporte_${tipo}_${today()}.xlsx`)
   }
-
-  const ws = XLSX.utils.aoa_to_sheet(rows)
-  ws['!cols'] = tipo==='asistencia'
-    ? [{wch:12},{wch:24},{wch:20},{wch:16},{wch:22},{wch:22}]
-    : [{wch:12},{wch:24},{wch:20},{wch:16},{wch:16},{wch:20}]
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, sheetName)
-  XLSX.writeFile(wb, `reporte_${tipo}_${today()}.xlsx`)
 }
 
 // ─── MODAL EDICIÓN ────────────────────────────────────
 let editDni = null
+let editJornada = null
 
-function abrirModal(dni) {
-  const e = estadoHoy.find(x => x.dni === dni)
+function abrirModal(registroId) {
+  // registroId puede ser "dni_jornada" o solo "dni" (legacy)
+  let dni, jornada
+  if (registroId.includes('_')) {
+    [dni, jornada] = registroId.split('_')
+    jornada = parseInt(jornada)
+  } else {
+    dni = registroId
+    jornada = 1
+  }
+  
+  const e = estadoHoy.find(x => x.dni === dni && (x.jornada || 1) === jornada)
   if (!e) return
+  
   editDni = dni
-  document.getElementById('modal-nombre').textContent = e.nombre
+  editJornada = jornada  // Guardar jornada para el update
+  
+  const jornadaLabel = jornada > 1 ? ` (Jornada ${jornada})` : ''
+  document.getElementById('modal-nombre').textContent = e.nombre + jornadaLabel
   document.getElementById('modal-meta').textContent = e.empresa + (e.area ? ' · ' + e.area : '')
   document.getElementById('modal-estado').value = e.estado
   document.getElementById('modal-ingreso').value = e.ingreso || ''
@@ -1630,34 +1727,307 @@ function cerrarModal(e) {
   if (e && e.target !== document.getElementById('modal-overlay')) return
   document.getElementById('modal-overlay').classList.remove('open')
   editDni = null
+  editJornada = null
 }
 
 async function guardarEdicion() {
   if (!editDni) return
-  const estado = document.getElementById('modal-estado').value
+  const nuevoEstado = document.getElementById('modal-estado').value
   const ingreso = document.getElementById('modal-ingreso').value.trim()
   const salida = document.getElementById('modal-salida').value.trim()
-  const existente = estadoHoy.find(e=>e.dni===editDni)
+  
+  // Buscar el registro específico por dni + jornada
+  const jornada = editJornada || 1
+  const existente = estadoHoy.find(e => e.dni === editDni && (e.jornada || 1) === jornada)
+  const estadoAnterior = existente?.estado
 
-  // CRÍTICO: usar la fecha real del registro, no today()
+  // CRÍTICO: usar la fecha y jornada real del registro
   const fechaRegistro = existente?.fecha || today()
 
-  const eraAusencia = ['break','banio'].includes(existente?.estado)
-  const esAusencia = ['break','banio'].includes(estado)
+  const eraAusencia = ['break', 'banio'].includes(estadoAnterior)
+  const esAusencia = ['break', 'banio'].includes(nuevoEstado)
   const breakInicio = esAusencia && !eraAusencia ? new Date().toISOString()
     : esAusencia ? (existente?.break_inicio || new Date().toISOString())
     : null
 
-  await db.from('estado_hoy').update({
-    estado, ingreso, salida,
-    break_inicio: breakInicio,
-    updated_at: new Date().toISOString()
-  }).eq('dni', editDni).eq('fecha', fechaRegistro)
+  try {
+    // 1. Actualizar estado_hoy (filtrar por dni + fecha + jornada)
+    const { error: errEstado } = await db.from('estado_hoy').update({
+      estado: nuevoEstado, ingreso, salida,
+      break_inicio: breakInicio,
+      updated_at: new Date().toISOString()
+    }).eq('dni', editDni).eq('fecha', fechaRegistro).eq('jornada', jornada)
 
-  document.getElementById('modal-overlay').classList.remove('open')
-  editDni = null
-  showToast('Registro actualizado', 'success')
-  loadEstadoHoy()
+    if (errEstado) throw errEstado
+
+    // 2. SINCRONIZAR CON EVENTOS (si el estado cambió)
+    if (estadoAnterior && estadoAnterior !== nuevoEstado) {
+      // Mapeo de estado → tipos de evento a eliminar
+      const TIPOS_A_ELIMINAR = {
+        'dentro': ['ingreso', 'break_retorno', 'banio_retorno'],
+        'break': ['break_salida'],
+        'banio': ['banio_salida'],
+        'salida': ['salida']
+      }
+      
+      // Mapeo de estado → tipo de evento a insertar
+      const TIPO_A_INSERTAR = {
+        'dentro': null,  // No insertar (es estado resultante, no acción)
+        'break': 'break_salida',
+        'banio': 'banio_salida',
+        'salida': 'salida'
+      }
+
+      const tiposEliminar = TIPOS_A_ELIMINAR[estadoAnterior] || []
+      const tipoInsertar = TIPO_A_INSERTAR[nuevoEstado]
+
+      // Rango de fecha para buscar eventos (mismo día)
+      const fechaDesde = fechaRegistro + 'T05:00:00Z'
+      const fechaHasta = fechaRegistro + 'T29:59:59Z'
+
+      // Eliminar eventos del estado anterior
+      if (tiposEliminar.length > 0) {
+        await db.from('eventos')
+          .delete()
+          .eq('dni', editDni)
+          .in('tipo', tiposEliminar)
+          .gte('fecha_iso', fechaDesde)
+          .lte('fecha_iso', fechaHasta)
+      }
+
+      // Insertar evento del nuevo estado
+      if (tipoInsertar) {
+        const horaEvento = nuevoEstado === 'salida' ? salida : ingreso
+        const fechaFormateada = `${fechaRegistro.split('-').reverse().join('/')} ${horaEvento || '00:00'}`
+        
+        await db.from('eventos').insert({
+          dni: editDni,
+          nombre: existente.nombre,
+          empresa: existente.empresa,
+          area: existente.area || '',
+          tipo: tipoInsertar,
+          fecha: fechaFormateada,
+          fecha_iso: new Date().toISOString()
+        })
+      }
+    }
+
+    document.getElementById('modal-overlay').classList.remove('open')
+    editDni = null
+    showToast('Registro actualizado y sincronizado ✓', 'success')
+    loadEstadoHoy()
+
+  } catch (err) {
+    console.error('Error al guardar edición:', err)
+    showToast('Error al guardar. Intenta de nuevo.', 'error')
+  }
+}
+
+// ─── RESUMEN ─────────────────────────────────────────
+let resumenData = []
+let resumenEmpresas = []
+let resumenTurno = 'todos'
+
+// cargarResumen ahora usa los filtros de Reportes (f-desde, f-hasta)
+async function cargarResumen() {
+  const desde = document.getElementById('f-desde').value
+  const hasta = document.getElementById('f-hasta').value
+  const busqueda = document.getElementById('f-search').value.trim().toLowerCase()
+  
+  if (!desde || !hasta) {
+    showToast('Selecciona rango de fechas', 'error')
+    return
+  }
+
+  let query = db.from('estado_hoy').select('*')
+    .gte('fecha', desde)
+    .lte('fecha', hasta)
+    .order('fecha', { ascending: false })
+    .order('ingreso', { ascending: true })
+
+  const { data } = await query
+
+  // Filtrar por búsqueda si hay texto
+  resumenData = (data || []).filter(e => {
+    if (!busqueda) return true
+    return e.dni.includes(busqueda) || 
+           e.nombre.toLowerCase().includes(busqueda) ||
+           e.empresa.toLowerCase().includes(busqueda)
+  })
+  
+  resumenEmpresas = []  // Reset filtro
+  resumenTurno = 'todos'
+  
+  // Actualizar botones de empresas
+  actualizarEmpresasResumen()
+  
+  // Actualizar botones de turno
+  document.getElementById('res-turno-todos').classList.add('active')
+  document.getElementById('res-turno-dia').classList.remove('active')
+  document.getElementById('res-turno-noche').classList.remove('active')
+  
+  renderResumen()
+}
+
+function actualizarEmpresasResumen() {
+  const empresas = [...new Set(resumenData.map(e => e.empresa).filter(Boolean))].sort()
+  
+  // Actualizar botón "Todas"
+  const todasActivo = resumenEmpresas.length === 0
+  document.getElementById('res-emp-todas')?.classList.toggle('active', todasActivo)
+  
+  // Generar botones de empresas
+  const cont = document.getElementById('res-emp-btns')
+  cont.innerHTML = empresas.map(emp => {
+    const activo = resumenEmpresas.includes(emp)
+    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleEmpresaResumen('${emp}')">${emp}</button>`
+  }).join('')
+}
+
+function toggleEmpresaResumen(empresa) {
+  if (empresa === 'todas') {
+    resumenEmpresas = []
+  } else {
+    const idx = resumenEmpresas.indexOf(empresa)
+    if (idx >= 0) {
+      resumenEmpresas.splice(idx, 1)
+    } else {
+      resumenEmpresas.push(empresa)
+    }
+  }
+  actualizarEmpresasResumen()
+  renderResumen()
+}
+
+function filtrarTurnoResumen(turno) {
+  resumenTurno = turno
+  
+  document.getElementById('res-turno-todos').classList.toggle('active', turno === 'todos')
+  document.getElementById('res-turno-dia').classList.toggle('active', turno === 'dia')
+  document.getElementById('res-turno-noche').classList.toggle('active', turno === 'noche')
+  
+  renderResumen()
+}
+
+function renderResumen() {
+  // Filtrar por empresa(s)
+  let data = resumenEmpresas.length === 0 
+    ? [...resumenData] 
+    : resumenData.filter(e => resumenEmpresas.includes(e.empresa))
+  
+  // Filtrar por turno
+  if (resumenTurno === 'dia') {
+    data = data.filter(e => !esTurnoNoche(e.ingreso))
+  } else if (resumenTurno === 'noche') {
+    data = data.filter(e => esTurnoNoche(e.ingreso))
+  }
+  
+  // Stats generales (sobre data filtrada)
+  const totalAsistencia = data.length
+  const completos = data.filter(e => e.salida && e.salida !== '').length
+  const pendientes = data.filter(e => !e.salida || e.salida === '').length
+  const empresasUnicas = [...new Set(data.map(e => e.empresa))].length
+  
+  document.getElementById('res-total').textContent = totalAsistencia
+  document.getElementById('res-completos').textContent = completos
+  document.getElementById('res-pendientes').textContent = pendientes
+  document.getElementById('res-empresas').textContent = empresasUnicas
+  
+  // Título con rango de fechas
+  const desde = document.getElementById('f-desde').value
+  const hasta = document.getElementById('f-hasta').value
+  let titulo = desde === hasta 
+    ? `Resumen del ${desde.split('-').reverse().join('/')}`
+    : `Resumen del ${desde.split('-').reverse().join('/')} al ${hasta.split('-').reverse().join('/')}`
+  
+  if (resumenEmpresas.length > 0) {
+    titulo += ` — ${resumenEmpresas.join(', ')}`
+  }
+  if (resumenTurno !== 'todos') {
+    titulo += ` — Turno ${resumenTurno === 'dia' ? 'Día' : 'Noche'}`
+  }
+  document.getElementById('res-titulo').textContent = titulo
+  
+  // Tabla
+  const tbody = document.getElementById('res-tabla')
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px">Sin registros para este rango</td></tr>'
+    return
+  }
+  
+  tbody.innerHTML = data.map(e => {
+    const b = ESTADO_BADGE[e.estado] || { label: e.estado, cls: '' }
+    const turno = esTurnoNoche(e.ingreso) ? 'Noche' : 'Día'
+    const turnoStyle = esTurnoNoche(e.ingreso) 
+      ? 'background:#ede9fe;color:#5b21b6' 
+      : 'background:#fef3c7;color:#92400e'
+    
+    // Marcar pendientes (sin salida)
+    const sinSalida = !e.salida || e.salida === ''
+    const pendienteBadge = sinSalida 
+      ? '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#fee2e2;color:#991b1b;margin-left:4px">PENDIENTE</span>' 
+      : ''
+    const rowStyle = sinSalida ? 'background:#fff7ed;' : ''
+    
+    return `<tr style="${rowStyle}">
+      <td><b>${e.dni}</b></td>
+      <td>${e.nombre}${pendienteBadge}</td>
+      <td>${e.empresa}</td>
+      <td>${e.area || '<span class="td-muted">—</span>'}</td>
+      <td><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;${turnoStyle}">${turno}</span></td>
+      <td>${e.ingreso || '<span class="td-muted">—</span>'}</td>
+      <td>${e.salida || '<span class="td-muted">—</span>'}</td>
+      <td><span class="badge ${b.cls}">${b.label}</span></td>
+    </tr>`
+  }).join('')
+}
+
+async function descargarResumen() {
+  if (!resumenData.length) {
+    showToast('Primero busca datos con el botón Buscar', 'error')
+    return
+  }
+  
+  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
+  
+  // Aplicar mismos filtros que la vista
+  let data = resumenEmpresas.length === 0 
+    ? [...resumenData] 
+    : resumenData.filter(e => resumenEmpresas.includes(e.empresa))
+  
+  if (resumenTurno === 'dia') {
+    data = data.filter(e => !esTurnoNoche(e.ingreso))
+  } else if (resumenTurno === 'noche') {
+    data = data.filter(e => esTurnoNoche(e.ingreso))
+  }
+  
+  const rows = [['DNI', 'Nombre', 'Empresa', 'Área', 'Fecha', 'Turno', 'Ingreso', 'Salida', 'Estado']]
+  
+  data.forEach(e => {
+    const turno = esTurnoNoche(e.ingreso) ? 'Noche' : 'Día'
+    const estado = ESTADO_BADGE[e.estado]?.label || e.estado || ''
+    rows.push([
+      e.dni,
+      e.nombre,
+      e.empresa,
+      e.area || '',
+      e.fecha || '',
+      turno,
+      e.ingreso || '',
+      e.salida || '',
+      estado
+    ])
+  })
+  
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols'] = [{ wch: 12 }, { wch: 28 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 8 }, { wch: 18 }, { wch: 18 }, { wch: 10 }]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Resumen')
+  
+  const desde = document.getElementById('f-desde').value
+  const hasta = document.getElementById('f-hasta').value
+  const nombreArchivo = desde === hasta ? `resumen_${desde}.xlsx` : `resumen_${desde}_al_${hasta}.xlsx`
+  XLSX.writeFile(wb, nombreArchivo)
 }
 
 // ─── PERSONAL ─────────────────────────────────────────
@@ -1876,53 +2246,49 @@ async function marcarMasivo() {
   if (!currentPersona || !modoMasivo) return
   const input = document.getElementById('dni-input')
   const ahora = fmt(new Date())
-  const existente = estadoHoy.find(e => e.dni === currentPersona.dni)
   
-  // CRÍTICO: usar fecha del registro existente (igual que ejecutarMarcar)
-  const fechaRegistro = existente?.fecha || today()
-
-  try {
-    const { error: errEstado } = await db.from('estado_hoy').upsert({
-      dni: currentPersona.dni, nombre: currentPersona.nombre,
-      empresa: currentPersona.empresa, area: currentPersona.area || '',
-      estado: 'dentro', fecha: fechaRegistro,
-      ingreso: ahora, salida: '',
-      break_inicio: null, banio_count: existente?.banio_count || 0,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'dni,fecha' })
-
-    if (errEstado) throw errEstado
-
-    const { error: errEvento } = await db.from('eventos').insert({
-      dni: currentPersona.dni, nombre: currentPersona.nombre,
-      empresa: currentPersona.empresa, area: currentPersona.area || '',
-      tipo: 'ingreso', fecha: ahora, fecha_iso: new Date().toISOString()
-    })
-
-    if (errEvento) throw errEvento
-
-    agregarALista(currentPersona.nombre, false)
-    input.className = 'dni-input dni-ok'
-    setFeedback('ok', '✓ ' + currentPersona.nombre + ' — Ingreso registrado')
-    loadEstadoHoy()
-
-    setTimeout(() => {
-      if (!modoMasivo) return
-      input.value = ''; input.className = 'dni-input'; input.disabled = false
-      currentDni = ''; currentPersona = null; modoEdicion = false
-      cerrarFormPersona(); updatePersonaInfo(); updateButtons()
-      masivoProcessing = false
-      setFeedback('proc', '⚡ Modo masivo activo — escribe el DNI')
-      input.focus()
-    }, 1200)
-    
-  } catch (err) {
-    console.error('Error en modo masivo:', err)
-    input.className = 'dni-input dni-err'
-    setFeedback('err', '❌ Error al registrar — intenta de nuevo')
-    masivoProcessing = false
-    input.disabled = false
+  // Buscar última jornada existente
+  const registros = estadoHoy.filter(e => e.dni === currentPersona.dni)
+  const existente = registros.sort((a, b) => (b.jornada || 1) - (a.jornada || 1))[0]
+  
+  // Si ya tiene salida hoy, crear nueva jornada
+  const fechaHoy = today()
+  let jornada = 1
+  if (existente?.fecha === fechaHoy && existente?.estado === 'salida') {
+    jornada = (existente.jornada || 1) + 1
+  } else if (existente?.fecha === fechaHoy) {
+    jornada = existente.jornada || 1
   }
+
+  await db.from('estado_hoy').upsert({
+    dni: currentPersona.dni, nombre: currentPersona.nombre,
+    empresa: currentPersona.empresa, area: currentPersona.area || '',
+    estado: 'dentro', fecha: fechaHoy, jornada: jornada,
+    ingreso: ahora, salida: '',
+    break_inicio: null, banio_count: 0,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'dni,fecha,jornada' })
+
+  await db.from('eventos').insert({
+    dni: currentPersona.dni, nombre: currentPersona.nombre,
+    empresa: currentPersona.empresa, area: currentPersona.area || '',
+    tipo: 'ingreso', fecha: ahora, fecha_iso: new Date().toISOString()
+  })
+
+  agregarALista(currentPersona.nombre, false)
+  input.className = 'dni-input dni-ok'
+  setFeedback('ok', '✓ ' + currentPersona.nombre + ' — Ingreso registrado')
+  loadEstadoHoy()
+
+  setTimeout(() => {
+    if (!modoMasivo) return
+    input.value = ''; input.className = 'dni-input'; input.disabled = false
+    currentDni = ''; currentPersona = null; modoEdicion = false
+    cerrarFormPersona(); updatePersonaInfo(); updateButtons()
+    masivoProcessing = false
+    setFeedback('proc', '⚡ Modo masivo activo — escribe el DNI')
+    input.focus()
+  }, 1200)
 }
 
 // Override guardarPersona en modo masivo
