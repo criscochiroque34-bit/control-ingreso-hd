@@ -192,6 +192,10 @@ tr:hover td{background:#f7f9fc}
 
 /* MODO MASIVO */
 .btn-masivo{width:36px;height:36px;border-radius:8px;border:2px solid var(--border);background:transparent;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;line-height:1}
+.btn-masivo-v2{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;line-height:1}
+.btn-masivo-v2:hover{border-color:var(--accent2);background:rgba(99,102,241,.05)}
+.btn-masivo-v2#btn-masivo-ingreso.active{background:#22c55e;border-color:#22c55e;color:#fff;box-shadow:0 2px 8px rgba(34,197,94,.3)}
+.btn-masivo-v2#btn-masivo-salida.active{background:#f47215;border-color:#f47215;color:#fff;box-shadow:0 2px 8px rgba(244,114,21,.3)}
 .btn-masivo:hover{border-color:var(--accent2)}
 .btn-masivo.active{background:var(--accent2);border-color:var(--accent2)}
 .masivo-feedback{border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:13px;font-weight:600;align-items:center;gap:8px;display:none}
@@ -328,10 +332,22 @@ tr:hover td{background:#f7f9fc}
       </div>
 
       <div class="divider"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div class="card-title" style="margin-bottom:0">Marcar</div>
-        <button class="btn-masivo" id="btn-masivo" onclick="toggleMasivo()" title="Modo ingreso masivo">⚡</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn-masivo-v2" id="btn-masivo-ingreso" onclick="toggleMasivo('ingreso')" title="Activar modo ingreso masivo">
+            <span style="font-size:13px">⚡</span>
+            <span>Ingreso masivo</span>
+          </button>
+          <button class="btn-masivo-v2" id="btn-masivo-salida" onclick="toggleMasivo('salida')" title="Activar modo salida masiva">
+            <span style="font-size:13px">⚡</span>
+            <span>Salida masiva</span>
+          </button>
+        </div>
       </div>
+
+      <!-- BANNER MODO ACTIVO -->
+      <div id="masivo-banner" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px;font-weight:700;text-align:center"></div>
 
       <!-- FEEDBACK MASIVO -->
       <div class="masivo-feedback" id="masivo-feedback"></div>
@@ -430,10 +446,18 @@ tr:hover td{background:#f7f9fc}
 <div class="page" id="page-reportes">
   <div class="section-title"><div class="dot"></div> Reportes</div>
 
-  <!-- Filtros principales -->
+  <!-- ==================== SECCIÓN 1: ASISTENCIA ==================== -->
   <div class="card" style="margin-bottom:20px">
-    <div class="card-title">Filtros</div>
-    <div class="filtros-row">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+      <div style="width:40px;height:40px;border-radius:10px;background:#6366f120;display:flex;align-items:center;justify-content:center;font-size:20px">📊</div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700">Asistencia</div>
+        <div style="font-size:12px;color:var(--muted)">Registro de ingresos y salidas del personal</div>
+      </div>
+    </div>
+
+    <!-- Filtros fecha y búsqueda -->
+    <div class="filtros-row" style="margin-bottom:16px">
       <div class="filtro-group">
         <label>Desde</label>
         <input class="filtro-input" type="date" id="f-desde" />
@@ -443,69 +467,99 @@ tr:hover td{background:#f7f9fc}
         <input class="filtro-input" type="date" id="f-hasta" />
       </div>
       <div class="filtro-group">
-        <label>DNI o Nombre</label>
-        <input class="filtro-input" type="text" id="f-search" placeholder="Buscar..." style="width:160px" />
+        <label>Buscar</label>
+        <input class="filtro-input" type="text" id="f-search" placeholder="DNI o nombre..." style="width:160px" />
       </div>
       <div class="filtro-group" style="justify-content:flex-end">
         <label>&nbsp;</label>
         <button class="btn-buscar" onclick="buscarTodo()" id="btn-buscar-rep">Buscar</button>
       </div>
     </div>
-  </div>
 
-  <!-- Tarjetas de estadísticas -->
-  <div class="stats-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
-    <div class="stat-card" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">
-      <div class="stat-num" id="res-total">0</div>
-      <div class="stat-label">Total Asistencia</div>
-    </div>
-    <div class="stat-card green">
-      <div class="stat-num" id="res-completos">0</div>
-      <div class="stat-label">Salida Completa</div>
-    </div>
-    <div class="stat-card" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
-      <div class="stat-num" id="res-pendientes">0</div>
-      <div class="stat-label">Sin Salida</div>
-    </div>
-    <div class="stat-card blue">
-      <div class="stat-num" id="res-empresas">0</div>
-      <div class="stat-label">Empresas</div>
-    </div>
-  </div>
-
-  <!-- Filtros: Empresa + Turno -->
-  <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:18px">
-    <div class="filtro-bar" style="margin-bottom:0;flex:1">
+    <!-- Filtros empresa y turno -->
+    <div class="filtro-bar" style="margin-bottom:10px">
       <span class="filtro-bar-label">Empresa:</span>
       <button class="emp-btn active" id="res-emp-todas" onclick="toggleEmpresaResumen('todas')">Todas</button>
       <div id="res-emp-btns" style="display:inline-flex;flex-wrap:wrap;gap:4px"></div>
     </div>
-    
-    <div class="filtro-bar" style="margin-bottom:0">
+
+    <div class="filtro-bar" style="margin-bottom:20px">
       <span class="filtro-bar-label">Turno:</span>
       <button class="emp-btn active" id="res-turno-todos" onclick="filtrarTurnoResumen('todos')">Todos</button>
       <button class="emp-btn" id="res-turno-dia" onclick="filtrarTurnoResumen('dia')" style="background:#fef3c7;border-color:#f59e0b;color:#92400e">☀️ Día</button>
       <button class="emp-btn" id="res-turno-noche" onclick="filtrarTurnoResumen('noche')" style="background:#ede9fe;border-color:#8b5cf6;color:#5b21b6">🌙 Noche</button>
     </div>
-  </div>
 
-  <!-- Tabla de resultados -->
-  <div class="card">
-    <div class="card-title" id="res-titulo">Selecciona fechas y presiona Buscar</div>
-    <div class="table-wrap" style="max-height:400px">
+    <!-- Stats con colores suaves -->
+    <div style="display:flex;gap:12px;margin-bottom:20px">
+      <div style="flex:1;padding:16px 20px;border-radius:10px;background:var(--bg);border:1px solid var(--border);text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#a5b4fc" id="res-total">0</div>
+        <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-top:4px">Total</div>
+      </div>
+      <div style="flex:1;padding:16px 20px;border-radius:10px;background:var(--bg);border:1px solid var(--border);text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#86efac" id="res-completos">0</div>
+        <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-top:4px">Con salida</div>
+      </div>
+      <div style="flex:1;padding:16px 20px;border-radius:10px;background:var(--bg);border:1px solid var(--border);text-align:center">
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#fcd34d" id="res-pendientes">0</div>
+        <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-top:4px">Pendientes</div>
+      </div>
+    </div>
+
+    <!-- Tabla asistencia -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-size:13px;font-weight:600;color:var(--muted)">Resultados</span>
+      <span style="font-size:12px;color:var(--muted);background:var(--bg);padding:4px 10px;border-radius:6px" id="res-count">0 registros</span>
+    </div>
+    <div class="table-wrap" style="max-height:300px;border:1px solid var(--border);border-radius:10px">
       <table>
-        <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Área</th><th>Turno</th><th>Ingreso</th><th>Salida</th><th>Estado</th></tr></thead>
+        <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Turno</th><th>Ingreso</th><th>Salida</th><th>Estado</th></tr></thead>
         <tbody id="res-tabla"></tbody>
       </table>
     </div>
+
+    <!-- Descarga asistencia -->
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <button class="btn-dl" onclick="descargarResumen()" style="background:#22c55e;color:#fff;border-color:#22c55e">📥 Descargar Asistencia</button>
+    </div>
   </div>
 
-  <!-- Botones de descarga -->
-  <div class="download-row" style="margin-top:16px">
-    <button class="btn-dl" onclick="descargarResumen()" style="background:var(--accent2);color:#fff;border-color:var(--accent2)">📥 Resumen</button>
-    <button class="btn-dl" onclick="descargar('break')">📥 Breaks</button>
-    <button class="btn-dl" onclick="descargar('banio')">📥 Baños</button>
-    <button class="btn-dl" onclick="descargar('general')">📥 General</button>
+  <!-- ==================== SECCIÓN 2: EVENTOS ==================== -->
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+      <div style="width:40px;height:40px;border-radius:10px;background:#8b5cf620;display:flex;align-items:center;justify-content:center;font-size:20px">📋</div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700">Eventos</div>
+        <div style="font-size:12px;color:var(--muted)">Registro de breaks y salidas al baño</div>
+      </div>
+    </div>
+
+    <!-- Filtro tipo evento -->
+    <div class="filtro-bar" style="margin-bottom:20px">
+      <span class="filtro-bar-label">Tipo:</span>
+      <button class="emp-btn active" id="evt-tipo-todos" onclick="filtrarTipoEvento('todos')">Todos</button>
+      <button class="emp-btn" id="evt-tipo-break" onclick="filtrarTipoEvento('break')" style="border-color:#3b82f650">☕ Breaks</button>
+      <button class="emp-btn" id="evt-tipo-banio" onclick="filtrarTipoEvento('banio')" style="border-color:#8b5cf650">🚻 Baños</button>
+    </div>
+
+    <!-- Tabla eventos -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-size:13px;font-weight:600;color:var(--muted)">Eventos registrados</span>
+      <span style="font-size:12px;color:var(--muted);background:var(--bg);padding:4px 10px;border-radius:6px" id="evt-count">0 eventos</span>
+    </div>
+    <div class="table-wrap" style="max-height:280px;border:1px solid var(--border);border-radius:10px">
+      <table>
+        <thead><tr><th>Fecha</th><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Tipo</th><th>Hora</th></tr></thead>
+        <tbody id="evt-tabla"></tbody>
+      </table>
+    </div>
+
+    <!-- Descarga eventos -->
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:10px">
+      <button class="btn-dl" onclick="descargarEventos('todos')" style="background:#22c55e;color:#fff;border-color:#22c55e">📥 Descargar Eventos</button>
+      <button class="btn-dl" onclick="descargarEventos('break')">☕ Solo Breaks</button>
+      <button class="btn-dl" onclick="descargarEventos('banio')">🚻 Solo Baños</button>
+    </div>
   </div>
 </div>
 
@@ -1612,9 +1666,8 @@ async function buscarEventos() {
   const desde = document.getElementById('f-desde').value
   const hasta = document.getElementById('f-hasta').value
   const search = document.getElementById('f-search').value.trim()
-  const empresa = document.getElementById('f-empresa').value.trim()
 
-  let q = db.from('eventos').select('*').order('fecha_iso', { ascending: true })
+  let q = db.from('eventos').select('*').order('fecha_iso', { ascending: false })
   
   if (desde) q = q.gte('fecha_iso', desde + 'T05:00:00Z')
   if (hasta) {
@@ -1623,10 +1676,10 @@ async function buscarEventos() {
     q = q.lte('fecha_iso', nextDay.toISOString().slice(0, 10) + 'T15:00:00Z')
   }
   if (search) q = q.or(`dni.ilike.%${search}%,nombre.ilike.%${search}%`)
-  if (empresa) q = q.ilike('empresa', `%${empresa}%`)
 
   const { data } = await q
-  eventosResumen = data || []
+  eventosData = data || []
+  eventosResumen = data || []  // Mantener compatibilidad
 }
 
 function renderReportes() {
@@ -1926,32 +1979,16 @@ function renderResumen() {
   const totalAsistencia = data.length
   const completos = data.filter(e => e.salida && e.salida !== '').length
   const pendientes = data.filter(e => !e.salida || e.salida === '').length
-  const empresasUnicas = [...new Set(data.map(e => e.empresa))].length
   
   document.getElementById('res-total').textContent = totalAsistencia
   document.getElementById('res-completos').textContent = completos
   document.getElementById('res-pendientes').textContent = pendientes
-  document.getElementById('res-empresas').textContent = empresasUnicas
-  
-  // Título con rango de fechas
-  const desde = document.getElementById('f-desde').value
-  const hasta = document.getElementById('f-hasta').value
-  let titulo = desde === hasta 
-    ? `Resumen del ${desde.split('-').reverse().join('/')}`
-    : `Resumen del ${desde.split('-').reverse().join('/')} al ${hasta.split('-').reverse().join('/')}`
-  
-  if (resumenEmpresas.length > 0) {
-    titulo += ` — ${resumenEmpresas.join(', ')}`
-  }
-  if (resumenTurno !== 'todos') {
-    titulo += ` — Turno ${resumenTurno === 'dia' ? 'Día' : 'Noche'}`
-  }
-  document.getElementById('res-titulo').textContent = titulo
+  document.getElementById('res-count').textContent = `${totalAsistencia} registros`
   
   // Tabla
   const tbody = document.getElementById('res-tabla')
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px">Sin registros para este rango</td></tr>'
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px">Sin registros — selecciona fechas y presiona Buscar</td></tr>'
     return
   }
   
@@ -1965,21 +2002,23 @@ function renderResumen() {
     // Marcar pendientes (sin salida)
     const sinSalida = !e.salida || e.salida === ''
     const pendienteBadge = sinSalida 
-      ? '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#fee2e2;color:#991b1b;margin-left:4px">PENDIENTE</span>' 
+      ? '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#fef3c7;color:#92400e;margin-left:4px">PENDIENTE</span>' 
       : ''
-    const rowStyle = sinSalida ? 'background:#fff7ed;' : ''
+    const rowStyle = sinSalida ? 'background:#fefce8;' : ''
     
     return `<tr style="${rowStyle}">
       <td><b>${e.dni}</b></td>
       <td>${e.nombre}${pendienteBadge}</td>
       <td>${e.empresa}</td>
-      <td>${e.area || '<span class="td-muted">—</span>'}</td>
-      <td><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;${turnoStyle}">${turno}</span></td>
+      <td><span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;${turnoStyle}">${turno}</span></td>
       <td>${e.ingreso || '<span class="td-muted">—</span>'}</td>
       <td>${e.salida || '<span class="td-muted">—</span>'}</td>
       <td><span class="badge ${b.cls}">${b.label}</span></td>
     </tr>`
   }).join('')
+  
+  // También renderizar eventos
+  renderEventos()
 }
 
 async function descargarResumen() {
@@ -2001,11 +2040,25 @@ async function descargarResumen() {
     data = data.filter(e => esTurnoNoche(e.ingreso))
   }
   
-  const rows = [['DNI', 'Nombre', 'Empresa', 'Área', 'Fecha', 'Turno', 'Ingreso', 'Salida', 'Estado']]
+  // Construir índice de DNIs que tuvieron break por fecha (desde eventosData)
+  const breaksPorDniFecha = new Set()
+  eventosData.forEach(ev => {
+    if (ev.tipo === 'break_salida') {
+      const fecha = ev.fecha?.split(' ')[0] || ''
+      // Convertir DD/MM/YYYY a YYYY-MM-DD para comparar
+      const partes = fecha.split('/')
+      const fechaIso = partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : ''
+      breaksPorDniFecha.add(`${ev.dni}_${fechaIso}`)
+    }
+  })
+  
+  const rows = [['DNI', 'Nombre', 'Empresa', 'Área', 'Fecha', 'Turno', 'Ingreso', 'Salida', 'Estado', 'Break']]
   
   data.forEach(e => {
     const turno = esTurnoNoche(e.ingreso) ? 'Noche' : 'Día'
     const estado = ESTADO_BADGE[e.estado]?.label || e.estado || ''
+    const tuvoBreak = breaksPorDniFecha.has(`${e.dni}_${e.fecha}`) ? 1 : 0
+    
     rows.push([
       e.dni,
       e.nombre,
@@ -2015,18 +2068,120 @@ async function descargarResumen() {
       turno,
       e.ingreso || '',
       e.salida || '',
-      estado
+      estado,
+      tuvoBreak
     ])
   })
   
   const ws = XLSX.utils.aoa_to_sheet(rows)
-  ws['!cols'] = [{ wch: 12 }, { wch: 28 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 8 }, { wch: 18 }, { wch: 18 }, { wch: 10 }]
+  ws['!cols'] = [{ wch: 12 }, { wch: 28 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 8 }, { wch: 18 }, { wch: 18 }, { wch: 10 }, { wch: 7 }]
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Resumen')
+  XLSX.utils.book_append_sheet(wb, ws, 'Asistencia')
   
   const desde = document.getElementById('f-desde').value
   const hasta = document.getElementById('f-hasta').value
-  const nombreArchivo = desde === hasta ? `resumen_${desde}.xlsx` : `resumen_${desde}_al_${hasta}.xlsx`
+  const nombreArchivo = desde === hasta ? `asistencia_${desde}.xlsx` : `asistencia_${desde}_al_${hasta}.xlsx`
+  XLSX.writeFile(wb, nombreArchivo)
+}
+
+// ─── EVENTOS (Breaks y Baños) ─────────────────────────
+let eventosData = []
+let filtroTipoEvento = 'todos'
+
+function filtrarTipoEvento(tipo) {
+  filtroTipoEvento = tipo
+  
+  document.getElementById('evt-tipo-todos').classList.toggle('active', tipo === 'todos')
+  document.getElementById('evt-tipo-break').classList.toggle('active', tipo === 'break')
+  document.getElementById('evt-tipo-banio').classList.toggle('active', tipo === 'banio')
+  
+  renderEventos()
+}
+
+function renderEventos() {
+  // Filtrar por tipo
+  let data = eventosData.filter(e => {
+    const esBreak = ['break_salida', 'break_retorno'].includes(e.tipo)
+    const esBanio = ['banio_salida', 'banio_retorno'].includes(e.tipo)
+    
+    if (filtroTipoEvento === 'break') return esBreak
+    if (filtroTipoEvento === 'banio') return esBanio
+    return esBreak || esBanio  // 'todos' solo muestra breaks y baños
+  })
+  
+  document.getElementById('evt-count').textContent = `${data.length} eventos`
+  
+  const tbody = document.getElementById('evt-tabla')
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px">Sin eventos para este rango</td></tr>'
+    return
+  }
+  
+  tbody.innerHTML = data.map(e => {
+    const esBreak = ['break_salida', 'break_retorno'].includes(e.tipo)
+    const tipoLabel = esBreak ? 'Break' : 'Baño'
+    const tipoClass = esBreak ? 'badge-break' : 'badge-banio'
+    const accion = e.tipo.includes('salida') ? 'Salida' : 'Retorno'
+    
+    return `<tr>
+      <td>${e.fecha?.split(' ')[0] || '—'}</td>
+      <td><b>${e.dni}</b></td>
+      <td>${e.nombre}</td>
+      <td>${e.empresa}</td>
+      <td><span class="badge ${tipoClass}">${tipoLabel}</span> <span style="font-size:11px;color:var(--muted)">${accion}</span></td>
+      <td>${e.fecha?.split(' ')[1] || '—'}</td>
+    </tr>`
+  }).join('')
+}
+
+async function descargarEventos(tipo) {
+  if (!eventosData.length) {
+    showToast('Primero busca datos con el botón Buscar', 'error')
+    return
+  }
+  
+  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
+  
+  // Filtrar según tipo
+  let data = eventosData.filter(e => {
+    const esBreak = ['break_salida', 'break_retorno'].includes(e.tipo)
+    const esBanio = ['banio_salida', 'banio_retorno'].includes(e.tipo)
+    
+    if (tipo === 'break') return esBreak
+    if (tipo === 'banio') return esBanio
+    return esBreak || esBanio
+  })
+  
+  const rows = [['Fecha', 'DNI', 'Nombre', 'Empresa', 'Tipo', 'Acción', 'Hora']]
+  
+  data.forEach(e => {
+    const esBreak = ['break_salida', 'break_retorno'].includes(e.tipo)
+    const tipoLabel = esBreak ? 'Break' : 'Baño'
+    const accion = e.tipo.includes('salida') ? 'Salida' : 'Retorno'
+    const partes = e.fecha?.split(' ') || ['', '']
+    
+    rows.push([
+      partes[0],
+      e.dni,
+      e.nombre,
+      e.empresa,
+      tipoLabel,
+      accion,
+      partes[1] || ''
+    ])
+  })
+  
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols'] = [{ wch: 12 }, { wch: 12 }, { wch: 28 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 10 }]
+  const wb = XLSX.utils.book_new()
+  
+  const sheetName = tipo === 'break' ? 'Breaks' : tipo === 'banio' ? 'Baños' : 'Eventos'
+  XLSX.utils.book_append_sheet(wb, ws, sheetName)
+  
+  const desde = document.getElementById('f-desde').value
+  const hasta = document.getElementById('f-hasta').value
+  const tipoFile = tipo === 'break' ? 'breaks' : tipo === 'banio' ? 'banios' : 'eventos'
+  const nombreArchivo = desde === hasta ? `${tipoFile}_${desde}.xlsx` : `${tipoFile}_${desde}_al_${hasta}.xlsx`
   XLSX.writeFile(wb, nombreArchivo)
 }
 
@@ -2149,32 +2304,64 @@ async function descargarPlantilla() {
 
 // ─── MODO MASIVO ──────────────────────────────────────
 let modoMasivo = false
+let tipoMasivo = 'ingreso'  // 'ingreso' o 'salida'
 let masivoRegistrados = []
 let masivoProcessing = false
 
-function toggleMasivo() {
-  modoMasivo = !modoMasivo
-  const btn = document.getElementById('btn-masivo')
-  btn.classList.toggle('active', modoMasivo)
-  btn.title = modoMasivo ? 'Modo masivo activo — click para salir' : 'Modo ingreso masivo'
-
-  if (!modoMasivo) {
+function toggleMasivo(tipo) {
+  const btnIngreso = document.getElementById('btn-masivo-ingreso')
+  const btnSalida = document.getElementById('btn-masivo-salida')
+  const banner = document.getElementById('masivo-banner')
+  
+  // Si ya está activo el mismo tipo, desactivar
+  if (modoMasivo && tipoMasivo === tipo) {
+    modoMasivo = false
+    btnIngreso.classList.remove('active')
+    btnSalida.classList.remove('active')
+    banner.style.display = 'none'
+    
     // Salir del modo masivo
     masivoRegistrados = []
     masivoProcessing = false
     document.getElementById('masivo-feedback').className = 'masivo-feedback'
     document.getElementById('masivo-lista-wrap').style.display = 'none'
     document.getElementById('dni-input').className = 'dni-input'
-    // Restaurar modo normal
     currentDni = ''; currentPersona = null; modoEdicion = false
     cerrarFormPersona(); updatePersonaInfo(); updateButtons()
     document.getElementById('dni-input').focus()
   } else {
-    // Entrar al modo masivo — limpiar estado
+    // Activar modo masivo con el tipo seleccionado
+    modoMasivo = true
+    tipoMasivo = tipo
+    
+    // Actualizar botones
+    btnIngreso.classList.toggle('active', tipo === 'ingreso')
+    btnSalida.classList.toggle('active', tipo === 'salida')
+    
+    // Mostrar banner del modo activo
+    banner.style.display = 'block'
+    if (tipo === 'ingreso') {
+      banner.style.background = '#22c55e15'
+      banner.style.border = '1.5px solid #22c55e60'
+      banner.style.color = '#16a34a'
+      banner.innerHTML = '🟢 MODO INGRESO MASIVO ACTIVO — Cada DNI registrará INGRESO'
+    } else {
+      banner.style.background = '#f4721515'
+      banner.style.border = '1.5px solid #f4721560'
+      banner.style.color = '#c2410c'
+      banner.innerHTML = '🟠 MODO SALIDA MASIVA ACTIVO — Cada DNI registrará SALIDA'
+    }
+    
+    // Limpiar estado anterior
+    masivoRegistrados = []
+    document.getElementById('masivo-lista-wrap').style.display = 'none'
     document.getElementById('dni-input').value = ''
     currentDni = ''; currentPersona = null
     cerrarFormPersona(); updatePersonaInfo(); updateButtons()
-    setFeedback('proc', '⚡ Modo masivo activo — escribe el DNI')
+    
+    const emoji = tipo === 'ingreso' ? '🟢' : '🟠'
+    const label = tipo === 'ingreso' ? 'INGRESO' : 'SALIDA'
+    setFeedback('proc', `⚡ Modo ${label} masivo — escribe el DNI ${emoji}`)
     document.getElementById('dni-input').focus()
   }
 }
@@ -2250,34 +2437,97 @@ async function marcarMasivo() {
   // Buscar última jornada existente
   const registros = estadoHoy.filter(e => e.dni === currentPersona.dni)
   const existente = registros.sort((a, b) => (b.jornada || 1) - (a.jornada || 1))[0]
-  
-  // Si ya tiene salida hoy, crear nueva jornada
   const fechaHoy = today()
-  let jornada = 1
-  if (existente?.fecha === fechaHoy && existente?.estado === 'salida') {
-    jornada = (existente.jornada || 1) + 1
-  } else if (existente?.fecha === fechaHoy) {
-    jornada = existente.jornada || 1
+  
+  if (tipoMasivo === 'ingreso') {
+    // ─── INGRESO MASIVO ───
+    let jornada = 1
+    if (existente?.fecha === fechaHoy && existente?.estado === 'salida') {
+      jornada = (existente.jornada || 1) + 1
+    } else if (existente?.fecha === fechaHoy) {
+      jornada = existente.jornada || 1
+    }
+
+    await db.from('estado_hoy').upsert({
+      dni: currentPersona.dni, nombre: currentPersona.nombre,
+      empresa: currentPersona.empresa, area: currentPersona.area || '',
+      estado: 'dentro', fecha: fechaHoy, jornada: jornada,
+      ingreso: ahora, salida: '',
+      break_inicio: null, banio_count: 0,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'dni,fecha,jornada' })
+
+    await db.from('eventos').insert({
+      dni: currentPersona.dni, nombre: currentPersona.nombre,
+      empresa: currentPersona.empresa, area: currentPersona.area || '',
+      tipo: 'ingreso', fecha: ahora, fecha_iso: new Date().toISOString()
+    })
+
+    agregarALista(currentPersona.nombre, false)
+    input.className = 'dni-input dni-ok'
+    setFeedback('ok', '✓ ' + currentPersona.nombre + ' — Ingreso registrado 🟢')
+    
+  } else {
+    // ─── SALIDA MASIVA ───
+    // Verificar que tenga ingreso y esté dentro
+    if (!existente || existente.fecha !== fechaHoy) {
+      input.className = 'dni-input dni-err'
+      setFeedback('err', '✗ ' + currentPersona.nombre + ' — No tiene ingreso hoy')
+      setTimeout(() => {
+        if (!modoMasivo) return
+        input.value = ''; input.className = 'dni-input'
+        masivoProcessing = false
+        setFeedback('proc', '⚡ Modo SALIDA masivo — escribe el DNI 🟠')
+        input.focus()
+      }, 1500)
+      return
+    }
+    
+    if (existente.estado === 'salida') {
+      input.className = 'dni-input dni-err'
+      setFeedback('err', '⚠ ' + currentPersona.nombre + ' — Ya tiene salida registrada')
+      setTimeout(() => {
+        if (!modoMasivo) return
+        input.value = ''; input.className = 'dni-input'
+        masivoProcessing = false
+        setFeedback('proc', '⚡ Modo SALIDA masivo — escribe el DNI 🟠')
+        input.focus()
+      }, 1500)
+      return
+    }
+    
+    if (!['dentro'].includes(existente.estado)) {
+      input.className = 'dni-input dni-err'
+      setFeedback('err', '⚠ ' + currentPersona.nombre + ' — Estado actual: ' + existente.estado)
+      setTimeout(() => {
+        if (!modoMasivo) return
+        input.value = ''; input.className = 'dni-input'
+        masivoProcessing = false
+        setFeedback('proc', '⚡ Modo SALIDA masivo — escribe el DNI 🟠')
+        input.focus()
+      }, 1500)
+      return
+    }
+
+    // Registrar salida
+    const jornada = existente.jornada || 1
+    await db.from('estado_hoy').update({
+      estado: 'salida',
+      salida: ahora,
+      updated_at: new Date().toISOString()
+    }).eq('dni', currentPersona.dni).eq('fecha', fechaHoy).eq('jornada', jornada)
+
+    await db.from('eventos').insert({
+      dni: currentPersona.dni, nombre: currentPersona.nombre,
+      empresa: currentPersona.empresa, area: currentPersona.area || '',
+      tipo: 'salida', fecha: ahora, fecha_iso: new Date().toISOString()
+    })
+
+    agregarALista(currentPersona.nombre, false)
+    input.className = 'dni-input dni-ok'
+    setFeedback('ok', '✓ ' + currentPersona.nombre + ' — Salida registrada 🟠')
   }
-
-  await db.from('estado_hoy').upsert({
-    dni: currentPersona.dni, nombre: currentPersona.nombre,
-    empresa: currentPersona.empresa, area: currentPersona.area || '',
-    estado: 'dentro', fecha: fechaHoy, jornada: jornada,
-    ingreso: ahora, salida: '',
-    break_inicio: null, banio_count: 0,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'dni,fecha,jornada' })
-
-  await db.from('eventos').insert({
-    dni: currentPersona.dni, nombre: currentPersona.nombre,
-    empresa: currentPersona.empresa, area: currentPersona.area || '',
-    tipo: 'ingreso', fecha: ahora, fecha_iso: new Date().toISOString()
-  })
-
-  agregarALista(currentPersona.nombre, false)
-  input.className = 'dni-input dni-ok'
-  setFeedback('ok', '✓ ' + currentPersona.nombre + ' — Ingreso registrado')
+  
   loadEstadoHoy()
 
   setTimeout(() => {
@@ -2286,7 +2536,9 @@ async function marcarMasivo() {
     currentDni = ''; currentPersona = null; modoEdicion = false
     cerrarFormPersona(); updatePersonaInfo(); updateButtons()
     masivoProcessing = false
-    setFeedback('proc', '⚡ Modo masivo activo — escribe el DNI')
+    const emoji = tipoMasivo === 'ingreso' ? '🟢' : '🟠'
+    const label = tipoMasivo === 'ingreso' ? 'INGRESO' : 'SALIDA'
+    setFeedback('proc', `⚡ Modo ${label} masivo — escribe el DNI ${emoji}`)
     input.focus()
   }, 1200)
 }
