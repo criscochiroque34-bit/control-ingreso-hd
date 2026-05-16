@@ -74,6 +74,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .b-bn{background:#fef3c7;color:#92400e}.b-s{background:#fce7f3;color:#9d174d}
 .tp{padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600}
 .tp-d{background:#fef3c7;color:#92400e}.tp-n{background:#ede9fe;color:#5b21b6}
+.j-tag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#dbeafe;color:#1e40af;margin-left:6px}
 .sg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding-top:10px;border-top:1px solid var(--border)}
 .si{display:flex;flex-direction:column;gap:2px}
 .si-l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
@@ -189,8 +190,8 @@ tr:hover td{background:#f7f9fc}
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Nombre</th><th>Área</th><th>Turno</th><th>Ingreso</th><th>Salida</th><th>Break</th><th>Baño</th></tr></thead>
-          <tbody id="rep-body"><tr><td colspan="7" class="empty">Selecciona un rango y busca</td></tr></tbody>
+          <thead><tr><th>Fecha</th><th>Nombre</th><th>Área</th><th>Turno</th><th>Ingreso</th><th>Salida</th><th>Break</th><th>Baño</th></tr></thead>
+          <tbody id="rep-body"><tr><td colspan="8" class="empty">Selecciona un rango y busca</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -222,6 +223,14 @@ const horaStr = str => { if(!str) return null; const p=str.split(' '); return p.
 const esTurnoNoche = str => { const h=horaStr(str); return h!==null&&(h>=21||h<6) }
 const ini = n => n?.split(' ').map(x=>x[0]).slice(0,2).join('')||'?'
 
+// Convertir "DD/MM/YYYY" → "YYYY-MM-DD" (para emparejar con campo fecha de estado_hoy)
+const fechaDmyToYmd = str => {
+  if (!str) return null
+  const partes = str.split(' ')[0].split('/')
+  if (partes.length !== 3) return null
+  return `${partes[2]}-${partes[1]}-${partes[0]}`
+}
+
 const AVATARES_COLORS = ['#22c27a','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#06b6d4']
 let avatarMap={}, avatarIdx=0
 const getColor = emp => { if(!avatarMap[emp]) avatarMap[emp]=AVATARES_COLORS[avatarIdx++%AVATARES_COLORS.length]; return avatarMap[emp] }
@@ -238,11 +247,42 @@ const minEntre = (a,b) => {
 }
 const fmtMin = m => { if(m===null||m===undefined) return null; if(m<60) return m+'min'; return Math.floor(m/60)+'h '+(m%60)+'min' }
 
+// ─── CÁLCULOS DE BREAK Y BAÑO ─────────────────────────
+// Empareja salidas y retornos de un tipo específico, suma tiempo total
+// Retorna: { veces: N, tiempoTotal: minutos, enCurso: bool }
+function calcularEventos(eventos, dni, fecha, tipoSalida, tipoRetorno) {
+  const ev = eventos.filter(e => 
+    e.dni === dni && 
+    fechaDmyToYmd(e.fecha) === fecha &&
+    (e.tipo === tipoSalida || e.tipo === tipoRetorno)
+  ).sort((a,b) => (a.fecha_iso||'').localeCompare(b.fecha_iso||''))
+  
+  let veces = 0
+  let tiempoTotal = 0
+  let enCurso = false
+  let salidaPendiente = null
+  
+  for (const e of ev) {
+    if (e.tipo === tipoSalida) {
+      veces++
+      salidaPendiente = e
+    } else if (e.tipo === tipoRetorno && salidaPendiente) {
+      const m = minEntre(salidaPendiente.fecha, e.fecha)
+      if (m !== null) tiempoTotal += m
+      salidaPendiente = null
+    }
+  }
+  
+  if (salidaPendiente) enCurso = true
+  
+  return { veces, tiempoTotal, enCurso }
+}
+
 // ─── LOGIN ────────────────────────────────────────────
 async function login() {
   const cod = document.getElementById('cod').value.trim()
   if (!cod) return
-  const { data } = await db.from('empresas_codigos').select('empresa').eq('codigo',cod).single()
+  const { data } = await db.from('empresas_codigos').select('empresa').eq('codigo',cod).maybeSingle()
   if (data?.empresa) {
     empresaActual = data.empresa
     document.getElementById('v-login').classList.remove('active')
@@ -282,9 +322,11 @@ async function cargarDatos() {
   const now = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false})
   document.getElementById('h-update').textContent = 'Actualizado a las '+now
 
+  // FIX: ordenar también por jornada
   const { data } = await db.from('estado_hoy').select('*')
     .eq('fecha', today()).eq('empresa', empresaActual)
     .order('ingreso', {ascending:true})
+    .order('jornada', {ascending:true})
 
   if (!data) return
   const personas = data
@@ -303,9 +345,18 @@ async function cargarDatos() {
   document.getElementById('rt-dia').textContent = dia
   document.getElementById('rt-noche').textContent = noche
 
-  // Para calcular break/baño necesitamos eventos
+  // FIX: Traer eventos con rango amplio (no por fecha) para incluir turno noche
+  // Buscamos eventos cuya fecha operativa (DD/MM/YYYY de campo fecha) sea today()
+  // Mejor: traer un rango temporal que cubra el turno operativo completo
+  const fechaHoy = today()
+  const inicio = new Date(`${fechaHoy}T06:00:00-05:00`).toISOString()
+  const fin = new Date(`${fechaHoy}T06:00:00-05:00`)
+  fin.setDate(fin.getDate() + 1)
+  
   const { data: eventos } = await db.from('eventos').select('*')
-    .eq('fecha', today()).eq('empresa', empresaActual)
+    .eq('empresa', empresaActual)
+    .gte('fecha_iso', inicio)
+    .lte('fecha_iso', fin.toISOString())
 
   const lista = document.getElementById('rt-lista')
   if (!personas.length) { lista.innerHTML='<div class="empty">Sin registros para el turno actual</div>'; return }
@@ -317,34 +368,36 @@ async function cargarDatos() {
     const turnoTag = turno
       ? `<span class="tp tp-n">Noche</span>`
       : `<span class="tp tp-d">Día</span>`
+    
+    // Badge jornada si > 1
+    const jornadaTag = (p.jornada || 1) > 1 
+      ? `<span class="j-tag">J${p.jornada}</span>` 
+      : ''
 
-    // Calcular break
-    const evBreakOut = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
-    const evBreakIn = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='break_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
+    // FIX: Cálculo correcto de break (suma TODOS los breaks, no solo el primero)
+    const breakInfo = calcularEventos(eventos||[], p.dni, p.fecha, 'break_salida', 'break_retorno')
     let breakStr = 'Sin break'
-    if (evBreakOut?.length) {
-      if (p.estado==='break') {
-        breakStr = 'En curso'
-      } else if (evBreakIn?.length) {
-        const mins = minEntre(evBreakOut[0].fecha, evBreakIn[0].fecha)
-        breakStr = mins!==null ? fmtMin(mins) : 'Sin break'
-      }
+    if (breakInfo.veces > 0) {
+      if (breakInfo.enCurso) breakStr = 'En curso'
+      else breakStr = fmtMin(breakInfo.tiempoTotal) || 'Sin break'
     }
 
-    // Calcular baño
-    const evBanioOut = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='banio_salida')||[]
-    const evBanioIn = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='banio_retorno')||[]
-    const banioVeces = evBanioOut.length
-    let banioMin = 0
-    evBanioOut.forEach((bo,i)=>{ const bi=evBanioIn[i]; if(bi){ const m=minEntre(bo.fecha,bi.fecha); if(m) banioMin+=m } })
-    const banioStr = banioVeces===0 ? '0 veces' : `${banioVeces} ${banioVeces===1?'vez':'veces'}${banioMin>0?' / '+fmtMin(banioMin):''}`
+    // FIX: Cálculo correcto de baño
+    const banioInfo = calcularEventos(eventos||[], p.dni, p.fecha, 'banio_salida', 'banio_retorno')
+    let banioStr = '0 veces'
+    if (banioInfo.veces > 0) {
+      const vecesStr = `${banioInfo.veces} ${banioInfo.veces === 1 ? 'vez' : 'veces'}`
+      const tiempoStr = banioInfo.tiempoTotal > 0 ? ' / ' + fmtMin(banioInfo.tiempoTotal) : ''
+      const enCursoStr = banioInfo.enCurso ? ' (en curso)' : ''
+      banioStr = vecesStr + tiempoStr + enCursoStr
+    }
 
     return `<div class="pc${p.estado==='salida'?' pc-salio':''}">
       <div class="pc-top">
         <div class="pc-left">
           <div class="av" style="background:${color}">${ini(p.nombre)}</div>
           <div>
-            <div class="p-name">${p.nombre}</div>
+            <div class="p-name">${p.nombre}${jornadaTag}</div>
             <div class="p-area">${p.area||'—'} &nbsp;${turnoTag}</div>
           </div>
         </div>
@@ -354,7 +407,7 @@ async function cargarDatos() {
         <div class="si"><div class="si-l">Ingreso</div><div class="si-v">${p.ingreso||'—'}</div></div>
         <div class="si"><div class="si-l">Salida</div><div class="si-v ${!p.salida?'m':''}">${p.salida||'—'}</div></div>
         <div class="si"><div class="si-l">Break</div><div class="si-v ${breakStr==='Sin break'?'m':''}" ${breakStr==='En curso'?'style="color:#1e40af"':''}>${breakStr}</div></div>
-        <div class="si"><div class="si-l">Baño</div><div class="si-v ${banioVeces===0?'m':''}">${banioStr}</div></div>
+        <div class="si"><div class="si-l">Baño</div><div class="si-v ${banioInfo.veces===0?'m':''}">${banioStr}</div></div>
       </div>
     </div>`
   }).join('')
@@ -366,68 +419,128 @@ async function buscarReporte() {
   const hasta = document.getElementById('r-hasta').value
   const turno = document.getElementById('r-turno').value
   const tbody = document.getElementById('rep-body')
-  tbody.innerHTML = '<tr><td colspan="7" class="loading">Buscando...</td></tr>'
+  tbody.innerHTML = '<tr><td colspan="8" class="loading">Buscando...</td></tr>'
 
-  // Traer estado_hoy del rango
-  let q = db.from('estado_hoy').select('*').eq('empresa', empresaActual).order('ingreso',{ascending:true})
-  if (desde) q = q.gte('fecha', desde)
-  if (hasta) q = q.lte('fecha', hasta)
+  if (!desde || !hasta) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">Selecciona un rango de fechas</td></tr>'
+    return
+  }
+
+  // FIX: Ordenar por fecha, ingreso y jornada
+  let q = db.from('estado_hoy').select('*')
+    .eq('empresa', empresaActual)
+    .gte('fecha', desde).lte('fecha', hasta)
+    .order('fecha', {ascending:true})
+    .order('ingreso', {ascending:true})
+    .order('jornada', {ascending:true})
+  
   const { data: estados } = await q
-  if (!estados?.length) { tbody.innerHTML='<tr><td colspan="7" class="empty">Sin registros para este rango</td></tr>'; return }
+  if (!estados?.length) { 
+    tbody.innerHTML='<tr><td colspan="8" class="empty">Sin registros para este rango</td></tr>'
+    return 
+  }
 
-  // Traer eventos del mismo rango para calcular breaks/baños
-  let qe = db.from('eventos').select('*').eq('empresa', empresaActual)
-  if (desde) qe = qe.gte('fecha_iso', desde+'T05:00:00Z')
-  if (hasta) { const nd=new Date(hasta); nd.setDate(nd.getDate()+1); qe = qe.lte('fecha_iso', nd.toISOString().slice(0,10)+'T04:59:59Z') }
-  const { data: eventos } = await qe
+  // FIX: Traer eventos con rango temporal amplio que cubra los turnos operativos
+  // desde día 1 6am hasta día (hasta+1) 6am — así capturamos el turno noche del último día
+  const inicio = new Date(`${desde}T06:00:00-05:00`).toISOString()
+  const finDate = new Date(`${hasta}T06:00:00-05:00`)
+  finDate.setDate(finDate.getDate() + 1)
+  const fin = finDate.toISOString()
+
+  const { data: eventos } = await db.from('eventos').select('*')
+    .eq('empresa', empresaActual)
+    .gte('fecha_iso', inicio)
+    .lte('fecha_iso', fin)
 
   let rows = estados.map(p => {
     const esTN = esTurnoNoche(p.ingreso)
     if (turno==='dia'&&esTN) return null
     if (turno==='noche'&&!esTN) return null
 
-    const evs = eventos?.filter(e=>e.dni===p.dni&&e.fecha_iso?.slice(0,10)===p.fecha)||[]
-    const evBO = evs.filter(e=>e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
-    const evBI = evs.filter(e=>e.tipo==='break_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
-    let breakStr='Sin break'
-    if (evBO.length) { breakStr=p.estado==='break'?'En curso': (evBI.length? (fmtMin(minEntre(evBO[0].fecha,evBI[0].fecha))||'Sin break'):'Sin break') }
+    // FIX: Usar la nueva función que empareja correctamente por orden cronológico
+    const breakInfo = calcularEventos(eventos||[], p.dni, p.fecha, 'break_salida', 'break_retorno')
+    let breakStr = 'Sin break'
+    if (breakInfo.veces > 0) {
+      if (breakInfo.enCurso) breakStr = 'En curso'
+      else breakStr = fmtMin(breakInfo.tiempoTotal) || 'Sin break'
+    }
 
-    const evBOut = evs.filter(e=>e.tipo==='banio_salida')
-    const evBIn = evs.filter(e=>e.tipo==='banio_retorno')
-    let banioMin=0
-    evBOut.forEach((bo,i)=>{ const bi=evBIn[i]; if(bi){ const m=minEntre(bo.fecha,bi.fecha); if(m) banioMin+=m } })
-    const banioStr = evBOut.length===0?'0 veces':`${evBOut.length} ${evBOut.length===1?'vez':'veces'}${banioMin>0?' / '+fmtMin(banioMin):''}`
+    const banioInfo = calcularEventos(eventos||[], p.dni, p.fecha, 'banio_salida', 'banio_retorno')
+    let banioStr = '0 veces'
+    if (banioInfo.veces > 0) {
+      const vecesStr = `${banioInfo.veces} ${banioInfo.veces === 1 ? 'vez' : 'veces'}`
+      const tiempoStr = banioInfo.tiempoTotal > 0 ? ' / ' + fmtMin(banioInfo.tiempoTotal) : ''
+      banioStr = vecesStr + tiempoStr
+    }
 
-    return { p, esTN, breakStr, banioStr }
+    return { p, esTN, breakStr, banioStr, breakInfo, banioInfo }
   }).filter(Boolean)
 
   reporteData = rows
 
-  if (!rows.length) { tbody.innerHTML='<tr><td colspan="7" class="empty">Sin resultados con los filtros aplicados</td></tr>'; return }
+  if (!rows.length) { 
+    tbody.innerHTML='<tr><td colspan="8" class="empty">Sin resultados con los filtros aplicados</td></tr>'
+    return 
+  }
 
-  tbody.innerHTML = rows.map(({p,esTN,breakStr,banioStr})=>`<tr>
-    <td>${p.nombre}</td>
-    <td>${p.area||'—'}</td>
-    <td><span class="tp ${esTN?'tp-n':'tp-d'}">${esTN?'Noche':'Día'}</span></td>
-    <td>${p.ingreso||'—'}</td>
-    <td>${p.salida||'—'}</td>
-    <td>${breakStr}</td>
-    <td>${banioStr}</td>
-  </tr>`).join('')
+  tbody.innerHTML = rows.map(({p,esTN,breakStr,banioStr})=>{
+    const jornadaTag = (p.jornada || 1) > 1 ? `<span class="j-tag">J${p.jornada}</span>` : ''
+    const fechaFmt = p.fecha?.split('-').reverse().join('/') || '—'
+    return `<tr>
+      <td>${fechaFmt}</td>
+      <td>${p.nombre}${jornadaTag}</td>
+      <td>${p.area||'—'}</td>
+      <td><span class="tp ${esTN?'tp-n':'tp-d'}">${esTN?'Noche':'Día'}</span></td>
+      <td>${p.ingreso||'—'}</td>
+      <td>${p.salida||'—'}</td>
+      <td>${breakStr}</td>
+      <td>${banioStr}</td>
+    </tr>`
+  }).join('')
 }
 
 async function descargarReporte() {
   if (!reporteData.length) { alert('Primero busca los datos'); return }
   const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
-  const rows = [['Nombre','Área','Turno','Ingreso','Salida','Break','Baño']]
-  reporteData.forEach(({p,esTN,breakStr,banioStr})=>{
-    rows.push([p.nombre, p.area||'', esTN?'Noche':'Día', p.ingreso||'', p.salida||'', breakStr, banioStr])
+  
+  // Columnas: Fecha, Nombre, Área, Turno, Ingreso, Salida, Tiempo Break, Veces Baño, Tiempo Baño
+  const rows = [['Fecha', 'Nombre', 'Área', 'Turno', 'Ingreso', 'Salida', 'Tiempo Break', 'Veces Baño', 'Tiempo Total Baño']]
+  
+  reporteData.forEach(({p, esTN, breakInfo, banioInfo}) => {
+    const fechaFmt = p.fecha?.split('-').reverse().join('/') || ''
+    const jornadaSuffix = (p.jornada || 1) > 1 ? ` (J${p.jornada})` : ''
+    const nombre = p.nombre + jornadaSuffix
+    
+    // Tiempo break
+    let tiempoBreak = ''
+    if (breakInfo.veces > 0) {
+      tiempoBreak = breakInfo.enCurso ? 'En curso' : (fmtMin(breakInfo.tiempoTotal) || 'Sin break')
+    } else {
+      tiempoBreak = 'Sin break'
+    }
+    
+    rows.push([
+      fechaFmt,
+      nombre,
+      p.area || '',
+      esTN ? 'Noche' : 'Día',
+      p.ingreso || '',
+      p.salida || '',
+      tiempoBreak,
+      banioInfo.veces,
+      banioInfo.tiempoTotal > 0 ? fmtMin(banioInfo.tiempoTotal) : (banioInfo.veces > 0 ? '< 1min' : '0min')
+    ])
   })
+  
   const ws = XLSX.utils.aoa_to_sheet(rows)
-  ws['!cols']=[{wch:24},{wch:16},{wch:10},{wch:20},{wch:20},{wch:14},{wch:18}]
+  ws['!cols']=[{wch:12},{wch:24},{wch:16},{wch:10},{wch:20},{wch:20},{wch:14},{wch:11},{wch:18}]
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb,ws,'Reporte')
-  XLSX.writeFile(wb,`reporte_${empresaActual}_${today()}.xlsx`)
+  
+  const desde = document.getElementById('r-desde').value
+  const hasta = document.getElementById('r-hasta').value
+  const nombreArchivo = desde === hasta ? `reporte_${empresaActual}_${desde}.xlsx` : `reporte_${empresaActual}_${desde}_al_${hasta}.xlsx`
+  XLSX.writeFile(wb, nombreArchivo)
 }
 </script>
 </body>
