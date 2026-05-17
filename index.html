@@ -248,6 +248,7 @@ tr:hover td{background:#f7f9fc}
     <button class="nav-tab active" onclick="showPage('registro',this)">Registro</button>
     <button class="nav-tab" onclick="showPage('situacion',this)">Situación Actual</button>
     <button class="nav-tab" onclick="showPage('reportes',this)">Reportes</button>
+    <button class="nav-tab" onclick="showPage('rankings',this)">Rankings</button>
     <button class="nav-tab" onclick="showPage('personal',this)">Personal</button>
     <button class="nav-tab" onclick="showPage('actas',this)">Actas</button>
   </div>
@@ -563,6 +564,186 @@ tr:hover td{background:#f7f9fc}
   </div>
 </div>
 
+<!-- ===================== RANKINGS ===================== -->
+<div class="page" id="page-rankings">
+  <div class="section-title"><div class="dot"></div> Rankings</div>
+
+  <!-- CONFIG -->
+  <div class="card" style="margin-bottom:20px;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0;cursor:pointer;user-select:none" onclick="toggleRkConfig()">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">⚙️</span>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700">Configuración</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px" id="rk-summary">Turno activo · Todas las empresas</div>
+        </div>
+      </div>
+      <span style="color:var(--muted);font-size:12px;transition:transform .2s" id="rk-arrow" class="open">▼</span>
+    </div>
+
+    <div id="rk-config-body" style="display:block;border-top:1px solid var(--border);padding-top:16px;margin-top:16px">
+
+      <!-- Toggle modo -->
+      <div style="display:flex;gap:0;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:4px;margin-bottom:16px;width:fit-content">
+        <button id="rk-btn-activo" onclick="rkSetModo('activo')" style="padding:10px 20px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:var(--surface);color:#ef4444;display:flex;align-items:center;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,.3)">
+          <span style="width:7px;height:7px;border-radius:50%;background:#ef4444;animation:rk-pulse 1.5s infinite;display:inline-block"></span>
+          Turno activo
+        </button>
+        <button id="rk-btn-fecha" onclick="rkSetModo('fecha')" style="padding:10px 20px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted)">
+          📅 Por fecha
+        </button>
+      </div>
+
+      <!-- Badge turno activo -->
+      <div id="rk-turno-info" style="margin-bottom:16px"></div>
+
+      <!-- Filtros fecha (ocultos por defecto) -->
+      <div id="rk-filtros-fecha" style="display:none;margin-bottom:16px">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+          <div class="filtro-group">
+            <label>Desde</label>
+            <input class="filtro-input" type="date" id="rk-desde" />
+          </div>
+          <div class="filtro-group">
+            <label>Hasta</label>
+            <input class="filtro-input" type="date" id="rk-hasta" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Empresa -->
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
+        <div class="filtro-group">
+          <label>Empresa</label>
+          <select class="filtro-input" id="rk-empresa" style="min-width:160px">
+            <option value="">Todas</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="height:1px;background:var(--border);margin:16px 0"></div>
+
+      <!-- Horarios desplegable -->
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:8px 0" onclick="toggleHorariosConfig()">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px">⏰</span>
+          <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Horarios de entrada por empresa</span>
+        </div>
+        <span style="color:var(--muted);font-size:12px;transition:transform .2s" id="rk-horarios-arrow">▼</span>
+      </div>
+
+      <div id="rk-horarios-body" style="display:none;margin-top:12px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border)">Empresa</th>
+              <th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border)">☀️ Día</th>
+              <th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border)">🌙 Noche</th>
+              <th style="border-bottom:1px solid var(--border)"></th>
+            </tr>
+          </thead>
+          <tbody id="rk-horarios-tbody"></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:20px">
+        <button onclick="generarRankings()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:13px;font-weight:700;cursor:pointer">🔍 Generar Rankings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rankings grid -->
+  <div id="rk-rankings-wrap" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+        <div style="width:38px;height:38px;border-radius:10px;background:#8b5cf615;display:flex;align-items:center;justify-content:center;font-size:18px">🚻</div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700">Top Baños</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Cantidad de salidas al baño</div>
+        </div>
+      </div>
+      <div id="rk-banio" style="padding:8px 0">
+        <div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px">
+          <div style="font-size:32px;margin-bottom:8px">🚻</div>
+          Genera el ranking para ver resultados
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+        <div style="width:38px;height:38px;border-radius:10px;background:#3b82f615;display:flex;align-items:center;justify-content:center;font-size:18px">☕</div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700">Top Breaks</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Tiempo acumulado en break</div>
+        </div>
+      </div>
+      <div id="rk-break" style="padding:8px 0">
+        <div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px">
+          <div style="font-size:32px;margin-bottom:8px">☕</div>
+          Genera el ranking para ver resultados
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+        <div style="width:38px;height:38px;border-radius:10px;background:#f59e0b15;display:flex;align-items:center;justify-content:center;font-size:18px">⏰</div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700">Puntualidad</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Mayor retraso vs hora esperada</div>
+        </div>
+      </div>
+      <div id="rk-puntualidad" style="padding:8px 0">
+        <div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px">
+          <div style="font-size:32px;margin-bottom:8px">⏰</div>
+          Genera el ranking para ver resultados
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+@keyframes rk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+#rk-arrow.open { transform: rotate(180deg); }
+#rk-horarios-arrow.open { transform: rotate(180deg); }
+.rk-item { display:flex;align-items:center;gap:10px;padding:10px 16px;transition:background .1s;position:relative }
+.rk-item:hover { background:rgba(255,255,255,.03) }
+.rk-pos { font-family:'Syne',sans-serif;font-size:18px;font-weight:800;min-width:30px;text-align:center }
+.rk-1 { color:#f59e0b }
+.rk-2 { color:#9ca3af }
+.rk-3 { color:#b45309 }
+.rk-rest { color:var(--muted);font-size:14px }
+.rk-avatar { width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0 }
+.rk-info { flex:1;min-width:0 }
+.rk-name { font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
+.rk-empresa { font-size:11px;color:var(--muted) }
+.rk-value { text-align:right;flex-shrink:0 }
+.rk-main { font-family:'Syne',sans-serif;font-size:16px;font-weight:800 }
+.rk-sub { font-size:10px;color:var(--muted);margin-top:1px }
+.rk-sep { height:1px;background:var(--border);margin:0 16px }
+.rk-bar { position:absolute;bottom:0;left:56px;right:16px;height:2px;background:var(--border);border-radius:1px }
+.rk-bar-fill { height:100%;border-radius:1px }
+.rk-banio .rk-main { color:#a78bfa }
+.rk-banio .rk-bar-fill { background:#8b5cf6 }
+.rk-break .rk-main { color:#60a5fa }
+.rk-break .rk-bar-fill { background:#3b82f6 }
+.rk-punt .rk-main { color:#fbbf24 }
+.rk-punt .rk-bar-fill { background:#f59e0b }
+.rk-punt-ok .rk-main { color:#4ade80;font-size:13px }
+.rk-turno-badge { display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700 }
+.rk-turno-badge.dia { background:#fef3c720;border:1.5px solid #f59e0b40;color:#fbbf24 }
+.rk-turno-badge.noche { background:#ede9fe20;border:1.5px solid #8b5cf640;color:#a78bfa }
+.rk-hora-input { background:var(--bg);border:1.5px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:13px;font-weight:600;width:90px;text-align:center }
+.rk-hora-input:focus { outline:none;border-color:var(--accent2) }
+.rk-btn-save { background:transparent;border:1.5px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--muted);font-size:12px;cursor:pointer;transition:all .15s }
+.rk-btn-save:hover { border-color:#22c55e;color:#22c55e }
+@media(max-width:900px){ #rk-rankings-wrap{grid-template-columns:1fr} }
+</style>
+
 <!-- ===================== PERSONAL ===================== -->
 <div class="page" id="page-personal">
   <div class="section-title"><div class="dot"></div> Personal</div>
@@ -791,7 +972,6 @@ const AVATARES = ['av-g','av-b','av-p','av-o','av-r']
 
 // ─── ESTADO ───────────────────────────────────────────
 let estadoHoy = []
-let eventosResumen = []
 let currentDni = ''
 let currentPersona = null
 let filtroEmpresas = []  // Array vacío = todas, o lista de empresas seleccionadas
@@ -863,6 +1043,7 @@ function showPage(name, el) {
   document.getElementById('page-' + name).classList.add('active')
   el.classList.add('active')
   if (name === 'reportes') initReportes()
+  if (name === 'rankings') initRankings()
   if (name === 'situacion') { updateEmpresaBtns(); renderSituacion() }
   if (name === 'personal') loadCatalogo()
   if (name === 'actas') initActas()
@@ -1621,7 +1802,6 @@ setInterval(() => {
 }, 1000)
 
 // ─── REPORTES ─────────────────────────────────────────
-let asistenciaResumen = []  // De estado_hoy (sincronizado con Situación Actual)
 
 function initReportes() {
   const t = today()
@@ -1643,24 +1823,6 @@ async function buscarTodo() {
   btn.textContent = 'Buscar'
 }
 
-// Buscar de estado_hoy para Asistencia (sincronizado con Situación Actual)
-async function buscarAsistencia() {
-  const desde = document.getElementById('f-desde').value
-  const hasta = document.getElementById('f-hasta').value
-  const search = document.getElementById('f-search').value.trim()
-  const empresa = document.getElementById('f-empresa').value.trim()
-
-  let q = db.from('estado_hoy').select('*').order('ingreso', { ascending: true })
-  
-  if (desde) q = q.gte('fecha', desde)
-  if (hasta) q = q.lte('fecha', hasta)
-  if (search) q = q.or(`dni.ilike.%${search}%,nombre.ilike.%${search}%`)
-  if (empresa) q = q.ilike('empresa', `%${empresa}%`)
-
-  const { data } = await q
-  asistenciaResumen = data || []
-}
-
 // Buscar de eventos para Breaks/Baños/General
 async function buscarEventos() {
   const desde = document.getElementById('f-desde').value
@@ -1679,72 +1841,10 @@ async function buscarEventos() {
 
   const { data } = await q
   eventosData = data || []
-  eventosResumen = data || []  // Mantener compatibilidad
-}
-
-function renderReportes() {
-  document.getElementById('rep-count').textContent = `Asistencia (${asistenciaResumen.length})`
-  
-  const tbody = document.getElementById('tabla-reportes')
-  if (!asistenciaResumen.length) { 
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Sin registros para este rango de fechas</td></tr>'
-    return 
-  }
-  
-  tbody.innerHTML = asistenciaResumen.map(e => `<tr>
-    <td><b>${e.dni}</b></td>
-    <td>${e.nombre}</td>
-    <td>${e.empresa}</td>
-    <td>${e.area || '<span class="td-muted">—</span>'}</td>
-    <td>${e.ingreso || '<span class="td-muted">—</span>'}</td>
-    <td>${e.salida || '<span class="td-muted">—</span>'}</td>
-  </tr>`).join('')
 }
 
 // ─── EXPORTAR EXCEL ───────────────────────────────────
-async function descargar(tipo) {
-  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
-  let rows, sheetName
-
-  if (tipo === 'asistencia') {
-    // Lee de estado_hoy (sincronizado con Situación Actual)
-    rows = [['DNI', 'Nombre', 'Empresa', 'Área', 'Fecha y Hora Ingreso', 'Fecha y Hora Salida']]
-    
-    asistenciaResumen.forEach(e => {
-      rows.push([
-        e.dni, 
-        e.nombre, 
-        e.empresa, 
-        e.area || '', 
-        e.ingreso || '—',
-        e.salida || '—'
-      ])
-    })
-    sheetName = 'Asistencia'
-    
-    const ws = XLSX.utils.aoa_to_sheet(rows)
-    ws['!cols'] = [{ wch: 12 }, { wch: 28 }, { wch: 18 }, { wch: 14 }, { wch: 20 }, { wch: 20 }]
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, sheetName)
-    XLSX.writeFile(wb, `asistencia_${today()}.xlsx`)
-    
-  } else {
-    // Breaks, Baños, General: leen de eventos
-    const filtros = { break: ['break_salida', 'break_retorno'], banio: ['banio_salida', 'banio_retorno'], general: [] }
-    const filtro = filtros[tipo]
-    const data = filtro?.length ? eventosResumen.filter(e => filtro.includes(e.tipo)) : eventosResumen
-    
-    rows = [['DNI', 'Nombre', 'Empresa', 'Área', 'Tipo', 'Fecha y Hora']]
-    data.forEach(e => rows.push([e.dni, e.nombre, e.empresa, e.area || '', TIPO_LABEL[e.tipo] || e.tipo, e.fecha]))
-    sheetName = tipo.charAt(0).toUpperCase() + tipo.slice(1)
-    
-    const ws = XLSX.utils.aoa_to_sheet(rows)
-    ws['!cols'] = [{ wch: 12 }, { wch: 24 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 20 }]
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, sheetName)
-    XLSX.writeFile(wb, `reporte_${tipo}_${today()}.xlsx`)
-  }
-}
+// Nota: la descarga de Asistencia, Breaks y Baños se hace ahora por descargarResumen() y descargarEventos()
 
 // ─── MODAL EDICIÓN ────────────────────────────────────
 let editDni = null
@@ -2770,6 +2870,447 @@ async function calcularConsumo() {
 
 // Calcular al cargar
 setTimeout(calcularConsumo, 2000)
+
+// ═══════════════════════════════════════════════════════════════
+// ─── RANKINGS ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+
+let rkModo = 'activo'  // 'activo' o 'fecha'
+let rkHorarios = {}    // { empresa: { dia: '07:00', noche: '21:00' } }
+let rkInitialized = false
+
+const AVATARES_RK = ['#22c27a','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#06b6d4','#ec4899','#10b981']
+const rkAvatarMap = {}
+let rkAvatarIdx = 0
+function rkGetColor(empresa) {
+  if (!rkAvatarMap[empresa]) {
+    rkAvatarMap[empresa] = AVATARES_RK[rkAvatarIdx++ % AVATARES_RK.length]
+  }
+  return rkAvatarMap[empresa]
+}
+
+async function initRankings() {
+  if (!rkInitialized) {
+    // Setear fechas por defecto
+    const t = today()
+    if (document.getElementById('rk-desde')) document.getElementById('rk-desde').value = t
+    if (document.getElementById('rk-hasta')) document.getElementById('rk-hasta').value = t
+    
+    // Cargar empresas en select
+    await rkCargarEmpresas()
+    
+    // Cargar horarios desde Supabase
+    await rkCargarHorarios()
+    
+    // Listener para cambio de empresa
+    const sel = document.getElementById('rk-empresa')
+    if (sel) sel.addEventListener('change', rkActualizarSummary)
+    
+    rkInitialized = true
+  }
+  rkActualizarTurnoBadge()
+  rkActualizarSummary()
+}
+
+async function rkCargarEmpresas() {
+  const { data } = await db.from('personas').select('empresa')
+  const empresas = [...new Set((data || []).map(p => p.empresa).filter(Boolean))].sort()
+  
+  const sel = document.getElementById('rk-empresa')
+  sel.innerHTML = '<option value="">Todas</option>' + 
+    empresas.map(e => `<option>${e}</option>`).join('')
+  
+  return empresas
+}
+
+async function rkCargarHorarios() {
+  // Cargar horarios existentes
+  const { data: horariosDB } = await db.from('config_horarios').select('*')
+  rkHorarios = {}
+  ;(horariosDB || []).forEach(h => {
+    if (!rkHorarios[h.empresa]) rkHorarios[h.empresa] = {}
+    rkHorarios[h.empresa][h.turno] = h.hora_entrada
+  })
+  
+  // Reutilizar empresas ya cargadas del select (evita doble query)
+  const sel = document.getElementById('rk-empresa')
+  const empresas = Array.from(sel.options).slice(1).map(o => o.value).sort()
+  
+  const tbody = document.getElementById('rk-horarios-tbody')
+  if (!empresas.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">No hay empresas registradas</td></tr>'
+    return
+  }
+  
+  tbody.innerHTML = empresas.map(emp => {
+    const horaDia = rkHorarios[emp]?.dia || '07:00'
+    const horaNoche = rkHorarios[emp]?.noche || '21:00'
+    return `<tr>
+      <td style="padding:10px 12px;border-bottom:1px solid var(--border);font-weight:600">${emp}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid var(--border)"><input class="rk-hora-input" type="time" value="${horaDia}" data-empresa="${emp}" data-turno="dia"></td>
+      <td style="padding:10px 12px;border-bottom:1px solid var(--border)"><input class="rk-hora-input" type="time" value="${horaNoche}" data-empresa="${emp}" data-turno="noche"></td>
+      <td style="padding:10px 12px;border-bottom:1px solid var(--border)"><button class="rk-btn-save" onclick="rkGuardarHora('${emp}', this)">Guardar</button></td>
+    </tr>`
+  }).join('')
+}
+
+async function rkGuardarHora(empresa, btn) {
+  const row = btn.closest('tr')
+  const horaDia = row.querySelector('[data-turno="dia"]').value
+  const horaNoche = row.querySelector('[data-turno="noche"]').value
+  
+  try {
+    // Upsert ambos turnos
+    await db.from('config_horarios').upsert([
+      { empresa, turno: 'dia', hora_entrada: horaDia, updated_at: new Date().toISOString() },
+      { empresa, turno: 'noche', hora_entrada: horaNoche, updated_at: new Date().toISOString() }
+    ], { onConflict: 'empresa,turno' })
+    
+    // Actualizar caché local
+    if (!rkHorarios[empresa]) rkHorarios[empresa] = {}
+    rkHorarios[empresa].dia = horaDia
+    rkHorarios[empresa].noche = horaNoche
+    
+    // Feedback visual
+    btn.textContent = '✓ Guardado'
+    btn.style.borderColor = '#22c55e'
+    btn.style.color = '#22c55e'
+    setTimeout(() => {
+      btn.textContent = 'Guardar'
+      btn.style.borderColor = ''
+      btn.style.color = ''
+    }, 2000)
+  } catch (err) {
+    console.error('Error al guardar horario:', err)
+    showToast('Error al guardar horario', 'error')
+  }
+}
+
+function toggleRkConfig() {
+  const body = document.getElementById('rk-config-body')
+  const arrow = document.getElementById('rk-arrow')
+  if (body.style.display === 'none') {
+    body.style.display = 'block'
+    arrow.classList.add('open')
+  } else {
+    body.style.display = 'none'
+    arrow.classList.remove('open')
+  }
+}
+
+function toggleHorariosConfig() {
+  const body = document.getElementById('rk-horarios-body')
+  const arrow = document.getElementById('rk-horarios-arrow')
+  if (body.style.display === 'none') {
+    body.style.display = 'block'
+    arrow.classList.add('open')
+  } else {
+    body.style.display = 'none'
+    arrow.classList.remove('open')
+  }
+}
+
+function rkSetModo(modo) {
+  rkModo = modo
+  const btnActivo = document.getElementById('rk-btn-activo')
+  const btnFecha = document.getElementById('rk-btn-fecha')
+  
+  if (modo === 'activo') {
+    btnActivo.style.background = 'var(--surface)'
+    btnActivo.style.color = '#ef4444'
+    btnActivo.style.boxShadow = '0 1px 4px rgba(0,0,0,.3)'
+    btnFecha.style.background = 'transparent'
+    btnFecha.style.color = 'var(--muted)'
+    btnFecha.style.boxShadow = 'none'
+    document.getElementById('rk-turno-info').style.display = 'block'
+    document.getElementById('rk-filtros-fecha').style.display = 'none'
+  } else {
+    btnFecha.style.background = 'var(--surface)'
+    btnFecha.style.color = 'var(--text)'
+    btnFecha.style.boxShadow = '0 1px 4px rgba(0,0,0,.3)'
+    btnActivo.style.background = 'transparent'
+    btnActivo.style.color = 'var(--muted)'
+    btnActivo.style.boxShadow = 'none'
+    document.getElementById('rk-turno-info').style.display = 'none'
+    document.getElementById('rk-filtros-fecha').style.display = 'block'
+  }
+  rkActualizarSummary()
+}
+
+function rkActualizarTurnoBadge() {
+  const hora = horaLima()
+  const esTurnoNocheAhora = hora >= 21 || hora < 6
+  const fechaOp = today()
+  const fechaFmt = fechaOp.split('-').reverse().join('/')
+  
+  const info = document.getElementById('rk-turno-info')
+  if (esTurnoNocheAhora) {
+    info.innerHTML = `<div class="rk-turno-badge noche">🌙 Turno Noche en curso — <span style="opacity:.7;font-weight:400">datos operativos ${fechaFmt}</span></div>`
+  } else {
+    info.innerHTML = `<div class="rk-turno-badge dia">☀️ Turno Día en curso — <span style="opacity:.7;font-weight:400">datos operativos ${fechaFmt}</span></div>`
+  }
+}
+
+function rkActualizarSummary() {
+  const empresa = document.getElementById('rk-empresa')?.value || 'Todas las empresas'
+  const summaryEl = document.getElementById('rk-summary')
+  if (!summaryEl) return
+  
+  if (rkModo === 'activo') {
+    summaryEl.textContent = `Turno activo · ${empresa}`
+  } else {
+    const desde = document.getElementById('rk-desde')?.value || ''
+    const hasta = document.getElementById('rk-hasta')?.value || ''
+    summaryEl.textContent = `${desde} — ${hasta} · ${empresa}`
+  }
+}
+
+// Convertir "DD/MM/YYYY HH:MM" → minutos desde la medianoche
+function rkHoraToMinutos(hhmm) {
+  if (!hhmm) return null
+  const [h, m] = hhmm.split(':').map(Number)
+  return h * 60 + m
+}
+
+// Sacar solo HH:MM de "DD/MM/YYYY HH:MM"
+function rkExtraerHora(str) {
+  if (!str) return null
+  const partes = str.split(' ')
+  return partes.length >= 2 ? partes[1] : null
+}
+
+// Convertir fecha DD/MM/YYYY → YYYY-MM-DD para emparejar con estado_hoy.fecha
+function rkFechaDmyToYmd(str) {
+  if (!str) return null
+  const partes = str.split(' ')[0].split('/')
+  if (partes.length !== 3) return null
+  return `${partes[2]}-${partes[1]}-${partes[0]}`
+}
+
+// Calcular eventos emparejados (salida/retorno) por orden cronológico
+function rkCalcularEventos(eventos, dni, fechaOp, tipoSalida, tipoRetorno) {
+  const ev = eventos.filter(e => 
+    e.dni === dni && 
+    rkFechaDmyToYmd(e.fecha) === fechaOp &&
+    (e.tipo === tipoSalida || e.tipo === tipoRetorno)
+  ).sort((a, b) => (a.fecha_iso || '').localeCompare(b.fecha_iso || ''))
+  
+  let veces = 0
+  let tiempoTotal = 0
+  let enCurso = false
+  let salidaPendiente = null
+  
+  for (const e of ev) {
+    if (e.tipo === tipoSalida) {
+      veces++
+      salidaPendiente = e
+    } else if (e.tipo === tipoRetorno && salidaPendiente) {
+      try {
+        const parse = s => {
+          const [f, h] = s.split(' ')
+          const [d, mo, y] = f.split('/')
+          const [hh, mm] = h.split(':')
+          return new Date(`${y}-${mo}-${d}T${hh}:${mm}:00-05:00`)
+        }
+        const diff = Math.max(0, Math.round((parse(e.fecha) - parse(salidaPendiente.fecha)) / 60000))
+        tiempoTotal += diff
+      } catch {}
+      salidaPendiente = null
+    }
+  }
+  
+  if (salidaPendiente) enCurso = true
+  
+  return { veces, tiempoTotal, enCurso }
+}
+
+async function generarRankings() {
+  const empresa = document.getElementById('rk-empresa').value
+  
+  // 1. Determinar rango de fechas
+  let fechaDesde, fechaHasta
+  if (rkModo === 'activo') {
+    fechaDesde = today()
+    fechaHasta = today()
+  } else {
+    fechaDesde = document.getElementById('rk-desde').value
+    fechaHasta = document.getElementById('rk-hasta').value
+    if (!fechaDesde || !fechaHasta) {
+      showToast('Selecciona un rango de fechas', 'error')
+      return
+    }
+  }
+  
+  // 2. Traer estado_hoy del rango (con filtro empresa si aplica)
+  let q = db.from('estado_hoy').select('*')
+    .gte('fecha', fechaDesde)
+    .lte('fecha', fechaHasta)
+    .order('fecha', { ascending: true })
+    .order('ingreso', { ascending: true })
+  
+  if (empresa) q = q.eq('empresa', empresa)
+  
+  const { data: estados } = await q
+  
+  if (!estados || !estados.length) {
+    rkMostrarVacio('No hay registros para este rango')
+    return
+  }
+  
+  // 3. Traer eventos del rango (rango temporal amplio para cubrir turno noche)
+  const inicio = new Date(`${fechaDesde}T06:00:00-05:00`).toISOString()
+  const finDate = new Date(`${fechaHasta}T06:00:00-05:00`)
+  finDate.setDate(finDate.getDate() + 1)
+  const fin = finDate.toISOString()
+  
+  let qe = db.from('eventos').select('*')
+    .gte('fecha_iso', inicio)
+    .lte('fecha_iso', fin)
+  if (empresa) qe = qe.eq('empresa', empresa)
+  
+  const { data: eventos } = await qe
+  
+  // 4. Procesar datos por persona (sumar TODOS los días y jornadas)
+  const porPersona = {}  // dni → { nombre, empresa, banioVeces, banioMin, breakMin, retrasoMax }
+  
+  for (const p of estados) {
+    if (!porPersona[p.dni]) {
+      porPersona[p.dni] = {
+        dni: p.dni,
+        nombre: p.nombre,
+        empresa: p.empresa,
+        banioVeces: 0,
+        banioMin: 0,
+        breakMin: 0,
+        retrasoTotal: 0,  // suma de minutos de retraso de todos los días
+        diasRegistrados: 0
+      }
+    }
+    
+    const persona = porPersona[p.dni]
+    
+    // Eventos de baño y break para este día/jornada
+    const banioInfo = rkCalcularEventos(eventos || [], p.dni, p.fecha, 'banio_salida', 'banio_retorno')
+    const breakInfo = rkCalcularEventos(eventos || [], p.dni, p.fecha, 'break_salida', 'break_retorno')
+    
+    persona.banioVeces += banioInfo.veces
+    persona.banioMin += banioInfo.tiempoTotal
+    persona.breakMin += breakInfo.tiempoTotal
+    
+    // Puntualidad: comparar hora de ingreso vs hora esperada
+    const turno = esTurnoNoche(p.ingreso) ? 'noche' : 'dia'
+    const horaEsperada = rkHorarios[p.empresa]?.[turno] || (turno === 'dia' ? '07:00' : '21:00')
+    const horaIngreso = rkExtraerHora(p.ingreso)
+    
+    if (horaIngreso) {
+      const minEsperada = rkHoraToMinutos(horaEsperada)
+      const minIngreso = rkHoraToMinutos(horaIngreso)
+      
+      // Ajuste turno noche: si esperada > 18:00 y ingreso < 06:00, ingreso es del día siguiente
+      let diff = minIngreso - minEsperada
+      if (turno === 'noche' && minEsperada >= 18*60 && minIngreso < 6*60) {
+        diff = (minIngreso + 24*60) - minEsperada
+      }
+      
+      if (diff > 0) {
+        persona.retrasoTotal += diff
+      }
+      persona.diasRegistrados++
+    }
+  }
+  
+  const lista = Object.values(porPersona)
+  
+  // 5. Generar los 3 rankings
+  
+  // BAÑOS: ordenar por cantidad de veces
+  const rankingBanio = [...lista]
+    .filter(p => p.banioVeces > 0)
+    .sort((a, b) => b.banioVeces - a.banioVeces)
+  
+  rkRenderRanking('rk-banio', 'rk-banio', rankingBanio, p => p.banioVeces,
+    p => `${p.banioVeces} ${p.banioVeces === 1 ? 'vez' : 'veces'}`,
+    p => p.banioMin > 0 ? `${rkFmtMin(p.banioMin)} acumulados` : 'sin tiempo'
+  )
+  
+  // BREAKS: ordenar por minutos
+  const rankingBreak = [...lista]
+    .filter(p => p.breakMin > 0)
+    .sort((a, b) => b.breakMin - a.breakMin)
+  
+  rkRenderRanking('rk-break', 'rk-break', rankingBreak, p => p.breakMin,
+    p => rkFmtMin(p.breakMin),
+    p => 'tiempo acumulado'
+  )
+  
+  // PUNTUALIDAD: ordenar por retraso promedio
+  const rankingPunt = [...lista]
+    .filter(p => p.diasRegistrados > 0)
+    .map(p => ({ ...p, retrasoPromedio: Math.round(p.retrasoTotal / p.diasRegistrados) }))
+    .sort((a, b) => b.retrasoPromedio - a.retrasoPromedio)
+  
+  rkRenderRanking('rk-puntualidad', 'rk-punt', rankingPunt, p => p.retrasoPromedio,
+    p => p.retrasoPromedio === 0 ? '✓ Puntual' : `+${p.retrasoPromedio} min`,
+    p => p.retrasoPromedio === 0 ? 'sin retraso' : (p.diasRegistrados > 1 ? 'retraso promedio' : 'de retraso')
+  )
+  
+  // 6. Colapsar config
+  document.getElementById('rk-config-body').style.display = 'none'
+  document.getElementById('rk-arrow').classList.remove('open')
+  rkActualizarSummary()
+}
+
+function rkRenderRanking(containerId, themeClass, items, getValue, mainFn, subFn) {
+  const el = document.getElementById(containerId)
+  
+  if (!items.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px">Sin datos para este ranking</div>`
+    return
+  }
+  
+  const maxVal = getValue(items[0]) || 1
+  
+  el.innerHTML = items.slice(0, 5).map((item, i) => {
+    const pos = i + 1
+    const medal = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : pos
+    const posClass = pos <= 3 ? `rk-${pos}` : 'rk-rest'
+    const val = getValue(item)
+    const barWidth = maxVal > 0 ? Math.round((val / maxVal) * 100) : 0
+    const isPuntual = themeClass === 'rk-punt' && val === 0
+    const themeFinal = isPuntual ? 'rk-punt rk-punt-ok' : themeClass
+    
+    return `
+      ${i > 0 ? '<div class="rk-sep"></div>' : ''}
+      <div class="rk-item ${themeFinal}">
+        <div class="rk-pos ${posClass}">${medal}</div>
+        <div class="rk-avatar" style="background:${rkGetColor(item.empresa)}">${ini(item.nombre)}</div>
+        <div class="rk-info">
+          <div class="rk-name">${item.nombre}</div>
+          <div class="rk-empresa">${item.empresa}</div>
+        </div>
+        <div class="rk-value">
+          <div class="rk-main">${mainFn(item)}</div>
+          <div class="rk-sub">${subFn(item)}</div>
+        </div>
+        <div class="rk-bar">
+          <div class="rk-bar-fill" style="width:${barWidth}%"></div>
+        </div>
+      </div>
+    `
+  }).join('')
+}
+
+function rkFmtMin(m) {
+  if (m === null || m === undefined) return ''
+  if (m < 60) return `${m} min`
+  return `${Math.floor(m/60)}h ${m%60}min`
+}
+
+function rkMostrarVacio(mensaje) {
+  ;['rk-banio', 'rk-break', 'rk-puntualidad'].forEach(id => {
+    document.getElementById(id).innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px">${mensaje}</div>`
+  })
+}
 
 // ─── INIT ─────────────────────────────────────────────
 loadEstadoHoy()
