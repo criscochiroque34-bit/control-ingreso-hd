@@ -48,7 +48,8 @@ export const esTurnoNoche = ingreso => {
 
 // Traer correos del equipo HD desde hd_config
 export async function getCorreosHD() {
-  const { data } = await db.from('hd_config').select('valor').like('clave', 'correo_hd%')
+  const { data, error } = await db.from('hd_config').select('valor').ilike('clave', 'correo_hd%')
+  console.log('HD correos:', data, error)
   return (data || []).map(r => r.valor).filter(Boolean)
 }
 
