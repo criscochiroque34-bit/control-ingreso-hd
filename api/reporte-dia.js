@@ -3,6 +3,7 @@ import { db, transporter, GMAIL, fechaLabel, calcTiempoTrabajado, esTurnoNoche, 
 // Turno Día: ingreso entre 6am y 8:59pm del mismo día
 const hoy = () => {
   const lima = new Date(Date.now() - 5 * 60 * 60 * 1000)
+  if (lima.getUTCHours() < 6) lima.setUTCDate(lima.getUTCDate() - 1)
   return lima.toISOString().slice(0, 10)
 }
 
@@ -74,7 +75,25 @@ export default async function handler(req, res) {
       })
     }
 
-    return res.status(200).json({ ok: true, resultados })
+    return res.status(200).json({ 
+      ok: true, 
+      resultados,
+      debug: {
+        fecha,
+        totalRegistros: registros?.length || 0,
+        registrosDia: registrosDia.length,
+        resumenHD: resumenHD.map(r => ({ empresa: r.empresa, total: r.total, sinSalida: r.sinSalida })),
+        correosHD: correosHD.length,
+        registrosPorEmpresa: Object.fromEntries(
+          [...new Set((registros||[]).map(r=>r.empresa))].map(emp => [
+            emp, {
+              total: (registros||[]).filter(r=>r.empresa===emp).length,
+              dia: registrosDia.filter(r=>r.empresa===emp).length
+            }
+          ])
+        )
+      }
+    })
   } catch (e) {
     console.error(e)
     return res.status(500).json({ error: e.message })
