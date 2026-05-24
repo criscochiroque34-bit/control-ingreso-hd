@@ -1,12 +1,12 @@
 {
   "rewrites": [
+    { "source": "/resumen", "destination": "/resumen.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "crons": [
     {
-      "source": "/resumen",
-      "destination": "/resumen.html"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "path": "/api/cron-reportes",
+      "schedule": "0 15 * * *"
     }
   ]
 }
