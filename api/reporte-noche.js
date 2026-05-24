@@ -72,7 +72,25 @@ export default async function handler(req, res) {
       })
     }
 
-    return res.status(200).json({ ok: true, resultados })
+    return res.status(200).json({ 
+      ok: true, 
+      resultados,
+      debug: {
+        fecha,
+        totalRegistros: registros?.length || 0,
+        registrosNoche: registrosNoche.length,
+        resumenHD: resumenHD.map(r => ({ empresa: r.empresa, total: r.total })),
+        correosHD: correosHD.length,
+        registrosPorEmpresa: Object.fromEntries(
+          [...new Set((registros||[]).map(r=>r.empresa))].map(emp => [
+            emp, {
+              total: (registros||[]).filter(r=>r.empresa===emp).length,
+              noche: registrosNoche.filter(r=>r.empresa===emp).length
+            }
+          ])
+        )
+      }
+    })
   } catch (e) {
     console.error(e)
     return res.status(500).json({ error: e.message })
