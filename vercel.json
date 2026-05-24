@@ -4,9 +4,9 @@
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "crons": [
-    {
-      "path": "/api/cron-reportes",
-      "schedule": "0 15 * * *"
-    }
+    { "path": "/api/aviso-dia",    "schedule": "20 3 * * *"  },
+    { "path": "/api/reporte-dia",  "schedule": "30 3 * * *"  },
+    { "path": "/api/aviso-noche",  "schedule": "50 14 * * *" },
+    { "path": "/api/reporte-noche","schedule": "0 15 * * *"  }
   ]
 }
