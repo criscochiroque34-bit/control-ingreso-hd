@@ -2,6 +2,7 @@ import { db, transporter, GMAIL, fechaLabel, getCorreosHD } from './_helpers.js'
 
 const hoy = () => {
   const lima = new Date(Date.now() - 5 * 60 * 60 * 1000)
+  if (lima.getUTCHours() < 6) lima.setUTCDate(lima.getUTCDate() - 1)
   return lima.toISOString().slice(0, 10)
 }
 
