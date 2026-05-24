@@ -59,6 +59,6 @@ export default async function handler(req, res) {
       await transporter.sendMail({ from: `"Control HD" <${GMAIL}>`, to: correosHD.join(', '), subject: `🧪 PRUEBA · Resumen HD · ${fechaStr}`, html: `<p style="font-family:Arial;padding:20px">Prueba correcta — ${fechaStr}. Recibirás los reportes automáticos en los horarios configurados.</p>` })
     }
 
-    return res.status(200).json({ ok: true, resultados })
+    return res.status(200).json({ ok: true, resultados, correosHD })
   } catch(e) { return res.status(500).json({ error: e.message }) }
 }
