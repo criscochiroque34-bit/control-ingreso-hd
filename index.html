@@ -827,7 +827,7 @@ tr:hover td{background:#f7f9fc}
 
   <!-- PANEL PRINCIPAL -->
   <div id="actas-main" style="display:none">
-    <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start">
+    <div style="display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start">
 
       <!-- COLUMNA IZQUIERDA -->
       <div>
@@ -897,43 +897,60 @@ tr:hover td{background:#f7f9fc}
           <div id="gestion-body" style="display:none;padding-top:14px">
 
             <!-- EMPRESAS -->
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px">
-              <span style="padding:1px 6px;border-radius:8px;font-size:9px;background:#ede9fe;color:#5b21b6">Empresas</span> empresas_correos
-            </div>
-            <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
-              <table style="width:100%;border-collapse:collapse;font-size:11px">
-                <thead><tr style="background:var(--bg)">
-                  <th style="padding:6px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Empresa</th>
-                  <th style="padding:6px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Correo</th>
-                  <th style="padding:6px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Contacto</th>
-                  <th style="border-bottom:1px solid var(--border)"></th>
-                </tr></thead>
-                <tbody id="tabla-emp-correos"></tbody>
-              </table>
-            </div>
-            <div style="display:flex;gap:5px;margin-bottom:14px">
-              <select id="new-emp-empresa" style="width:75px;padding:6px 8px;border:1.5px solid var(--border);border-radius:7px;font-size:11px;background:var(--surface);color:var(--text)" ></select>
-              <input id="new-emp-correo" type="email" placeholder="correo@empresa.com" style="flex:1;padding:6px 8px;border:1.5px solid var(--border);border-radius:7px;font-size:11px;color:var(--text);background:var(--surface)"/>
-              <input id="new-emp-contacto" type="text" placeholder="Contacto" style="width:70px;padding:6px 8px;border:1.5px solid var(--border);border-radius:7px;font-size:11px;color:var(--text);background:var(--surface)"/>
-              <button onclick="agregarEmpCorreo()" style="padding:6px 10px;border-radius:7px;border:none;background:var(--nav-bg);color:#fff;font-size:11px;font-weight:700;cursor:pointer">+</button>
+            <div style="margin-bottom:16px">
+              <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+                <span style="padding:2px 8px;border-radius:8px;font-size:9px;font-weight:700;background:#ede9fe;color:#5b21b6">Empresas</span>
+                <span style="color:var(--muted);font-size:10px">empresas_correos</span>
+              </div>
+              <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px">
+                <table style="width:100%;border-collapse:collapse;font-size:12px">
+                  <thead><tr style="background:var(--bg)">
+                    <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Empresa</th>
+                    <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Correo</th>
+                    <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Contacto</th>
+                    <th style="border-bottom:1px solid var(--border);width:36px"></th>
+                  </tr></thead>
+                  <tbody id="tabla-emp-correos"></tbody>
+                </table>
+              </div>
+              <div style="background:var(--bg);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px">Agregar correo empresa</div>
+                <div style="display:flex;gap:6px">
+                  <select id="new-emp-empresa" style="width:110px;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;background:var(--surface);color:var(--text)"></select>
+                  <input id="new-emp-correo" type="email" placeholder="correo@empresa.com" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface)"/>
+                </div>
+                <div style="display:flex;gap:6px">
+                  <input id="new-emp-contacto" type="text" placeholder="Nombre contacto (opcional)" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface)"/>
+                  <button onclick="agregarEmpCorreo()" style="padding:8px 16px;border-radius:7px;border:none;background:var(--nav-bg);color:#fff;font-size:12px;font-weight:700;cursor:pointer">+ Agregar</button>
+                </div>
+              </div>
             </div>
 
-            <!-- HD -->
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px">
-              <span style="padding:1px 6px;border-radius:8px;font-size:9px;background:#dbeafe;color:#1e40af">HD</span> equipo interno
-            </div>
-            <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
-              <table style="width:100%;border-collapse:collapse;font-size:11px">
-                <thead><tr style="background:var(--bg)">
-                  <th style="padding:6px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Correo equipo HD</th>
-                  <th style="border-bottom:1px solid var(--border)"></th>
-                </tr></thead>
-                <tbody id="tabla-hd-correos"></tbody>
-              </table>
-            </div>
-            <div style="display:flex;gap:5px">
-              <input id="new-hd-correo" type="email" placeholder="nuevo@correo.com" style="flex:1;padding:6px 8px;border:1.5px solid var(--border);border-radius:7px;font-size:11px;color:var(--text);background:var(--surface)"/>
-              <button onclick="agregarHDCorreo()" style="padding:6px 10px;border-radius:7px;border:none;background:var(--nav-bg);color:#fff;font-size:11px;font-weight:700;cursor:pointer">+</button>
+            <!-- HD CORREOS DESPLEGABLE -->
+            <div>
+              <div onclick="toggleHDLista()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border)">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="padding:2px 8px;border-radius:8px;font-size:9px;font-weight:700;background:#dbeafe;color:#1e40af">HD</span>
+                  <span style="font-size:12px;font-weight:700;color:var(--text)">Equipo interno</span>
+                  <span style="font-size:11px;color:var(--muted)" id="hd-count"></span>
+                </div>
+                <span id="hd-chevron" style="font-size:12px;color:var(--muted);transition:transform .2s">▼</span>
+              </div>
+              <div id="hd-lista-body" style="display:none;margin-top:8px">
+                <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
+                  <table style="width:100%;border-collapse:collapse;font-size:12px">
+                    <thead><tr style="background:var(--bg)">
+                      <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Correo equipo HD</th>
+                      <th style="border-bottom:1px solid var(--border);width:36px"></th>
+                    </tr></thead>
+                    <tbody id="tabla-hd-correos"></tbody>
+                  </table>
+                </div>
+                <div style="background:var(--bg);border-radius:8px;padding:10px;display:flex;gap:6px">
+                  <input id="new-hd-correo" type="email" placeholder="nuevo@correo.com" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface)"/>
+                  <button onclick="agregarHDCorreo()" style="padding:8px 16px;border-radius:7px;border:none;background:var(--nav-bg);color:#fff;font-size:12px;font-weight:700;cursor:pointer">+ Agregar</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2894,6 +2911,14 @@ function toggleGestion() {
   if (!open) cargarTablaCorreos()
 }
 
+function toggleHDLista() {
+  const body = document.getElementById('hd-lista-body')
+  const chev = document.getElementById('hd-chevron')
+  const open = body.style.display === 'block'
+  body.style.display = open ? 'none' : 'block'
+  chev.style.transform = open ? '' : 'rotate(180deg)'
+}
+
 async function cargarTablaCorreos() {
   const { data: emps } = await db.from('empresas_correos').select('*').order('empresa')
   const tbEmp = document.getElementById('tabla-emp-correos')
@@ -2906,6 +2931,8 @@ async function cargarTablaCorreos() {
     </tr>`).join('')
   const { data: hds } = await db.from('hd_config').select('*').ilike('clave','correo_hd%').order('clave')
   const tbHD = document.getElementById('tabla-hd-correos')
+  const hdCount = document.getElementById('hd-count')
+  if (hdCount) hdCount.textContent = hds?.length ? `(${hds.length} correos)` : ''
   if (tbHD) tbHD.innerHTML = (hds||[]).map(h=>`
     <tr>
       <td style="padding:6px 8px;font-size:11px">${h.valor}</td>
