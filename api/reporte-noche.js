@@ -1,4 +1,4 @@
-import { db, transporter, GMAIL, fechaLabel, calcTiempoTrabajado, esTurnoNoche, getCorreosHD, getCorreosEmpresas, calcBreakMin, calcBanio, tablaPersonal } from './_helpers.js'
+import { db, transporter, GMAIL, fechaLabel, calcTiempoTrabajado, esTurnoNoche, getCorreosHD, getCorreosEmpresas, getEventosFecha, calcBreakMinLocal, calcBanioLocal, tablaPersonal } from './_helpers.js'
 
 // Turno Noche: ingreso entre 9pm del dia anterior y 5:59am
 const ayer = () => {
@@ -21,12 +21,19 @@ export default async function handler(req, res) {
 
     const { data: registros } = await db.from('estado_hoy').select('*').eq('fecha', fecha)
     const registrosNoche = (registros||[]).filter(r => esTurnoNoche(r.ingreso))
+    const todosEventos = await getEventosFecha(fecha)
 
     const empresas = [...new Set(empresasCorreos.map(e => e.empresa))]
     const resultados = []
     const resumenHD = []
 
-    for (const empresa of empresas) {
+    // Incluir en resumenHD todas las empresas con registros, aunque no estén en empresas_correos
+    const todasEmpresas = [...new Set([
+      ...empresas,
+      ...registrosNoche.map(r => r.empresa).filter(Boolean)
+    ])]
+
+    for (const empresa of todasEmpresas) {
       const correosDest = empresasCorreos.filter(e => e.empresa === empresa)
       const personal = registrosNoche.filter(r => r.empresa === empresa)
       if (!personal.length) { resultados.push({ empresa, enviado: false, razon: 'Sin registros' }); continue }
@@ -36,8 +43,8 @@ export default async function handler(req, res) {
       const nombreContacto = correosDest[0]?.nombre_contacto || empresa
 
       for (const p of personal) {
-        const breakMin = await calcBreakMin(p.dni, fecha)
-        const { veces: banioVeces, mins: banioMin } = await calcBanio(p.dni, fecha)
+        const breakMin = calcBreakMinLocal(p.dni, todosEventos)
+        const { veces: banioVeces, mins: banioMin } = calcBanioLocal(p.dni, todosEventos)
         const trabajadoMin = calcTiempoTrabajado(p.ingreso, p.salida, breakMin)
         p._breakStr = breakMin > 0 ? `✓ ${(breakMin/60).toFixed(1)}h` : '—'
         p._banioStr = banioVeces > 0 ? `${banioVeces}v/${banioMin}min` : '—'
