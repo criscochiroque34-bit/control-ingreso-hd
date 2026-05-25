@@ -59,10 +59,17 @@ export async function getCorreosEmpresas() {
   return data || []
 }
 
-// Calcular break en minutos desde eventos
+// Calcular break en minutos desde eventos — con límite superior para evitar cruce de turnos
 export async function calcBreakMin(dni, fechaIso) {
+  const fechaSig = (() => {
+    const d = new Date(fechaIso + 'T05:00:00Z')
+    d.setUTCDate(d.getUTCDate() + 1)
+    return d.toISOString().slice(0,10)
+  })()
   const { data: evs } = await db.from('eventos').select('*')
-    .eq('dni', dni).gte('fecha_iso', fechaIso + 'T05:00:00Z')
+    .eq('dni', dni)
+    .gte('fecha_iso', fechaIso + 'T05:00:00Z')
+    .lt('fecha_iso', fechaSig + 'T05:00:00Z')
   const salidas = (evs||[]).filter(e=>e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
   const retornos = (evs||[]).filter(e=>e.tipo==='break_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
   let mins = 0
@@ -73,10 +80,17 @@ export async function calcBreakMin(dni, fechaIso) {
   return mins
 }
 
-// Calcular baño desde eventos
+// Calcular baño desde eventos — con límite superior para evitar cruce de turnos
 export async function calcBanio(dni, fechaIso) {
+  const fechaSig = (() => {
+    const d = new Date(fechaIso + 'T05:00:00Z')
+    d.setUTCDate(d.getUTCDate() + 1)
+    return d.toISOString().slice(0,10)
+  })()
   const { data: evs } = await db.from('eventos').select('*')
-    .eq('dni', dni).gte('fecha_iso', fechaIso + 'T05:00:00Z')
+    .eq('dni', dni)
+    .gte('fecha_iso', fechaIso + 'T05:00:00Z')
+    .lt('fecha_iso', fechaSig + 'T05:00:00Z')
   const salidas = (evs||[]).filter(e=>e.tipo==='banio_salida')
   const retornos = (evs||[]).filter(e=>e.tipo==='banio_retorno')
   let mins = 0
@@ -84,6 +98,36 @@ export async function calcBanio(dni, fechaIso) {
     const r = retornos[i]
     if (r) mins += Math.round((new Date(r.fecha_iso) - new Date(s.fecha_iso)) / 60000)
   })
+  return { veces: salidas.length, mins }
+}
+
+// Versión optimizada: traer TODOS los eventos de una fecha en una sola query
+// Úsala en los reportes para evitar N queries por persona
+export async function getEventosFecha(fechaIso) {
+  const fechaSig = (() => {
+    const d = new Date(fechaIso + 'T05:00:00Z')
+    d.setUTCDate(d.getUTCDate() + 1)
+    return d.toISOString().slice(0,10)
+  })()
+  const { data } = await db.from('eventos').select('*')
+    .gte('fecha_iso', fechaIso + 'T05:00:00Z')
+    .lt('fecha_iso', fechaSig + 'T05:00:00Z')
+  return data || []
+}
+
+export function calcBreakMinLocal(dni, eventos) {
+  const salidas = eventos.filter(e=>e.dni===dni&&e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
+  const retornos = eventos.filter(e=>e.dni===dni&&e.tipo==='break_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
+  let mins = 0
+  salidas.forEach((s,i) => { const r=retornos[i]; if(r) mins+=Math.round((new Date(r.fecha_iso)-new Date(s.fecha_iso))/60000) })
+  return mins
+}
+
+export function calcBanioLocal(dni, eventos) {
+  const salidas = eventos.filter(e=>e.dni===dni&&e.tipo==='banio_salida')
+  const retornos = eventos.filter(e=>e.dni===dni&&e.tipo==='banio_retorno')
+  let mins = 0
+  salidas.forEach((s,i) => { const r=retornos[i]; if(r) mins+=Math.round((new Date(r.fecha_iso)-new Date(s.fecha_iso))/60000) })
   return { veces: salidas.length, mins }
 }
 
