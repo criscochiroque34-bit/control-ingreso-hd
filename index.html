@@ -246,9 +246,9 @@ tr:hover td{background:#f7f9fc}
   </div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('registro',this)">Registro</button>
+    <button class="nav-tab" onclick="showPage('banio',this)">Baño Planilla</button>
     <button class="nav-tab" onclick="showPage('situacion',this)">Situación Actual</button>
     <button class="nav-tab" onclick="showPage('reportes',this)">Reportes</button>
-    <button class="nav-tab" onclick="showPage('rankings',this)">Rankings</button>
     <button class="nav-tab" onclick="showPage('personal',this)">Personal</button>
     <button class="nav-tab" onclick="showPage('actas',this)">Actas</button>
   </div>
@@ -287,7 +287,7 @@ tr:hover td{background:#f7f9fc}
 
 <!-- ===================== REGISTRO ===================== -->
 <div class="page active" id="page-registro">
-  <div class="section-title"><div class="dot"></div> Registro de Acceso</div>
+  <div class="section-title"><div class="dot"></div> Registro de Acceso — Personal Tercero</div>
 
   <div class="registro-grid">
     <div class="card">
@@ -560,6 +560,87 @@ tr:hover td{background:#f7f9fc}
       <button class="btn-dl" onclick="descargarEventos('todos')" style="background:#22c55e;color:#fff;border-color:#22c55e">📥 Descargar Eventos</button>
       <button class="btn-dl" onclick="descargarEventos('break')">☕ Solo Breaks</button>
       <button class="btn-dl" onclick="descargarEventos('banio')">🚻 Solo Baños</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== BAÑO PLANILLA ===================== -->
+<div class="page" id="page-banio">
+  <div class="section-title"><div class="dot"></div> Control de Baño — Personal Planilla</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:14px;overflow:hidden;border:1px solid var(--border);box-shadow:0 2px 12px rgba(30,36,51,.07);margin-bottom:16px">
+
+    <!-- ══ OPERACIONES ══ -->
+    <div style="background:var(--surface);border-right:2px solid var(--border)">
+      <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--nav-bg)">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:7px">👷 Operaciones</div>
+          <div style="font-size:10px;color:#9aa3b8;margin-top:2px">Registra la salida al baño</div>
+        </div>
+        <span id="banio-cnt-ops" style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(245,158,11,.25);color:#fbbf24">0 enviados</span>
+      </div>
+      <div style="padding:18px 20px">
+        <!-- BUSCAR POR NOMBRE -->
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Buscar trabajador</div>
+        <div style="position:relative;margin-bottom:10px">
+          <input type="text" id="banio-search" placeholder="Escribe el nombre..." autocomplete="off"
+            style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;color:var(--text);background:var(--bg);outline:none"
+            oninput="banioBuscar(this.value)" onfocus="banioBuscar(this.value)"/>
+          <div id="banio-dd" style="position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid #fde68a;border-radius:10px;z-index:100;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.12);display:none;max-height:200px;overflow-y:auto"></div>
+        </div>
+
+        <!-- SELECCIONADO -->
+        <div id="banio-sel" style="display:none;background:#fffbeb;border:2px solid #f59e0b;border-radius:10px;padding:11px 14px;margin-bottom:10px;align-items:center;gap:10px">
+          <div id="banio-sel-av" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;background:#f59e0b">—</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text)" id="banio-sel-nombre">—</div>
+          <button onclick="banioLimpiar()" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1">✕</button>
+        </div>
+
+        <button id="banio-btn-reg" onclick="banioRegistrar()" disabled
+          style="width:100%;padding:12px;border-radius:8px;border:none;background:#f59e0b;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">
+          🚻 Registrar salida al baño
+        </button>
+        <style>#banio-btn-reg:disabled{background:#e5e7eb;color:#9ca3af;cursor:not-allowed}</style>
+
+        <div style="height:1px;background:var(--border);margin:16px 0"></div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Enviados a prevención</div>
+        <div id="banio-col-ops" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto">
+          <div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">Sin registros aún</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PREVENCIÓN ══ -->
+    <div style="background:var(--surface)">
+      <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:#1e3a5f">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff">🛡️ Equipo Prevención</div>
+          <div style="font-size:10px;color:#9aa3b8;margin-top:2px">Aprueba y controla el tiempo</div>
+        </div>
+        <span id="banio-cnt-seg" style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(34,194,122,.25);color:#4ade80">0 en baño</span>
+      </div>
+      <div style="padding:18px 20px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Pendiente confirmar</div>
+        <div id="banio-col-prev" style="display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto;margin-bottom:14px">
+          <div style="text-align:center;padding:16px;color:var(--muted);font-size:12px">⏳ Nada pendiente</div>
+        </div>
+        <div style="height:1px;background:var(--border);margin-bottom:14px"></div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">En baño ahora</div>
+        <div id="banio-col-banio" style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto">
+          <div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">🚻 Nadie en baño</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:0">Historial del turno</div>
+      <span id="banio-hist-cnt" style="font-size:11px;color:var(--muted)">0 registros</span>
+    </div>
+    <div id="banio-historial">
+      <div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Sin registros aún</div>
     </div>
   </div>
 </div>
@@ -1153,13 +1234,11 @@ function showPage(name, el) {
   document.getElementById('page-' + name).classList.add('active')
   el.classList.add('active')
   if (name === 'reportes') initReportes()
-  if (name === 'rankings') initRankings()
   if (name === 'situacion') { updateEmpresaBtns(); renderSituacion() }
   if (name === 'personal') loadCatalogo()
+  if (name === 'banio') initBanio()
   if (name === 'actas') {
-    // Si ya hay supervisor logueado, ir directo al panel
     if (actaSupervisor) initActas()
-    // Si no, el login ya está visible por defecto
   }
 }
 
@@ -3110,6 +3189,258 @@ async function calcularConsumo() {
 setTimeout(calcularConsumo, 2000)
 
 // ═══════════════════════════════════════════════════════════════
+// ─── BAÑO PLANILLA ────────────────────────────────────
+let banioPlanilla = [] // cache de planilla
+let banioSelPersona = null
+let banioVeces = {}
+let banioUID = 0
+const BANIO_COLORS = ['#f59e0b','#8b5cf6','#3b82f6','#22c27a','#e85d9b','#ef4444','#06b6d4']
+let banioColorIdx = 0
+
+const banioAhora = () => new Date(Date.now() - 5*60*60*1000).toISOString().slice(11,16).replace('T','').substring(0,5)
+const banioIni = n => n.split(' ').map(x=>x[0]).slice(0,2).join('')
+const banioVecLbl = n => ['','1ra','2da','3ra','4ta','5ta','6ta'][n] || (n+'ta')
+
+async function initBanio() {
+  if (banioPlanilla.length) return
+  const { data } = await db.from('planilla').select('*').order('nombre')
+  banioPlanilla = data || []
+}
+
+function banioBuscar(val) {
+  const dd = document.getElementById('banio-dd')
+  if (val.length < 2) { dd.style.display='none'; return }
+  const matches = banioPlanilla.filter(p => p.nombre.toLowerCase().includes(val.toLowerCase())).slice(0,8)
+  if (!matches.length) { dd.style.display='none'; return }
+  dd.innerHTML = matches.map(p => {
+    const color = BANIO_COLORS[banioPlanilla.indexOf(p) % BANIO_COLORS.length]
+    const veces = banioVeces[p.dni] || 0
+    return `<div onclick="banioSel('${p.dni}')" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f0f2f6;transition:background .1s" onmouseover="this.style.background='#fffbeb'" onmouseout="this.style.background='transparent'">
+      <div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(p.nombre)}</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${p.nombre}</div>
+        ${p.area ? `<div style="font-size:10px;color:var(--muted)">${p.area}</div>` : ''}
+      </div>
+      ${veces > 0 ? `<span style="margin-left:auto;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:700;background:#fce7f3;color:#9d174d">${banioVecLbl(veces+1)} vez</span>` : ''}
+    </div>`
+  }).join('')
+  dd.style.display = 'block'
+}
+
+function banioSel(dni) {
+  const p = banioPlanilla.find(x => x.dni === dni)
+  if (!p) return
+  banioSelPersona = p
+  const color = BANIO_COLORS[banioPlanilla.indexOf(p) % BANIO_COLORS.length]
+  banioSelPersona._color = color
+  const av = document.getElementById('banio-sel-av')
+  av.textContent = banioIni(p.nombre)
+  av.style.background = color
+  document.getElementById('banio-sel-nombre').textContent = p.nombre
+  document.getElementById('banio-sel').style.display = 'flex'
+  document.getElementById('banio-btn-reg').disabled = false
+  document.getElementById('banio-dd').style.display = 'none'
+  document.getElementById('banio-search').value = ''
+}
+
+function banioLimpiar() {
+  banioSelPersona = null
+  document.getElementById('banio-sel').style.display = 'none'
+  document.getElementById('banio-btn-reg').disabled = true
+  document.getElementById('banio-search').value = ''
+}
+
+async function banioRegistrar() {
+  if (!banioSelPersona) return
+  const p = banioSelPersona
+  const id = ++banioUID
+  const veces = (banioVeces[p.dni] || 0) + 1
+  const tsol = banioAhora()
+  const fechaHoy = today()
+
+  // Guardar en Supabase
+  const { data: registro } = await db.from('banio_planilla').insert({
+    dni: p.dni, nombre: p.nombre, fecha: fechaHoy,
+    solicitado_at: new Date().toISOString(),
+    veces_jornada: veces
+  }).select().single()
+
+  const dbId = registro?.id || id
+
+  // Log en operaciones
+  const log = document.createElement('div')
+  log.style.cssText = 'padding:9px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;gap:8px'
+  log.innerHTML = `
+    <div style="width:28px;height:28px;border-radius:50%;background:${p._color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(p.nombre)}</div>
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--text)">${p.nombre}</div>
+      <div style="font-size:10px;color:var(--muted)">${tsol} · ${banioVecLbl(veces)} vez</div>
+    </div>
+    <span style="margin-left:auto;font-size:10px;color:var(--accent2);font-weight:700">✓ Enviado</span>`
+  const colOps = document.getElementById('banio-col-ops')
+  colOps.querySelector('div[style*="Sin registros"]')?.remove()
+  colOps.prepend(log)
+
+  // Card en prevención
+  const card = document.createElement('div')
+  card.style.cssText = 'border-radius:10px;padding:12px 14px;border:1px solid #bfdbfe;background:#eff6ff'
+  card.dataset.dbid = dbId
+  card.dataset.nombre = p.nombre
+  card.dataset.dni = p.dni
+  card.dataset.color = p._color
+  card.dataset.veces = veces
+  card.dataset.tsol = tsol
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+      <div style="width:34px;height:34px;border-radius:50%;background:${p._color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(p.nombre)}</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${p.nombre}</div>
+        <div style="font-size:10px;color:var(--muted)">Solicitó ${tsol}</div>
+      </div>
+      <span style="margin-left:auto;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:#fce7f3;color:#9d174d">${banioVecLbl(veces)} vez</span>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button onclick="banioConfirmar(this)" style="flex:1;padding:8px;border-radius:7px;border:none;background:#3b82f6;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">🛡️ Confirmar</button>
+      <button onclick="banioRechazar(this)" style="padding:8px 10px;border-radius:7px;border:1px solid #fce7f3;background:#fce7f3;color:#9d174d;font-size:12px;cursor:pointer;font-weight:700">✕</button>
+    </div>`
+  const colPrev = document.getElementById('banio-col-prev')
+  colPrev.querySelector('div[style*="Nada"]')?.remove()
+  colPrev.prepend(card)
+
+  banioLimpiar()
+  banioActualizarCounts()
+}
+
+async function banioConfirmar(btn) {
+  const card = btn.closest('[data-dbid]')
+  const d = card.dataset
+  const startMs = Date.now()
+  const tprev = banioAhora()
+
+  await db.from('banio_planilla').update({ aprobado_seg_at: new Date().toISOString() }).eq('id', d.dbid)
+
+  card.remove()
+  banioCheckEmpty('banio-col-prev', '⏳ Nada pendiente')
+
+  const bCard = document.createElement('div')
+  bCard.style.cssText = 'border-radius:10px;padding:12px 14px;border:1px solid #86efac;background:#f0fdf4'
+  bCard.dataset.dbid = d.dbid
+  bCard.dataset.nombre = d.nombre
+  bCard.dataset.color = d.color
+  bCard.dataset.veces = d.veces
+  bCard.dataset.tsol = d.tsol
+  bCard.dataset.tprev = tprev
+  bCard.dataset.start = startMs
+  bCard.dataset.uid = ++banioUID
+  bCard.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+      <div style="width:34px;height:34px;border-radius:50%;background:${d.color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(d.nombre)}</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${d.nombre}</div>
+        <div style="font-size:10px;color:var(--muted)">Prevención ${tprev}</div>
+      </div>
+      <span style="margin-left:auto;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:#fce7f3;color:#9d174d">${banioVecLbl(parseInt(d.veces))} vez</span>
+    </div>
+    <div style="font-family:monospace;font-size:22px;font-weight:700;text-align:center;padding:7px;border-radius:7px;background:rgba(0,0,0,.04);margin-bottom:9px;color:#22c27a" id="btmr-${bCard.dataset.uid}">00:00</div>
+    <button onclick="banioRetorno(this)" style="width:100%;padding:9px;border-radius:7px;border:none;background:#22c27a;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">✓ Marcar retorno</button>`
+
+  const colBanio = document.getElementById('banio-col-banio')
+  colBanio.querySelector('div[style*="Nadie"]')?.remove()
+  colBanio.prepend(bCard)
+  banioActualizarCounts()
+}
+
+async function banioRetorno(btn) {
+  const card = btn.closest('[data-dbid]')
+  const d = card.dataset
+  const elapsed = Date.now() - parseInt(d.start)
+  const mins = Math.floor(elapsed / 60000)
+  const secs = Math.floor((elapsed % 60000) / 1000)
+  const tiempoStr = mins + ' min ' + secs + ' seg'
+  const tiempoMin = parseFloat((elapsed / 60000).toFixed(2))
+  const tret = banioAhora()
+  const v = parseInt(d.veces)
+  banioVeces[card.dataset.dni] = v
+
+  await db.from('banio_planilla').update({
+    retorno_at: new Date().toISOString(),
+    tiempo_min: tiempoMin
+  }).eq('id', d.dbid)
+
+  card.remove()
+  banioCheckEmpty('banio-col-banio', '🚻 Nadie en baño')
+
+  const hist = document.createElement('div')
+  hist.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px'
+  hist.innerHTML = `
+    <div style="width:30px;height:30px;border-radius:50%;background:${d.color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(d.nombre)}</div>
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--text)">${d.nombre}</div>
+      <div style="font-size:10px;color:var(--muted)">Solicitó ${d.tsol} · Prev ${d.tprev} · Retornó ${tret}</div>
+    </div>
+    <div style="text-align:right;margin-left:auto">
+      <div style="font-family:monospace;font-size:12px;font-weight:700;color:var(--text)">${tiempoStr}</div>
+      <div style="margin-top:2px">
+        <span style="padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700;background:#d1fae5;color:#065f46">✓</span>
+        <span style="padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700;background:#fce7f3;color:#9d174d;margin-left:3px">${banioVecLbl(v)} vez</span>
+      </div>
+    </div>`
+  const histEl = document.getElementById('banio-historial')
+  histEl.querySelector('div[style*="Sin registros"]')?.remove()
+  histEl.prepend(hist)
+  const total = histEl.querySelectorAll('[style*="display:flex"]').length
+  document.getElementById('banio-hist-cnt').textContent = total + ' registro' + (total !== 1 ? 's' : '')
+  banioActualizarCounts()
+}
+
+async function banioRechazar(btn) {
+  if (!confirm('¿Rechazar esta solicitud?')) return
+  const card = btn.closest('[data-dbid]')
+  await db.from('banio_planilla').delete().eq('id', card.dataset.dbid)
+  const col = card.parentElement.id
+  card.remove()
+  banioCheckEmpty(col, '⏳ Nada pendiente')
+  banioActualizarCounts()
+}
+
+function banioCheckEmpty(colId, msg) {
+  const col = document.getElementById(colId)
+  if (!col.querySelector('[data-dbid]')) {
+    col.innerHTML = `<div style="text-align:center;padding:${colId==='banio-col-banio'?'20':'16'}px;color:var(--muted);font-size:12px">${msg}</div>`
+  }
+}
+
+function banioActualizarCounts() {
+  const prev = document.querySelectorAll('#banio-col-prev [data-dbid]').length
+  const banio = document.querySelectorAll('#banio-col-banio [data-dbid]').length
+  document.getElementById('banio-cnt-ops').textContent = (prev + banio) + ' enviados'
+  document.getElementById('banio-cnt-seg').textContent = banio + ' en baño'
+}
+
+// Timer baño
+setInterval(() => {
+  document.querySelectorAll('#banio-col-banio [data-dbid]').forEach(card => {
+    const startMs = parseInt(card.dataset.start)
+    if (!startMs) return
+    const elapsed = Date.now() - startMs
+    const mins = Math.floor(elapsed / 60000)
+    const secs = Math.floor((elapsed % 60000) / 1000)
+    const tmr = document.getElementById('btmr-' + card.dataset.uid)
+    if (tmr) {
+      tmr.textContent = String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0')
+      tmr.style.color = mins >= 10 ? '#ef4444' : mins >= 5 ? '#f59e0b' : '#22c27a'
+    }
+  })
+}, 1000)
+
+// Cerrar dropdown al click fuera
+document.addEventListener('click', e => {
+  if (!e.target.closest('#banio-search') && !e.target.closest('#banio-dd')) {
+    const dd = document.getElementById('banio-dd')
+    if (dd) dd.style.display = 'none'
+  }
+})
+
 // ─── RANKINGS ─────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
