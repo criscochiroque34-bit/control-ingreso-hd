@@ -601,12 +601,6 @@ tr:hover td{background:#f7f9fc}
           🚻 Registrar salida al baño
         </button>
         <style>#banio-btn-reg:disabled{background:#e5e7eb;color:#9ca3af;cursor:not-allowed}</style>
-
-        <div style="height:1px;background:var(--border);margin:16px 0"></div>
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Enviados a prevención</div>
-        <div id="banio-col-ops" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto">
-          <div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">Sin registros aún</div>
-        </div>
       </div>
     </div>
 
@@ -3201,10 +3195,140 @@ const banioAhora = () => new Date(Date.now() - 5*60*60*1000).toISOString().slice
 const banioIni = n => n.split(' ').map(x=>x[0]).slice(0,2).join('')
 const banioVecLbl = n => ['','1ra','2da','3ra','4ta','5ta','6ta'][n] || (n+'ta')
 
+// Calcula el inicio de la jornada actual (8am Lima)
+function banioJornadaInicio() {
+  const lima = new Date(Date.now() - 5 * 60 * 60 * 1000)
+  const horaLimaActual = lima.getUTCHours()
+  // Si es antes de las 8am Lima, la jornada empezó ayer a las 8am
+  if (horaLimaActual < 8) lima.setUTCDate(lima.getUTCDate() - 1)
+  // Construir timestamp de 8am Lima = 13:00 UTC
+  const yyyy = lima.getUTCFullYear()
+  const mm = String(lima.getUTCMonth()+1).padStart(2,'0')
+  const dd = String(lima.getUTCDate()).padStart(2,'0')
+  return `${yyyy}-${mm}-${dd}T13:00:00.000Z` // 8am Lima = 13:00 UTC
+}
+
 async function initBanio() {
-  if (banioPlanilla.length) return
-  const { data } = await db.from('planilla').select('*').order('nombre')
-  banioPlanilla = data || []
+  // Cargar catálogo planilla
+  if (!banioPlanilla.length) {
+    const { data } = await db.from('planilla').select('*').order('nombre')
+    banioPlanilla = data || []
+  }
+
+  const jornadaInicio = banioJornadaInicio()
+
+  // Traer todos los registros de la jornada actual
+  const { data: registros } = await db.from('banio_planilla')
+    .select('*')
+    .gte('solicitado_at', jornadaInicio)
+    .order('solicitado_at', { ascending: true })
+
+  if (!registros?.length) return
+
+  // Reconstruir contadores de veces por DNI
+  banioVeces = {}
+  registros.forEach(r => {
+    if (r.retorno_at) banioVeces[r.dni] = r.veces_jornada
+  })
+
+  // Limpiar UI antes de reconstruir
+  document.getElementById('banio-col-prev').innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:12px">⏳ Nada pendiente</div>'
+  document.getElementById('banio-col-banio').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">🚻 Nadie en baño</div>'
+  document.getElementById('banio-historial').innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Sin registros aún</div>'
+
+  for (const r of registros) {
+    const color = BANIO_COLORS[banioPlanilla.findIndex(p=>p.dni===r.dni) % BANIO_COLORS.length] || '#7a8299'
+    const tsol = r.solicitado_at ? new Date(r.solicitado_at).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Lima'}) : '—'
+    const tprev = r.aprobado_seg_at ? new Date(r.aprobado_seg_at).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Lima'}) : null
+    const tret = r.retorno_at ? new Date(r.retorno_at).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Lima'}) : null
+
+    if (r.retorno_at) {
+      // Completado → historial
+      const mins = Math.floor(r.tiempo_min || 0)
+      const secs = Math.round(((r.tiempo_min||0) - mins) * 60)
+      const tiempoStr = mins + ' min ' + secs + ' seg'
+      const hist = document.createElement('div')
+      hist.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px'
+      hist.innerHTML = `
+        <div style="width:30px;height:30px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(r.nombre)}</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text)">${r.nombre}</div>
+          <div style="font-size:10px;color:var(--muted)">Solicitó ${tsol} · Prev ${tprev||'—'} · Retornó ${tret}</div>
+        </div>
+        <div style="text-align:right;margin-left:auto">
+          <div style="font-family:monospace;font-size:12px;font-weight:700;color:var(--text)">${tiempoStr}</div>
+          <div style="margin-top:2px">
+            <span style="padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700;background:#d1fae5;color:#065f46">✓</span>
+            <span style="padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700;background:#fce7f3;color:#9d174d;margin-left:3px">${banioVecLbl(r.veces_jornada)} vez</span>
+          </div>
+        </div>`
+      const histEl = document.getElementById('banio-historial')
+      histEl.querySelector('div[style*="Sin registros"]')?.remove()
+      histEl.appendChild(hist)
+
+    } else if (r.aprobado_seg_at) {
+      // En baño — reconstruir timer desde aprobado_seg_at
+      const startMs = new Date(r.aprobado_seg_at).getTime()
+      const uid = ++banioUID
+      const bCard = document.createElement('div')
+      bCard.style.cssText = 'border-radius:10px;padding:12px 14px;border:1px solid #86efac;background:#f0fdf4'
+      bCard.dataset.dbid = r.id
+      bCard.dataset.nombre = r.nombre
+      bCard.dataset.dni = r.dni
+      bCard.dataset.color = color
+      bCard.dataset.veces = r.veces_jornada
+      bCard.dataset.tsol = tsol
+      bCard.dataset.tprev = tprev
+      bCard.dataset.start = startMs
+      bCard.dataset.uid = uid
+      bCard.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+          <div style="width:34px;height:34px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(r.nombre)}</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text)">${r.nombre}</div>
+            <div style="font-size:10px;color:var(--muted)">Prevención ${tprev}</div>
+          </div>
+          <span style="margin-left:auto;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:#fce7f3;color:#9d174d">${banioVecLbl(r.veces_jornada)} vez</span>
+        </div>
+        <div style="font-family:monospace;font-size:22px;font-weight:700;text-align:center;padding:7px;border-radius:7px;background:rgba(0,0,0,.04);margin-bottom:9px;color:#22c27a" id="btmr-${uid}">00:00</div>
+        <button onclick="banioRetorno(this)" style="width:100%;padding:9px;border-radius:7px;border:none;background:#22c27a;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">✓ Marcar retorno</button>`
+      const colBanio = document.getElementById('banio-col-banio')
+      colBanio.querySelector('div[style*="Nadie"]')?.remove()
+      colBanio.appendChild(bCard)
+
+    } else {
+      // Sin aprobar seg → pendiente confirmar (con X solo en ops)
+      const card = document.createElement('div')
+      card.style.cssText = 'border-radius:10px;padding:12px 14px;border:1px solid #bfdbfe;background:#eff6ff'
+      card.dataset.dbid = r.id
+      card.dataset.nombre = r.nombre
+      card.dataset.dni = r.dni
+      card.dataset.color = color
+      card.dataset.veces = r.veces_jornada
+      card.dataset.tsol = tsol
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+          <div style="width:34px;height:34px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(r.nombre)}</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text)">${r.nombre}</div>
+            <div style="font-size:10px;color:var(--muted)">Solicitó ${tsol}</div>
+          </div>
+          <span style="margin-left:auto;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:#fce7f3;color:#9d174d">${banioVecLbl(r.veces_jornada)} vez</span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button onclick="banioConfirmar(this)" style="flex:1;padding:8px;border-radius:7px;border:none;background:#3b82f6;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">🛡️ Confirmar</button>
+          <button onclick="banioRechazar(this)" style="padding:8px 10px;border-radius:7px;border:1px solid #fce7f3;background:#fce7f3;color:#9d174d;font-size:12px;cursor:pointer;font-weight:700" class="banio-x-ops">✕</button>
+        </div>`
+      const colPrev = document.getElementById('banio-col-prev')
+      colPrev.querySelector('div[style*="Nada"]')?.remove()
+      colPrev.appendChild(card)
+    }
+  }
+
+  // Actualizar historial count
+  const histTotal = document.querySelectorAll('#banio-historial [style*="display:flex"]').length
+  if (histTotal > 0) document.getElementById('banio-hist-cnt').textContent = histTotal + ' registro' + (histTotal!==1?'s':'')
+  banioActualizarCounts()
 }
 
 function banioBuscar(val) {
@@ -3267,20 +3391,6 @@ async function banioRegistrar() {
 
   const dbId = registro?.id || id
 
-  // Log en operaciones
-  const log = document.createElement('div')
-  log.style.cssText = 'padding:9px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;gap:8px'
-  log.innerHTML = `
-    <div style="width:28px;height:28px;border-radius:50%;background:${p._color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(p.nombre)}</div>
-    <div>
-      <div style="font-size:12px;font-weight:700;color:var(--text)">${p.nombre}</div>
-      <div style="font-size:10px;color:var(--muted)">${tsol} · ${banioVecLbl(veces)} vez</div>
-    </div>
-    <span style="margin-left:auto;font-size:10px;color:var(--accent2);font-weight:700">✓ Enviado</span>`
-  const colOps = document.getElementById('banio-col-ops')
-  colOps.querySelector('div[style*="Sin registros"]')?.remove()
-  colOps.prepend(log)
-
   // Card en prevención
   const card = document.createElement('div')
   card.style.cssText = 'border-radius:10px;padding:12px 14px;border:1px solid #bfdbfe;background:#eff6ff'
@@ -3301,7 +3411,7 @@ async function banioRegistrar() {
     </div>
     <div style="display:flex;gap:6px">
       <button onclick="banioConfirmar(this)" style="flex:1;padding:8px;border-radius:7px;border:none;background:#3b82f6;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">🛡️ Confirmar</button>
-      <button onclick="banioRechazar(this)" style="padding:8px 10px;border-radius:7px;border:1px solid #fce7f3;background:#fce7f3;color:#9d174d;font-size:12px;cursor:pointer;font-weight:700">✕</button>
+      <button onclick="banioRechazar(this)" style="padding:8px 10px;border-radius:7px;border:1px solid #fce7f3;background:#fce7f3;color:#9d174d;font-size:12px;cursor:pointer;font-weight:700" class="banio-x-ops">✕</button>
     </div>`
   const colPrev = document.getElementById('banio-col-prev')
   colPrev.querySelector('div[style*="Nada"]')?.remove()
