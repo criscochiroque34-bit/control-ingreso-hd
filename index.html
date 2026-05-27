@@ -3243,28 +3243,8 @@ async function initBanio() {
     const tret = r.retorno_at ? new Date(r.retorno_at).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Lima'}) : null
 
     if (r.retorno_at) {
-      // Completado → historial
-      const mins = Math.floor(r.tiempo_min || 0)
-      const secs = Math.round(((r.tiempo_min||0) - mins) * 60)
-      const tiempoStr = mins + ' min ' + secs + ' seg'
-      const hist = document.createElement('div')
-      hist.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px'
-      hist.innerHTML = `
-        <div style="width:30px;height:30px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(r.nombre)}</div>
-        <div>
-          <div style="font-size:12px;font-weight:700;color:var(--text)">${r.nombre}</div>
-          <div style="font-size:10px;color:var(--muted)">Solicitó ${tsol} · Prev ${tprev||'—'} · Retornó ${tret}</div>
-        </div>
-        <div style="text-align:right;margin-left:auto">
-          <div style="font-family:monospace;font-size:12px;font-weight:700;color:var(--text)">${tiempoStr}</div>
-          <div style="margin-top:2px">
-            <span style="padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700;background:#d1fae5;color:#065f46">✓</span>
-            <span style="padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700;background:#fce7f3;color:#9d174d;margin-left:3px">${banioVecLbl(r.veces_jornada)} vez</span>
-          </div>
-        </div>`
-      const histEl = document.getElementById('banio-historial')
-      histEl.querySelector('div[style*="Sin registros"]')?.remove()
-      histEl.appendChild(hist)
+      // Completado → se renderizará con banioRenderHistorial al final
+      continue
 
     } else if (r.aprobado_seg_at) {
       // En baño — reconstruir timer desde aprobado_seg_at
@@ -3326,8 +3306,8 @@ async function initBanio() {
   }
 
   // Actualizar historial count
-  const histTotal = document.querySelectorAll('#banio-historial [style*="display:flex"]').length
-  if (histTotal > 0) document.getElementById('banio-hist-cnt').textContent = histTotal + ' registro' + (histTotal!==1?'s':'')
+  const completados = registros.filter(r => r.retorno_at)
+  banioRenderHistorial(completados)
   banioActualizarCounts()
 }
 
@@ -3460,15 +3440,85 @@ async function banioConfirmar(btn) {
   banioActualizarCounts()
 }
 
+// ─── HISTORIAL AGRUPADO POR PERSONA ───────────────────
+function banioRenderHistorial(registros) {
+  const histEl = document.getElementById('banio-historial')
+  if (!registros.length) {
+    histEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Sin registros aún</div>'
+    document.getElementById('banio-hist-cnt').textContent = '0 registros'
+    return
+  }
+
+  // Agrupar por DNI manteniendo orden de primera aparición
+  const grupos = {}
+  const orden = []
+  registros.forEach(r => {
+    if (!grupos[r.dni]) { grupos[r.dni] = []; orden.push(r.dni) }
+    grupos[r.dni].push(r)
+  })
+
+  histEl.innerHTML = ''
+  let totalPersonas = 0, totalSalidas = 0, totalMin = 0
+
+  orden.forEach(dni => {
+    const rows = grupos[dni]
+    const nombre = rows[0].nombre
+    const color = BANIO_COLORS[banioPlanilla.findIndex(p=>p.dni===dni) % BANIO_COLORS.length] || '#7a8299'
+    const acumMin = rows.reduce((acc,r) => acc + (r.tiempo_min||0), 0)
+    const acumStr = Math.round(acumMin) + ' min'
+    totalPersonas++
+    totalSalidas += rows.length
+    totalMin += acumMin
+
+    const filasHTML = rows.map(r => {
+      const tsol = r.solicitado_at ? new Date(r.solicitado_at).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Lima'}) : '—'
+      const tret = r.retorno_at ? new Date(r.retorno_at).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Lima'}) : '—'
+      const mins = Math.floor(r.tiempo_min||0)
+      const secs = Math.round(((r.tiempo_min||0) - mins) * 60)
+      const durMin = Math.round(r.tiempo_min||0)
+      const durColor = durMin >= 10 ? '#ef4444' : durMin >= 7 ? '#f59e0b' : '#22c27a'
+      const durBg = durMin >= 10 ? '#fce7f3' : durMin >= 7 ? '#fef3c7' : '#d1fae5'
+      const vecColors = ['','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#06b6d4']
+      const vecColor = vecColors[r.veces_jornada] || '#7a8299'
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border)">
+          <span style="font-size:11px;font-weight:700;color:${vecColor};width:44px;flex-shrink:0">${banioVecLbl(r.veces_jornada)} vez</span>
+          <span style="font-family:monospace;font-size:12px;font-weight:600;color:var(--text)">${tsol}</span>
+          <span style="color:var(--border);font-size:12px">→</span>
+          <span style="font-family:monospace;font-size:12px;font-weight:600;color:var(--text)">${tret}</span>
+          <span style="margin-left:auto;padding:2px 8px;border-radius:6px;font-family:monospace;font-size:11px;font-weight:700;background:${durBg};color:${durColor}">${mins} min ${secs} seg</span>
+        </div>`
+    }).join('')
+
+    const card = document.createElement('div')
+    card.dataset.dnihist = dni
+    card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px'
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--bg);border-bottom:1px solid var(--border)">
+        <div style="width:34px;height:34px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(nombre)}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${nombre}</div>
+        <span style="margin-left:auto;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:#fce7f3;color:#9d174d">${rows.length} ${rows.length===1?'salida':'salidas'}</span>
+      </div>
+      ${filasHTML}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:var(--bg);border-top:2px solid var(--border)">
+        <span style="font-size:11px;font-weight:600;color:var(--muted)">Total jornada</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700;background:#ede9fe;color:#5b21b6">${rows.length} ${rows.length===1?'vez':'veces'}</span>
+          <span style="padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700;background:#dbeafe;color:#1e40af">${acumStr} acum.</span>
+        </div>
+      </div>`
+    histEl.appendChild(card)
+  })
+
+  document.getElementById('banio-hist-cnt').textContent =
+    `${totalPersonas} persona${totalPersonas!==1?'s':''} · ${totalSalidas} salida${totalSalidas!==1?'s':''} · ${Math.round(totalMin)} min total`
+}
+
 async function banioRetorno(btn) {
   const card = btn.closest('[data-dbid]')
   const d = card.dataset
   const elapsed = Date.now() - parseInt(d.start)
-  const mins = Math.floor(elapsed / 60000)
-  const secs = Math.floor((elapsed % 60000) / 1000)
-  const tiempoStr = mins + ' min ' + secs + ' seg'
   const tiempoMin = parseFloat((elapsed / 60000).toFixed(2))
-  const tret = banioAhora()
   const v = parseInt(d.veces)
   banioVeces[card.dataset.dni] = v
 
@@ -3480,26 +3530,14 @@ async function banioRetorno(btn) {
   card.remove()
   banioCheckEmpty('banio-col-banio', '🚻 Nadie en baño')
 
-  const hist = document.createElement('div')
-  hist.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px'
-  hist.innerHTML = `
-    <div style="width:30px;height:30px;border-radius:50%;background:${d.color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(d.nombre)}</div>
-    <div>
-      <div style="font-size:12px;font-weight:700;color:var(--text)">${d.nombre}</div>
-      <div style="font-size:10px;color:var(--muted)">Solicitó ${d.tsol} · Prev ${d.tprev} · Retornó ${tret}</div>
-    </div>
-    <div style="text-align:right;margin-left:auto">
-      <div style="font-family:monospace;font-size:12px;font-weight:700;color:var(--text)">${tiempoStr}</div>
-      <div style="margin-top:2px">
-        <span style="padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700;background:#d1fae5;color:#065f46">✓</span>
-        <span style="padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700;background:#fce7f3;color:#9d174d;margin-left:3px">${banioVecLbl(v)} vez</span>
-      </div>
-    </div>`
-  const histEl = document.getElementById('banio-historial')
-  histEl.querySelector('div[style*="Sin registros"]')?.remove()
-  histEl.prepend(hist)
-  const total = histEl.querySelectorAll('[style*="display:flex"]').length
-  document.getElementById('banio-hist-cnt').textContent = total + ' registro' + (total !== 1 ? 's' : '')
+  // Recargar historial completo desde Supabase y re-renderizar
+  const { data: registros } = await db.from('banio_planilla')
+    .select('*')
+    .gte('solicitado_at', banioJornadaInicio())
+    .not('retorno_at', 'is', null)
+    .order('solicitado_at', { ascending: true })
+
+  banioRenderHistorial(registros || [])
   banioActualizarCounts()
 }
 
