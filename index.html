@@ -568,11 +568,11 @@ tr:hover td{background:#f7f9fc}
 <div class="page" id="page-banio">
   <div class="section-title"><div class="dot"></div> Control de Baño — Personal Planilla</div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:14px;overflow:hidden;border:1px solid var(--border);box-shadow:0 2px 12px rgba(30,36,51,.07);margin-bottom:16px">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:14px;border:1px solid var(--border);box-shadow:0 2px 12px rgba(30,36,51,.07);margin-bottom:16px">
 
     <!-- ══ OPERACIONES ══ -->
-    <div style="background:var(--surface);border-right:2px solid var(--border)">
-      <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--nav-bg)">
+    <div style="background:var(--surface);border-right:2px solid var(--border);border-radius:14px 0 0 14px">
+      <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--nav-bg);border-radius:14px 0 0 0">
         <div>
           <div style="font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:7px">👷 Operaciones</div>
           <div style="font-size:10px;color:#9aa3b8;margin-top:2px">Registra la salida al baño</div>
@@ -603,17 +603,17 @@ tr:hover td{background:#f7f9fc}
             <span id="banio-motivo-actual">🚻 Baño</span>
             <span style="color:var(--muted);font-size:12px;transition:transform .2s" id="banio-motivo-chev">▼</span>
           </div>
-          <div id="banio-motivo-dd" style="position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;z-index:100;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.12);display:none">
-            <div id="banio-motivos-lista"></div>
-            <div onclick="banioMostrarAgregar()" style="padding:10px 14px;border-top:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:12px;font-weight:700;color:var(--accent3);display:flex;align-items:center;gap:6px" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='var(--bg)'">
+          <div id="banio-motivo-dd" style="position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.12);display:none">
+            <div id="banio-motivos-lista" style="max-height:160px;overflow-y:auto"></div>
+            <div onclick="banioMostrarAgregar()" style="padding:10px 14px;border-top:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:12px;font-weight:700;color:var(--accent3);display:flex;align-items:center;gap:6px;border-radius:0 0 10px 10px" id="banio-btn-agregar-motivo" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='var(--bg)'">
               <span style="font-size:14px">+</span> Agregar nuevo motivo
             </div>
-            <div id="banio-motivo-nuevo-form" style="display:none;padding:10px;border-top:1px solid var(--border);background:var(--bg)">
+            <div id="banio-motivo-nuevo-form" style="display:none;padding:12px;border-top:1px solid var(--border);background:var(--bg);border-radius:0 0 10px 10px">
               <input id="banio-motivo-nuevo-input" type="text" placeholder="Nombre del motivo..."
-                style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);margin-bottom:6px;outline:none"/>
+                style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;color:var(--text);background:var(--surface);margin-bottom:8px;outline:none"/>
               <div style="display:flex;gap:6px">
-                <button onclick="banioAgregarMotivo()" style="flex:1;padding:7px;border-radius:7px;border:none;background:var(--nav-bg);color:#fff;font-size:11px;font-weight:700;cursor:pointer">Guardar</button>
-                <button onclick="banioCancelarAgregar()" style="flex:1;padding:7px;border-radius:7px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer">Cancelar</button>
+                <button onclick="banioAgregarMotivo()" style="flex:1;padding:9px;border-radius:7px;border:none;background:#22c27a;color:#fff;font-size:12px;font-weight:700;cursor:pointer">✓ Guardar</button>
+                <button onclick="banioCancelarAgregar()" style="flex:1;padding:9px;border-radius:7px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer">Cancelar</button>
               </div>
             </div>
           </div>
@@ -628,8 +628,8 @@ tr:hover td{background:#f7f9fc}
     </div>
 
     <!-- ══ PREVENCIÓN ══ -->
-    <div style="background:var(--surface)">
-      <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:#1e3a5f">
+    <div style="background:var(--surface);border-radius:0 14px 14px 0">
+      <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:#1e3a5f;border-radius:0 14px 0 0">
         <div>
           <div style="font-size:13px;font-weight:700;color:#fff">🛡️ Equipo Prevención</div>
           <div style="font-size:10px;color:#9aa3b8;margin-top:2px">Aprueba y controla el tiempo</div>
