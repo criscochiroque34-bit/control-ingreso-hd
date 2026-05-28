@@ -596,9 +596,32 @@ tr:hover td{background:#f7f9fc}
           <button onclick="banioLimpiar()" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1">✕</button>
         </div>
 
+        <!-- MOTIVO -->
+        <div style="position:relative;margin-bottom:10px">
+          <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;display:block">Motivo de salida</label>
+          <div onclick="banioToggleMotivos()" style="padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;color:var(--text);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:space-between" id="banio-motivo-btn">
+            <span id="banio-motivo-actual">🚻 Baño</span>
+            <span style="color:var(--muted);font-size:12px;transition:transform .2s" id="banio-motivo-chev">▼</span>
+          </div>
+          <div id="banio-motivo-dd" style="position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;z-index:100;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.12);display:none">
+            <div id="banio-motivos-lista"></div>
+            <div onclick="banioMostrarAgregar()" style="padding:10px 14px;border-top:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:12px;font-weight:700;color:var(--accent3);display:flex;align-items:center;gap:6px" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='var(--bg)'">
+              <span style="font-size:14px">+</span> Agregar nuevo motivo
+            </div>
+            <div id="banio-motivo-nuevo-form" style="display:none;padding:10px;border-top:1px solid var(--border);background:var(--bg)">
+              <input id="banio-motivo-nuevo-input" type="text" placeholder="Nombre del motivo..."
+                style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);margin-bottom:6px;outline:none"/>
+              <div style="display:flex;gap:6px">
+                <button onclick="banioAgregarMotivo()" style="flex:1;padding:7px;border-radius:7px;border:none;background:var(--nav-bg);color:#fff;font-size:11px;font-weight:700;cursor:pointer">Guardar</button>
+                <button onclick="banioCancelarAgregar()" style="flex:1;padding:7px;border-radius:7px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <button id="banio-btn-reg" onclick="banioRegistrar()" disabled
           style="width:100%;padding:12px;border-radius:8px;border:none;background:#f59e0b;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">
-          🚻 Registrar salida al baño
+          🚻 Registrar salida
         </button>
         <style>#banio-btn-reg:disabled{background:#e5e7eb;color:#9ca3af;cursor:not-allowed}</style>
       </div>
@@ -3188,6 +3211,8 @@ let banioPlanilla = [] // cache de planilla
 let banioSelPersona = null
 let banioVeces = {}
 let banioUID = 0
+let banioMotivos = []
+let banioMotivoSel = 'Baño'
 const BANIO_COLORS = ['#f59e0b','#8b5cf6','#3b82f6','#22c27a','#e85d9b','#ef4444','#06b6d4']
 let banioColorIdx = 0
 
@@ -3215,6 +3240,9 @@ async function initBanio() {
     banioPlanilla = data || []
   }
 
+  // Cargar motivos disponibles
+  await banioCargarMotivos()
+
   const jornadaInicio = banioJornadaInicio()
 
   // Traer todos los registros de la jornada actual
@@ -3225,10 +3253,10 @@ async function initBanio() {
 
   if (!registros?.length) return
 
-  // Reconstruir contadores de veces por DNI
+  // Reconstruir contadores de veces por DNI — cuenta TODOS los registros (no solo completados)
   banioVeces = {}
   registros.forEach(r => {
-    if (r.retorno_at) banioVeces[r.dni] = r.veces_jornada
+    banioVeces[r.dni] = (banioVeces[r.dni] || 0) + 1
   })
 
   // Limpiar UI antes de reconstruir
@@ -3311,21 +3339,102 @@ async function initBanio() {
   banioActualizarCounts()
 }
 
-function banioBuscar(val) {
+// ─── MOTIVOS ──────────────────────────────────────────
+async function banioCargarMotivos() {
+  const { data } = await db.from('motivos_banio').select('*').order('id')
+  banioMotivos = data || [{ id: 0, nombre: 'Baño' }]
+  banioRenderMotivos()
+}
+
+function banioRenderMotivos() {
+  const lista = document.getElementById('banio-motivos-lista')
+  if (!lista) return
+  lista.innerHTML = banioMotivos.map(m => `
+    <div onclick="banioSelMotivo('${m.nombre.replace(/'/g, "\\'")}')" style="padding:9px 14px;cursor:pointer;font-size:13px;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between" onmouseover="this.style.background='#fff8e6'" onmouseout="this.style.background='transparent'">
+      <span>${m.nombre === 'Baño' ? '🚻' : '📋'} ${m.nombre}</span>
+      ${m.nombre === banioMotivoSel ? '<span style="color:#22c27a;font-weight:700">✓</span>' : ''}
+    </div>`).join('')
+}
+
+function banioToggleMotivos() {
+  const dd = document.getElementById('banio-motivo-dd')
+  const chev = document.getElementById('banio-motivo-chev')
+  const abierto = dd.style.display === 'block'
+  dd.style.display = abierto ? 'none' : 'block'
+  chev.style.transform = abierto ? '' : 'rotate(180deg)'
+  if (!abierto) banioCancelarAgregar()
+}
+
+function banioSelMotivo(nombre) {
+  banioMotivoSel = nombre
+  const icon = nombre === 'Baño' ? '🚻' : '📋'
+  document.getElementById('banio-motivo-actual').textContent = `${icon} ${nombre}`
+  banioRenderMotivos()
+  banioToggleMotivos()
+}
+
+function banioMostrarAgregar() {
+  document.getElementById('banio-motivo-nuevo-form').style.display = 'block'
+  document.getElementById('banio-motivo-nuevo-input').focus()
+}
+
+function banioCancelarAgregar() {
+  const form = document.getElementById('banio-motivo-nuevo-form')
+  if (form) {
+    form.style.display = 'none'
+    document.getElementById('banio-motivo-nuevo-input').value = ''
+  }
+}
+
+async function banioAgregarMotivo() {
+  const input = document.getElementById('banio-motivo-nuevo-input')
+  const nombre = input.value.trim()
+  if (!nombre) { showToast('Ingresa un nombre','error'); return }
+
+  // Verificar que no exista (case insensitive)
+  if (banioMotivos.some(m => m.nombre.toLowerCase() === nombre.toLowerCase())) {
+    showToast('Ese motivo ya existe','warning')
+    return
+  }
+
+  const { data, error } = await db.from('motivos_banio').insert({ nombre }).select().single()
+  if (error) { showToast('Error al guardar','error'); return }
+
+  banioMotivos.push(data)
+  banioMotivoSel = data.nombre
+  document.getElementById('banio-motivo-actual').textContent = `📋 ${data.nombre}`
+  banioCancelarAgregar()
+  banioRenderMotivos()
+  banioToggleMotivos()
+  showToast('Motivo agregado','success')
+}
+
+async function banioBuscar(val) {
   const dd = document.getElementById('banio-dd')
   if (val.length < 2) { dd.style.display='none'; return }
   const matches = banioPlanilla.filter(p => p.nombre.toLowerCase().includes(val.toLowerCase())).slice(0,8)
   if (!matches.length) { dd.style.display='none'; return }
+
+  // Refrescar contadores desde BD para mostrar veces actualizadas en el dropdown
+  const jornadaInicio = banioJornadaInicio()
+  const dnis = matches.map(p => p.dni)
+  const { data: registros } = await db.from('banio_planilla')
+    .select('dni')
+    .in('dni', dnis)
+    .gte('solicitado_at', jornadaInicio)
+  const cntPorDni = {}
+  ;(registros||[]).forEach(r => cntPorDni[r.dni] = (cntPorDni[r.dni]||0) + 1)
+
   dd.innerHTML = matches.map(p => {
     const color = BANIO_COLORS[banioPlanilla.indexOf(p) % BANIO_COLORS.length]
-    const veces = banioVeces[p.dni] || 0
+    const veces = cntPorDni[p.dni] || 0
     return `<div onclick="banioSel('${p.dni}')" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f0f2f6;transition:background .1s" onmouseover="this.style.background='#fffbeb'" onmouseout="this.style.background='transparent'">
       <div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(p.nombre)}</div>
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">${p.nombre}</div>
         ${p.area ? `<div style="font-size:10px;color:var(--muted)">${p.area}</div>` : ''}
       </div>
-      ${veces > 0 ? `<span style="margin-left:auto;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:700;background:#fce7f3;color:#9d174d">${banioVecLbl(veces+1)} vez</span>` : ''}
+      ${veces > 0 ? `<span style="margin-left:auto;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:700;background:#fce7f3;color:#9d174d">Próxima: ${banioVecLbl(veces+1)} vez</span>` : ''}
     </div>`
   }).join('')
   dd.style.display = 'block'
@@ -3352,21 +3461,33 @@ function banioLimpiar() {
   document.getElementById('banio-sel').style.display = 'none'
   document.getElementById('banio-btn-reg').disabled = true
   document.getElementById('banio-search').value = ''
+  // Reset motivo a Baño
+  banioMotivoSel = 'Baño'
+  const ma = document.getElementById('banio-motivo-actual')
+  if (ma) ma.textContent = '🚻 Baño'
 }
 
 async function banioRegistrar() {
   if (!banioSelPersona) return
   const p = banioSelPersona
   const id = ++banioUID
-  const veces = (banioVeces[p.dni] || 0) + 1
   const tsol = banioAhora()
   const fechaHoy = today()
+
+  // Calcular veces consultando BD — cuenta TODOS los registros del DNI en la jornada actual
+  const jornadaInicio = banioJornadaInicio()
+  const { count } = await db.from('banio_planilla')
+    .select('*', { count: 'exact', head: true })
+    .eq('dni', p.dni)
+    .gte('solicitado_at', jornadaInicio)
+  const veces = (count || 0) + 1
 
   // Guardar en Supabase
   const { data: registro } = await db.from('banio_planilla').insert({
     dni: p.dni, nombre: p.nombre, fecha: fechaHoy,
     solicitado_at: new Date().toISOString(),
-    veces_jornada: veces
+    veces_jornada: veces,
+    motivo: banioMotivoSel
   }).select().single()
 
   const dbId = registro?.id || id
@@ -3380,12 +3501,13 @@ async function banioRegistrar() {
   card.dataset.color = p._color
   card.dataset.veces = veces
   card.dataset.tsol = tsol
+  card.dataset.motivo = banioMotivoSel
   card.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
       <div style="width:34px;height:34px;border-radius:50%;background:${p._color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(p.nombre)}</div>
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">${p.nombre}</div>
-        <div style="font-size:10px;color:var(--muted)">Solicitó ${tsol}</div>
+        <div style="font-size:10px;color:var(--muted)">Solicitó ${tsol} · ${banioMotivoSel === 'Baño' ? '🚻' : '📋'} ${banioMotivoSel}</div>
       </div>
       <span style="margin-left:auto;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:#fce7f3;color:#9d174d">${banioVecLbl(veces)} vez</span>
     </div>
@@ -3396,6 +3518,11 @@ async function banioRegistrar() {
   const colPrev = document.getElementById('banio-col-prev')
   colPrev.querySelector('div[style*="Nada"]')?.remove()
   colPrev.prepend(card)
+
+  // Reset motivo a "Baño" por defecto
+  banioMotivoSel = 'Baño'
+  document.getElementById('banio-motivo-actual').textContent = '🚻 Baño'
+  banioRenderMotivos()
 
   banioLimpiar()
   banioActualizarCounts()
@@ -3421,13 +3548,15 @@ async function banioConfirmar(btn) {
   bCard.dataset.tsol = d.tsol
   bCard.dataset.tprev = tprev
   bCard.dataset.start = startMs
+  bCard.dataset.motivo = d.motivo
   bCard.dataset.uid = ++banioUID
+  const motivoIcon = d.motivo === 'Baño' ? '🚻' : '📋'
   bCard.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
       <div style="width:34px;height:34px;border-radius:50%;background:${d.color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(d.nombre)}</div>
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">${d.nombre}</div>
-        <div style="font-size:10px;color:var(--muted)">Prevención ${tprev}</div>
+        <div style="font-size:10px;color:var(--muted)">Prev ${tprev} · ${motivoIcon} ${d.motivo}</div>
       </div>
       <span style="margin-left:auto;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:#fce7f3;color:#9d174d">${banioVecLbl(parseInt(d.veces))} vez</span>
     </div>
@@ -3475,18 +3604,16 @@ function banioRenderHistorial(registros) {
       const tret = r.retorno_at ? new Date(r.retorno_at).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Lima'}) : '—'
       const mins = Math.floor(r.tiempo_min||0)
       const secs = Math.round(((r.tiempo_min||0) - mins) * 60)
-      const durMin = Math.round(r.tiempo_min||0)
-      const durColor = durMin >= 10 ? '#ef4444' : durMin >= 7 ? '#f59e0b' : '#22c27a'
-      const durBg = durMin >= 10 ? '#fce7f3' : durMin >= 7 ? '#fef3c7' : '#d1fae5'
-      const vecColors = ['','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#06b6d4']
-      const vecColor = vecColors[r.veces_jornada] || '#7a8299'
+      const motivo = r.motivo || 'Baño'
+      const motivoIcon = motivo === 'Baño' ? '🚻' : '📋'
       return `
         <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border)">
-          <span style="font-size:11px;font-weight:700;color:${vecColor};width:44px;flex-shrink:0">${banioVecLbl(r.veces_jornada)} vez</span>
+          <span style="font-size:11px;font-weight:700;color:var(--accent3);width:44px;flex-shrink:0">${banioVecLbl(r.veces_jornada)} vez</span>
           <span style="font-family:monospace;font-size:12px;font-weight:600;color:var(--text)">${tsol}</span>
           <span style="color:var(--border);font-size:12px">→</span>
           <span style="font-family:monospace;font-size:12px;font-weight:600;color:var(--text)">${tret}</span>
-          <span style="margin-left:auto;padding:2px 8px;border-radius:6px;font-family:monospace;font-size:11px;font-weight:700;background:${durBg};color:${durColor}">${mins} min ${secs} seg</span>
+          <span style="font-size:11px;color:var(--muted);padding:2px 8px;background:var(--bg);border-radius:6px;display:inline-flex;align-items:center;gap:3px">${motivoIcon} ${motivo}</span>
+          <span style="margin-left:auto;font-family:monospace;font-size:11px;font-weight:700;color:var(--text)">${mins} min ${secs} seg</span>
         </div>`
     }).join('')
 
@@ -3586,6 +3713,16 @@ document.addEventListener('click', e => {
   if (!e.target.closest('#banio-search') && !e.target.closest('#banio-dd')) {
     const dd = document.getElementById('banio-dd')
     if (dd) dd.style.display = 'none'
+  }
+  // Cerrar dropdown de motivos al click afuera
+  if (!e.target.closest('#banio-motivo-btn') && !e.target.closest('#banio-motivo-dd')) {
+    const mdd = document.getElementById('banio-motivo-dd')
+    if (mdd && mdd.style.display === 'block') {
+      mdd.style.display = 'none'
+      const chev = document.getElementById('banio-motivo-chev')
+      if (chev) chev.style.transform = ''
+      banioCancelarAgregar()
+    }
   }
 })
 
