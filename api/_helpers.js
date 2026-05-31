@@ -156,7 +156,7 @@ export function tablaPersonal(personal, conTiempo = true) {
           <th style="padding:8px 10px;color:#fff;text-align:left;font-size:11px">Nombre</th>
           <th style="padding:8px 10px;color:#fff;text-align:center;font-size:11px">Ingreso</th>
           <th style="padding:8px 10px;color:#fff;text-align:center;font-size:11px">Salida</th>
-          <th style="padding:8px 10px;color:#fff;text-align:center;font-size:11px">Break</th>
+          <th style="padding:8px 10px;color:#fff;text-align:center;font-size:11px">Tiempo Break</th>
           <th style="padding:8px 10px;color:#fff;text-align:center;font-size:11px">Baño</th>
           ${conTiempo ? '<th style="padding:8px 10px;color:#fff;text-align:center;font-size:11px">Horas trab.</th>' : ''}
         </tr>
