@@ -33,7 +33,7 @@ export default async function handler(req, res) {
       const breakMin = calcBreakMinLocal(p.dni, todosEventos)
       const { veces: banioVeces, mins: banioMin } = calcBanioLocal(p.dni, todosEventos)
       const trabajadoMin = calcTiempoTrabajado(p.ingreso, p.salida, breakMin)
-      p._breakStr = breakMin > 0 ? `✓ ${(breakMin/60).toFixed(1)}h` : '—'
+      p._breakStr = breakMin > 0 ? `${breakMin} min` : '—'
       p._banioStr = banioVeces > 0 ? `${banioVeces}v/${banioMin}min` : '—'
       p._trabajadoMin = trabajadoMin
     }
