@@ -1163,7 +1163,7 @@ const TIPO_BADGE = {ingreso:'badge-dentro',salida:'badge-fuera',break_salida:'ba
 const ESTADO_BADGE = {dentro:{label:'Dentro',cls:'badge-dentro'},break:{label:'Break',cls:'badge-break'},banio:{label:'Baño',cls:'badge-banio'},salida:{label:'Salió',cls:'badge-fuera'}}
 const ESTADO_MAP = {ingreso:'dentro',salida:'salida',break_salida:'break',break_retorno:'dentro',banio_salida:'banio',banio_retorno:'dentro'}
 const ACCION_LABEL = {ingreso:'Ingreso registrado',salida:'Salida registrada',break_salida:'Break iniciado',break_retorno:'Break finalizado',banio_salida:'Salida a baño',banio_retorno:'Retorno de baño'}
-const TOLERANCIA_BREAK_MS = 45 * 60 * 1000  // 45 min para break
+const TOLERANCIA_BREAK_MS = 60 * 60 * 1000  // 60 min para break
 const TOLERANCIA_BANIO_MS = 10 * 60 * 1000  // 10 min para baño
 const BANIO_ALERTA = 3                        // alerta mayor a partir de 3ra salida
 
@@ -1758,7 +1758,9 @@ async function ejecutarMarcar(tipo) {
   if (!currentPersona) return
   const ahora = fmt(new Date())
   const nuevoEstado = ESTADO_MAP[tipo]
-  const existente = estadoHoy.find(e => e.dni === currentPersona.dni)
+  // Usar el registro de la jornada más alta (consistente con marcar())
+  const registrosDni = estadoHoy.filter(e => e.dni === currentPersona.dni)
+  const existente = registrosDni.sort((a, b) => (b.jornada || 1) - (a.jornada || 1))[0]
 
   // Determinar si es REINGRESO (ingreso cuando ya tiene salida)
   const esReingreso = tipo === 'ingreso' && existente?.estado === 'salida'
@@ -1989,7 +1991,7 @@ setInterval(() => {
     const elapsed = Date.now() - start
 
     if (e.estado === 'break') {
-      // Countdown: 45:00 → 00:00 → negativo = rojo
+      // Countdown: 60:00 → 00:00 → negativo = rojo
       const remaining = TOLERANCIA_BREAK_MS - elapsed
       const abs = Math.abs(remaining)
       const mins = Math.floor(abs/60000)
@@ -3213,6 +3215,7 @@ let banioVeces = {}
 let banioUID = 0
 let banioMotivos = []
 let banioMotivoSel = 'Baño'
+let banioRealtimeActivo = false
 const BANIO_COLORS = ['#f59e0b','#8b5cf6','#3b82f6','#22c27a','#e85d9b','#ef4444','#06b6d4']
 let banioColorIdx = 0
 
@@ -3240,29 +3243,45 @@ async function initBanio() {
     banioPlanilla = data || []
   }
 
-  // Cargar motivos disponibles
-  await banioCargarMotivos()
+  // Suscripción realtime — sincroniza entre dispositivos (operaciones / prevención)
+  if (!banioRealtimeActivo) {
+    banioRealtimeActivo = true
+    db.channel('banio_planilla_rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'banio_planilla' }, () => {
+        if (enPagina('banio')) banioRecargar()
+      })
+      .subscribe()
+  }
 
+  await banioCargarMotivos()
+  await banioRecargar()
+}
+
+// Recarga el estado desde Supabase sin re-suscribir — usada por realtime y al abrir
+async function banioRecargar() {
   const jornadaInicio = banioJornadaInicio()
 
-  // Traer todos los registros de la jornada actual
   const { data: registros } = await db.from('banio_planilla')
     .select('*')
     .gte('solicitado_at', jornadaInicio)
     .order('solicitado_at', { ascending: true })
 
-  if (!registros?.length) return
+  // Limpiar UI antes de reconstruir (siempre, incluso si está vacío)
+  document.getElementById('banio-col-prev').innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:12px">⏳ Nada pendiente</div>'
+  document.getElementById('banio-col-banio').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">🚻 Nadie en baño</div>'
+  document.getElementById('banio-historial').innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Sin registros aún</div>'
 
-  // Reconstruir contadores de veces por DNI — cuenta TODOS los registros (no solo completados)
+  if (!registros?.length) {
+    document.getElementById('banio-hist-cnt').textContent = '0 registros'
+    banioActualizarCounts()
+    return
+  }
+
+  // Reconstruir contadores de veces por DNI — cuenta TODOS los registros
   banioVeces = {}
   registros.forEach(r => {
     banioVeces[r.dni] = (banioVeces[r.dni] || 0) + 1
   })
-
-  // Limpiar UI antes de reconstruir
-  document.getElementById('banio-col-prev').innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:12px">⏳ Nada pendiente</div>'
-  document.getElementById('banio-col-banio').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">🚻 Nadie en baño</div>'
-  document.getElementById('banio-historial').innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Sin registros aún</div>'
 
   for (const r of registros) {
     const color = BANIO_COLORS[banioPlanilla.findIndex(p=>p.dni===r.dni) % BANIO_COLORS.length] || '#7a8299'
@@ -3578,12 +3597,29 @@ function banioRenderHistorial(registros) {
     return
   }
 
-  // Agrupar por DNI manteniendo orden de primera aparición
+  // Agrupar por DNI
   const grupos = {}
-  const orden = []
   registros.forEach(r => {
-    if (!grupos[r.dni]) { grupos[r.dni] = []; orden.push(r.dni) }
+    if (!grupos[r.dni]) { grupos[r.dni] = [] }
     grupos[r.dni].push(r)
+  })
+
+  // Ordenar las salidas de cada persona: más reciente arriba
+  Object.values(grupos).forEach(rows => {
+    rows.sort((a, b) => {
+      const ta = new Date(a.retorno_at || a.solicitado_at).getTime()
+      const tb = new Date(b.retorno_at || b.solicitado_at).getTime()
+      return tb - ta
+    })
+  })
+
+  // Ordenar las personas por su actividad más reciente (la primera fila ya es la más reciente)
+  const orden = Object.keys(grupos).sort((dniA, dniB) => {
+    const ra = grupos[dniA][0]
+    const rb = grupos[dniB][0]
+    const ta = new Date(ra.retorno_at || ra.solicitado_at).getTime()
+    const tb = new Date(rb.retorno_at || rb.solicitado_at).getTime()
+    return tb - ta
   })
 
   histEl.innerHTML = ''
