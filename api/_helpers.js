@@ -28,14 +28,24 @@ export const fmtMin = m => {
 export const calcTiempoTrabajado = (ingreso, salida, breakMin) => {
   if (!ingreso || !salida) return null
   try {
-    const parse = s => {
-      const [f, h] = s.split(' ')
-      const [d,m,y] = f.split('/')
-      const [hh,mm] = h.split(':')
-      return Date.UTC(+y,+m-1,+d,+hh+5,+mm,0)
+    // Extraer solo HH:MM de cada string (formato "DD/MM/YYYY HH:MM")
+    const minutosDelDia = s => {
+      const h = s.split(' ').slice(-1)[0]  // último token = "HH:MM"
+      const [hh, mm] = h.split(':').map(Number)
+      if (isNaN(hh) || isNaN(mm)) return null
+      return hh * 60 + mm
     }
-    const diffMin = (parse(salida) - parse(ingreso)) / 60000
-    const trabajado = diffMin - (breakMin || 0)
+    const mIng = minutosDelDia(ingreso)
+    const mSal = minutosDelDia(salida)
+    if (mIng === null || mSal === null) return null
+
+    // Si la salida es menor que el ingreso, cruzó UNA medianoche (turno noche)
+    let diffMin = mSal - mIng
+    if (diffMin < 0) diffMin += 24 * 60
+
+    // El break solo resta si es positivo (protección contra datos corruptos)
+    const brk = (breakMin && breakMin > 0) ? breakMin : 0
+    const trabajado = diffMin - brk
     return Math.max(0, trabajado)
   } catch { return null }
 }
