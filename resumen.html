@@ -231,12 +231,23 @@ const getColor = emp => { if(!avatarMap[emp]) avatarMap[emp]=AVATARES_COLORS[ava
 
 const ESTADO_BADGE = {dentro:{label:'Dentro',cls:'b-d'},break:{label:'Break',cls:'b-b'},banio:{label:'Baño',cls:'b-bn'},salida:{label:'Salió',cls:'b-s'}}
 
-// Calcular minutos entre dos strings "DD/MM/YYYY HH:MM"
+// Calcular minutos entre dos timestamps — acepta ISO o "DD/MM/YYYY HH:MM"
 const minEntre = (a,b) => {
   if(!a||!b) return null
   try {
-    const parse = s => { const [f,h]=s.split(' ');const [d,m,y]=f.split('/');const [hh,mm]=h.split(':'); return new Date(`${y}-${m}-${d}T${hh}:${mm}:00-05:00`) }
-    return Math.max(0, Math.round((parse(b)-parse(a))/60000))
+    const parse = s => {
+      if (!s) return null
+      // ISO format (2026-05-30T03:00:00Z)
+      if (s.includes('T') || s.match(/^\d{4}-\d{2}-\d{2}/)) return new Date(s).getTime()
+      // "DD/MM/YYYY HH:MM" format
+      const [f,h]=s.split(' ')
+      const [d,m,y]=f.split('/')
+      const [hh,mm]=h.split(':')
+      return new Date(`${y}-${m}-${d}T${hh}:${mm}:00-05:00`).getTime()
+    }
+    const ta=parse(a), tb=parse(b)
+    if(!ta||!tb) return null
+    return Math.max(0, Math.round((tb-ta)/60000))
   } catch { return null }
 }
 const fmtMin = m => { if(m===null||m===undefined) return null; if(m<60) return m+'min'; return Math.floor(m/60)+'h '+(m%60)+'min' }
@@ -339,7 +350,7 @@ async function cargarDatos() {
       if (p.estado==='break') {
         breakStr = 'En curso'
       } else if (evBreakIn?.length) {
-        const mins = minEntre(evBreakOut[0].fecha, evBreakIn[0].fecha)
+        const mins = minEntre(evBreakOut[0].fecha_iso, evBreakIn[0].fecha_iso)
         breakStr = mins!==null ? fmtMin(mins) : 'Sin break'
       }
     }
@@ -349,7 +360,7 @@ async function cargarDatos() {
     const evBanioIn = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='banio_retorno')||[]
     const banioVeces = evBanioOut.length
     let banioMin = 0
-    evBanioOut.forEach((bo,i)=>{ const bi=evBanioIn[i]; if(bi){ const m=minEntre(bo.fecha,bi.fecha); if(m) banioMin+=m } })
+    evBanioOut.forEach((bo,i)=>{ const bi=evBanioIn[i]; if(bi){ const m=minEntre(bo.fecha_iso,bi.fecha_iso); if(m) banioMin+=m } })
     const banioStr = banioVeces===0 ? '0 veces' : `${banioVeces} ${banioVeces===1?'vez':'veces'}${banioMin>0?' / '+fmtMin(banioMin):''}`
 
     return `<div class="pc${p.estado==='salida'?' pc-salio':''}">
@@ -403,12 +414,12 @@ async function buscarReporte() {
     const evBO = evs.filter(e=>e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
     const evBI = evs.filter(e=>e.tipo==='break_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
     let breakStr='Sin break'
-    if (evBO.length) { breakStr=p.estado==='break'?'En curso': (evBI.length? (fmtMin(minEntre(evBO[0].fecha,evBI[0].fecha))||'Sin break'):'Sin break') }
+    if (evBO.length) { breakStr=p.estado==='break'?'En curso': (evBI.length? (fmtMin(minEntre(evBO[0].fecha_iso,evBI[0].fecha_iso))||'Sin break'):'Sin break') }
 
     const evBOut = evs.filter(e=>e.tipo==='banio_salida')
     const evBIn = evs.filter(e=>e.tipo==='banio_retorno')
     let banioMin=0
-    evBOut.forEach((bo,i)=>{ const bi=evBIn[i]; if(bi){ const m=minEntre(bo.fecha,bi.fecha); if(m) banioMin+=m } })
+    evBOut.forEach((bo,i)=>{ const bi=evBIn[i]; if(bi){ const m=minEntre(bo.fecha_iso,bi.fecha_iso); if(m) banioMin+=m } })
     const banioStr = evBOut.length===0?'0 veces':`${evBOut.length} ${evBOut.length===1?'vez':'veces'}${banioMin>0?' / '+fmtMin(banioMin):''}`
 
     return { p, esTN, breakStr, banioStr }
