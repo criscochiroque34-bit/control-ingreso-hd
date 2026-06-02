@@ -324,12 +324,17 @@ async function cargarDatos() {
   document.getElementById('rt-dia').textContent = dia
   document.getElementById('rt-noche').textContent = noche
 
-  // Eventos de hoy Y ayer para cubrir turno noche completo
-  const [{ data: evHoy }, { data: evAyer }] = await Promise.all([
-    db.from('eventos').select('*').eq('fecha', fechaHoy).eq('empresa', empresaActual),
-    db.from('eventos').select('*').eq('fecha', fechaAyer).eq('empresa', empresaActual)
-  ])
-  const eventos = [...(evHoy||[]), ...(evAyer||[])]
+  // Eventos por ventana de timestamp (6am ayer → 6am mañana) — cubre turno noche completo
+  // La columna 'fecha' guarda formato con hora, por eso filtramos por fecha_iso que es confiable
+  const winInicio = fechaAyer + 'T11:00:00Z'  // 6am Lima ayer
+  const finLima = new Date(Date.now() - 5*60*60*1000)
+  finLima.setUTCDate(finLima.getUTCDate() + 1)
+  const winFin = finLima.toISOString().slice(0,10) + 'T11:00:00Z'  // 6am Lima mañana
+  const { data: evData } = await db.from('eventos').select('*')
+    .eq('empresa', empresaActual)
+    .gte('fecha_iso', winInicio)
+    .lt('fecha_iso', winFin)
+  const eventos = evData || []
 
   const lista = document.getElementById('rt-lista')
   if (!personas.length) { lista.innerHTML='<div class="empty">Sin registros para el turno actual</div>'; return }
@@ -399,18 +404,27 @@ async function buscarReporte() {
   const { data: estados } = await q
   if (!estados?.length) { tbody.innerHTML='<tr><td colspan="7" class="empty">Sin registros para este rango</td></tr>'; return }
 
-  // Traer eventos del mismo rango para calcular breaks/baños
+  // Traer eventos del rango — ventana amplia por fecha_iso (6am del primer día a 6am después del último)
   let qe = db.from('eventos').select('*').eq('empresa', empresaActual)
-  if (desde) qe = qe.gte('fecha_iso', desde+'T05:00:00Z')
-  if (hasta) { const nd=new Date(hasta); nd.setDate(nd.getDate()+1); qe = qe.lte('fecha_iso', nd.toISOString().slice(0,10)+'T04:59:59Z') }
+  if (desde) qe = qe.gte('fecha_iso', desde+'T11:00:00Z')  // 6am Lima del primer día
+  if (hasta) { const nd=new Date(hasta+'T11:00:00Z'); nd.setUTCDate(nd.getUTCDate()+1); qe = qe.lt('fecha_iso', nd.toISOString().slice(0,10)+'T11:00:00Z') }
   const { data: eventos } = await qe
+
+  // Helper: eventos de una persona en SU jornada (fecha F = 6am F a 6am F+1 Lima)
+  const eventosDeJornada = (dni, fechaReg) => {
+    if (!fechaReg) return []
+    const ini = fechaReg + 'T11:00:00Z'
+    const sig = new Date(fechaReg + 'T11:00:00Z'); sig.setUTCDate(sig.getUTCDate()+1)
+    const fin = sig.toISOString().slice(0,10) + 'T11:00:00Z'
+    return (eventos||[]).filter(e => e.dni===dni && e.fecha_iso >= ini && e.fecha_iso < fin)
+  }
 
   let rows = estados.map(p => {
     const esTN = esTurnoNoche(p.ingreso)
     if (turno==='dia'&&esTN) return null
     if (turno==='noche'&&!esTN) return null
 
-    const evs = eventos?.filter(e=>e.dni===p.dni&&e.fecha_iso?.slice(0,10)===p.fecha)||[]
+    const evs = eventosDeJornada(p.dni, p.fecha)
     const evBO = evs.filter(e=>e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
     const evBI = evs.filter(e=>e.tipo==='break_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
     let breakStr='Sin break'
