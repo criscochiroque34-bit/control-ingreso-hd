@@ -69,17 +69,17 @@ export async function getCorreosEmpresas() {
   return data || []
 }
 
-// Calcular break en minutos desde eventos — con límite superior para evitar cruce de turnos
+// Calcular break en minutos desde eventos — ventana 6am-6am Lima (cubre turno noche completo)
 export async function calcBreakMin(dni, fechaIso) {
   const fechaSig = (() => {
-    const d = new Date(fechaIso + 'T05:00:00Z')
+    const d = new Date(fechaIso + 'T11:00:00Z')
     d.setUTCDate(d.getUTCDate() + 1)
     return d.toISOString().slice(0,10)
   })()
   const { data: evs } = await db.from('eventos').select('*')
     .eq('dni', dni)
-    .gte('fecha_iso', fechaIso + 'T05:00:00Z')
-    .lt('fecha_iso', fechaSig + 'T05:00:00Z')
+    .gte('fecha_iso', fechaIso + 'T11:00:00Z')
+    .lt('fecha_iso', fechaSig + 'T11:00:00Z')
   const salidas = (evs||[]).filter(e=>e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
   const retornos = (evs||[]).filter(e=>e.tipo==='break_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
   let mins = 0
@@ -90,17 +90,17 @@ export async function calcBreakMin(dni, fechaIso) {
   return mins
 }
 
-// Calcular baño desde eventos — con límite superior para evitar cruce de turnos
+// Calcular baño desde eventos — ventana 6am-6am Lima
 export async function calcBanio(dni, fechaIso) {
   const fechaSig = (() => {
-    const d = new Date(fechaIso + 'T05:00:00Z')
+    const d = new Date(fechaIso + 'T11:00:00Z')
     d.setUTCDate(d.getUTCDate() + 1)
     return d.toISOString().slice(0,10)
   })()
   const { data: evs } = await db.from('eventos').select('*')
     .eq('dni', dni)
-    .gte('fecha_iso', fechaIso + 'T05:00:00Z')
-    .lt('fecha_iso', fechaSig + 'T05:00:00Z')
+    .gte('fecha_iso', fechaIso + 'T11:00:00Z')
+    .lt('fecha_iso', fechaSig + 'T11:00:00Z')
   const salidas = (evs||[]).filter(e=>e.tipo==='banio_salida')
   const retornos = (evs||[]).filter(e=>e.tipo==='banio_retorno')
   let mins = 0
@@ -111,17 +111,16 @@ export async function calcBanio(dni, fechaIso) {
   return { veces: salidas.length, mins }
 }
 
-// Versión optimizada: traer TODOS los eventos de una fecha en una sola query
-// Úsala en los reportes para evitar N queries por persona
+// Versión optimizada: traer TODOS los eventos de la jornada en una sola query
 export async function getEventosFecha(fechaIso) {
   const fechaSig = (() => {
-    const d = new Date(fechaIso + 'T05:00:00Z')
+    const d = new Date(fechaIso + 'T11:00:00Z')
     d.setUTCDate(d.getUTCDate() + 1)
     return d.toISOString().slice(0,10)
   })()
   const { data } = await db.from('eventos').select('*')
-    .gte('fecha_iso', fechaIso + 'T05:00:00Z')
-    .lt('fecha_iso', fechaSig + 'T05:00:00Z')
+    .gte('fecha_iso', fechaIso + 'T11:00:00Z')
+    .lt('fecha_iso', fechaSig + 'T11:00:00Z')
   return data || []
 }
 
