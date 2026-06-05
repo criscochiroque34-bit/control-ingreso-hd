@@ -17,7 +17,7 @@ export const GMAIL = GMAIL_USER
 
 export const fechaLabel = f => {
   const [y,m,d] = f.split('-')
-  return `${d}/${m}/${y}`
+  return ${d}/${m}/${y}
 }
 
 export const fmtMin = m => {
@@ -101,8 +101,8 @@ export async function calcBanio(dni, fechaIso) {
     .eq('dni', dni)
     .gte('fecha_iso', fechaIso + 'T11:00:00Z')
     .lt('fecha_iso', fechaSig + 'T11:00:00Z')
-  const salidas = (evs||[]).filter(e=>e.tipo==='banio_salida')
-  const retornos = (evs||[]).filter(e=>e.tipo==='banio_retorno')
+  const salidas = (evs||[]).filter(e=>e.tipo==='banio_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
+  const retornos = (evs||[]).filter(e=>e.tipo==='banio_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
   let mins = 0
   salidas.forEach((s,i) => {
     const r = retornos[i]
@@ -133,8 +133,8 @@ export function calcBreakMinLocal(dni, eventos) {
 }
 
 export function calcBanioLocal(dni, eventos) {
-  const salidas = eventos.filter(e=>e.dni===dni&&e.tipo==='banio_salida')
-  const retornos = eventos.filter(e=>e.dni===dni&&e.tipo==='banio_retorno')
+  const salidas = eventos.filter(e=>e.dni===dni&&e.tipo==='banio_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
+  const retornos = eventos.filter(e=>e.dni===dni&&e.tipo==='banio_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
   let mins = 0
   salidas.forEach((s,i) => { const r=retornos[i]; if(r) mins+=Math.round((new Date(r.fecha_iso)-new Date(s.fecha_iso))/60000) })
   return { veces: salidas.length, mins }
@@ -154,7 +154,7 @@ export function tablaPersonal(personal, conTiempo = true) {
       <td style="padding:8px 10px;text-align:center;font-size:12px;color:${!p.salida?'#dc2626':'#1e2433'}">${p.salida?.split(' ').slice(-1)[0]||'⚠️'}</td>
       <td style="padding:8px 10px;text-align:center;font-size:12px">${p._breakStr||'—'}</td>
       <td style="padding:8px 10px;text-align:center;font-size:12px">${p._banioStr||'—'}</td>
-      ${conTiempo ? `<td style="padding:8px 10px;text-align:center;font-size:12px;font-weight:600">${p._trabajadoMin ? (p._trabajadoMin/60).toFixed(1)+'h' : '—'}</td>` : ''}
+      ${conTiempo ? <td style="padding:8px 10px;text-align:center;font-size:12px;font-weight:600">${p._trabajadoMin ? (p._trabajadoMin/60).toFixed(1)+'h' : '—'}</td> : ''}
     </tr>`).join('')
 
   return `
