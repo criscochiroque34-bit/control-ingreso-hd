@@ -347,22 +347,23 @@ async function cargarDatos() {
       ? `<span class="tp tp-n">Noche</span>`
       : `<span class="tp tp-d">Día</span>`
 
-    // Calcular break
-    const evBreakOut = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
-    const evBreakIn = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='break_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
+    // Calcular break — suma TODOS los pares (igual que el correo)
+    const evBreakOut = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)||[]
+    const evBreakIn = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='break_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)||[]
     let breakStr = 'Sin break'
-    if (evBreakOut?.length) {
+    if (evBreakOut.length) {
       if (p.estado==='break') {
         breakStr = 'En curso'
-      } else if (evBreakIn?.length) {
-        const mins = minEntre(evBreakOut[0].fecha_iso, evBreakIn[0].fecha_iso)
-        breakStr = mins!==null ? fmtMin(mins) : 'Sin break'
+      } else if (evBreakIn.length) {
+        let breakMin = 0
+        evBreakOut.forEach((bo,i)=>{ const bi=evBreakIn[i]; if(bi){ const m=minEntre(bo.fecha_iso,bi.fecha_iso); if(m) breakMin+=m } })
+        breakStr = breakMin>0 ? fmtMin(breakMin) : 'Sin break'
       }
     }
 
-    // Calcular baño
-    const evBanioOut = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='banio_salida')||[]
-    const evBanioIn = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='banio_retorno')||[]
+    // Calcular baño — ordenado y suma todos los pares
+    const evBanioOut = (eventos?.filter(e=>e.dni===p.dni&&e.tipo==='banio_salida')||[]).sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
+    const evBanioIn = (eventos?.filter(e=>e.dni===p.dni&&e.tipo==='banio_retorno')||[]).sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
     const banioVeces = evBanioOut.length
     let banioMin = 0
     evBanioOut.forEach((bo,i)=>{ const bi=evBanioIn[i]; if(bi){ const m=minEntre(bo.fecha_iso,bi.fecha_iso); if(m) banioMin+=m } })
@@ -428,10 +429,17 @@ async function buscarReporte() {
     const evBO = evs.filter(e=>e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
     const evBI = evs.filter(e=>e.tipo==='break_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
     let breakStr='Sin break'
-    if (evBO.length) { breakStr=p.estado==='break'?'En curso': (evBI.length? (fmtMin(minEntre(evBO[0].fecha_iso,evBI[0].fecha_iso))||'Sin break'):'Sin break') }
+    if (evBO.length) {
+      if (p.estado==='break') { breakStr='En curso' }
+      else if (evBI.length) {
+        let bm=0
+        evBO.forEach((bo,i)=>{ const bi=evBI[i]; if(bi){ const m=minEntre(bo.fecha_iso,bi.fecha_iso); if(m) bm+=m } })
+        breakStr = bm>0 ? fmtMin(bm) : 'Sin break'
+      }
+    }
 
-    const evBOut = evs.filter(e=>e.tipo==='banio_salida')
-    const evBIn = evs.filter(e=>e.tipo==='banio_retorno')
+    const evBOut = evs.filter(e=>e.tipo==='banio_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
+    const evBIn = evs.filter(e=>e.tipo==='banio_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
     let banioMin=0
     evBOut.forEach((bo,i)=>{ const bi=evBIn[i]; if(bi){ const m=minEntre(bo.fecha_iso,bi.fecha_iso); if(m) banioMin+=m } })
     const banioStr = evBOut.length===0?'0 veces':`${evBOut.length} ${evBOut.length===1?'vez':'veces'}${banioMin>0?' / '+fmtMin(banioMin):''}`
