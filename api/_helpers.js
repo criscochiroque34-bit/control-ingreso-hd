@@ -17,7 +17,7 @@ export const GMAIL = GMAIL_USER
 
 export const fechaLabel = f => {
   const [y,m,d] = f.split('-')
-  return ${d}/${m}/${y}
+  return `${d}/${m}/${y}`
 }
 
 export const fmtMin = m => {
@@ -154,7 +154,7 @@ export function tablaPersonal(personal, conTiempo = true) {
       <td style="padding:8px 10px;text-align:center;font-size:12px;color:${!p.salida?'#dc2626':'#1e2433'}">${p.salida?.split(' ').slice(-1)[0]||'⚠️'}</td>
       <td style="padding:8px 10px;text-align:center;font-size:12px">${p._breakStr||'—'}</td>
       <td style="padding:8px 10px;text-align:center;font-size:12px">${p._banioStr||'—'}</td>
-      ${conTiempo ? <td style="padding:8px 10px;text-align:center;font-size:12px;font-weight:600">${p._trabajadoMin ? (p._trabajadoMin/60).toFixed(1)+'h' : '—'}</td> : ''}
+      ${conTiempo ? `<td style="padding:8px 10px;text-align:center;font-size:12px;font-weight:600">${p._trabajadoMin ? (p._trabajadoMin/60).toFixed(1)+'h' : '—'}</td>` : ''}
     </tr>`).join('')
 
   return `
