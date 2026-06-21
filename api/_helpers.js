@@ -180,3 +180,40 @@ export function tablaPersonal(personal, conTiempo = true) {
       </tfoot>` : ''}
     </table>`
 }
+
+// Buscar la solicitud de personal para una fecha+turno+empresa
+export async function getSolicitud(fecha, turno, empresa) {
+  const { data } = await db.from('solicitudes_personal').select('solicitado')
+    .eq('fecha', fecha).eq('turno', turno).eq('empresa', empresa).maybeSingle()
+  return data?.solicitado ?? null
+}
+
+// Color del % según rangos: >100 naranja, 90-100 verde, 85-89 amarillo, <85 rojo
+function colorCumplimiento(pct) {
+  if (pct > 100) return { bg: '#fff7ed', border: '#fdba74', text: '#c2410c', accent: '#f59e0b' }
+  if (pct >= 90) return { bg: '#f0fdf4', border: '#86efac', text: '#065f46', accent: '#22c27a' }
+  if (pct >= 85) return { bg: '#fefce8', border: '#fde047', text: '#854d0e', accent: '#eab308' }
+  return { bg: '#fef2f2', border: '#fca5a5', text: '#991b1b', accent: '#ef4444' }
+}
+
+// Genera el banner HTML de cumplimiento. Si no hay solicitud, devuelve ''
+export function bannerCumplimiento(solicitado, asistieron) {
+  if (solicitado === null || solicitado === undefined) return ''
+  const pct = solicitado > 0 ? Math.round(asistieron / solicitado * 100) : 0
+  const c = colorCumplimiento(pct)
+  return `
+    <div style="display:flex;gap:12px;margin-bottom:16px">
+      <div style="flex:1;background:#f7f9fc;border:1px solid #dde2ed;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:26px;font-weight:800;color:#1e2433">${solicitado}</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#7a8299;margin-top:3px">Solicitados</div>
+      </div>
+      <div style="flex:1;background:#f7f9fc;border:1px solid #dde2ed;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:26px;font-weight:800;color:#3b82f6">${asistieron}</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#7a8299;margin-top:3px">Asistieron</div>
+      </div>
+      <div style="flex:1;background:${c.bg};border:1px solid ${c.border};border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:26px;font-weight:800;color:${c.accent}">${pct}%</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${c.text};margin-top:3px">Cumplimiento</div>
+      </div>
+    </div>`
+}
