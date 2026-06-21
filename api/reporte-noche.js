@@ -66,7 +66,8 @@ export default async function handler(req, res) {
 
       // Buscar solicitud para el banner de cumplimiento (turno='noche')
       const solicitado = await getSolicitud(fecha, 'noche', empresa)
-      const banner = bannerCumplimiento(solicitado, personal.length)
+      const asistieronUnicos = new Set(personal.map(p => p.dni)).size
+      const banner = bannerCumplimiento(solicitado, asistieronUnicos)
 
       const html = htmlReporte(empresa, fechaStr, turnoLabel, nombreContacto, personal, conSalida, banner)
       const destinatarios = correosDest.map(c => c.correo).join(', ')
