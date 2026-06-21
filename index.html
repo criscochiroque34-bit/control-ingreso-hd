@@ -250,7 +250,7 @@ tr:hover td{background:#f7f9fc}
     <button class="nav-tab" onclick="showPage('situacion',this)">Situación Actual</button>
     <button class="nav-tab" onclick="showPage('reportes',this)">Reportes</button>
     <button class="nav-tab" onclick="showPage('personal',this)">Personal</button>
-    <button class="nav-tab" onclick="showPage('actas',this)">Actas</button>
+    <button class="nav-tab" onclick="showPage('actas',this)">Análisis</button>
   </div>
   <div style="display:flex;align-items:center;gap:12px">
     <div class="nav-consumo" id="nav-consumo" onclick="toggleConsumo()">
@@ -905,9 +905,9 @@ tr:hover td{background:#f7f9fc}
   </div>
 </div>
 
-<!-- ===================== ACTAS ===================== -->
+<!-- ===================== ANÁLISIS (ACTAS) ===================== -->
 <div class="page" id="page-actas">
-  <div class="section-title"><div class="dot"></div> Actas de Turno</div>
+  <div class="section-title"><div class="dot"></div> Análisis</div>
 
   <!-- LOGIN SUPERVISOR -->
   <div id="actas-login" style="max-width:360px;margin:0 auto;padding-top:1rem">
@@ -925,25 +925,38 @@ tr:hover td{background:#f7f9fc}
 
   <!-- PANEL PRINCIPAL -->
   <div id="actas-main" style="display:none">
+
+    <!-- BARRA SUPERIOR: SUPERVISOR + SUB-TABS -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap">
+      <div style="display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px">
+        <button class="anl-subtab active" data-sub="acta" onclick="anlSwitchSub('acta',this)">📄 Generar Acta</button>
+        <button class="anl-subtab" data-sub="solicitudes" onclick="anlSwitchSub('solicitudes',this)">📋 Solicitudes</button>
+        <button class="anl-subtab" data-sub="indicadores" onclick="anlSwitchSub('indicadores',this)">📊 Indicadores</button>
+        <button class="anl-subtab" data-sub="correos" onclick="anlSwitchSub('correos',this)">✉️ Correos</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 12px">
+        <div style="width:30px;height:30px;border-radius:50%;background:var(--nav-bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0" id="actas-sup-ini">—</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.1" id="actas-sup-nombre">—</div>
+          <div style="font-size:10px;color:var(--muted)" id="actas-sup-cargo">—</div>
+        </div>
+        <button style="margin-left:6px;padding:5px 10px;border:1px solid var(--border);background:transparent;border-radius:7px;font-size:10px;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif" onclick="cerrarSesionActas()">Salir</button>
+      </div>
+    </div>
+
+    <style>
+      .anl-subtab{padding:9px 16px;border-radius:7px;border:none;background:transparent;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+      .anl-subtab.active{background:var(--nav-bg);color:#fff}
+      .anl-sub-content{display:none}
+      .anl-sub-content.active{display:block}
+    </style>
+
+    <!-- ============ SUB: GENERAR ACTA ============ -->
+    <div class="anl-sub-content active" id="anl-acta">
     <div style="display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start">
 
       <!-- COLUMNA IZQUIERDA -->
       <div>
-
-        <!-- SUPERVISOR ACTIVO -->
-        <div class="card" style="margin-bottom:12px">
-          <div class="card-title">Supervisor activo</div>
-          <div style="display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:10px">
-            <div style="width:36px;height:36px;border-radius:50%;background:var(--nav-bg);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent);flex-shrink:0" id="actas-sup-ini">—</div>
-            <div>
-              <div style="font-size:13px;font-weight:700;color:var(--text)" id="actas-sup-nombre">—</div>
-              <div style="font-size:11px;color:var(--muted)" id="actas-sup-cargo">—</div>
-            </div>
-          </div>
-          <div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:var(--text);border-bottom:2px solid var(--text);padding-bottom:3px;display:inline-block" id="actas-sup-firma">—</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:3px;margin-bottom:12px">Esta firma aparecerá en el acta</div>
-          <button style="width:100%;padding:8px;border:1px solid var(--border);background:transparent;border-radius:8px;font-size:11px;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif" onclick="cerrarSesionActas()">Cerrar sesión</button>
-        </div>
 
         <!-- FILTROS -->
         <div class="card" style="margin-bottom:12px">
@@ -972,7 +985,7 @@ tr:hover td{background:#f7f9fc}
           <button class="btn-ingreso btn-marca" style="width:100%;margin-bottom:8px" onclick="descargarActaPDF()">📄 Descargar acta PDF</button>
 
           <div class="divider"></div>
-          <div class="card-title">Enviar por correo</div>
+          <div class="card-title">Enviar / Reenviar por correo</div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Empresas</span>
             <button onclick="toggleAllEmpresas()" style="font-size:11px;color:var(--accent3);background:none;border:none;cursor:pointer;font-weight:600" id="btn-sel-all">Seleccionar todas</button>
@@ -980,77 +993,7 @@ tr:hover td{background:#f7f9fc}
           <div id="acta-empresa-checks" style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px"></div>
           <button onclick="enviarCorreoSeleccionadas()" id="btn-enviar-sel" style="width:100%;padding:11px;border-radius:8px;border:none;background:#3b82f6;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:'DM Sans',sans-serif">📧 Enviar a seleccionadas</button>
           <div id="envio-resultado" style="display:none;margin-top:8px;padding:9px 12px;border-radius:8px;font-size:12px;font-weight:600"></div>
-
-          <div class="divider"></div>
-          <div class="card-title">Prueba</div>
-          <button onclick="probarReporte()" id="btn-probar-reporte" style="width:100%;padding:9px;border-radius:8px;border:1.5px solid var(--accent3);background:transparent;color:var(--accent3);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:6px">📧 Probar reporte completo</button>
-          <button onclick="probarAviso()" id="btn-probar-aviso" style="width:100%;padding:9px;border-radius:8px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">⚠️ Probar aviso pendientes</button>
           <div id="correo-resultado" style="display:none;margin-top:8px;padding:9px 12px;border-radius:8px;font-size:12px;font-weight:600"></div>
-
-          <!-- ACORDEON GESTION CORREOS -->
-          <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:11px 14px;border-radius:8px;background:var(--bg);border:1px solid var(--border);margin-top:14px" onclick="toggleGestion()">
-            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">⚙️ Gestión de correos</span>
-            <span id="gestion-chevron" style="font-size:12px;color:var(--muted);transition:transform .2s">▼</span>
-          </div>
-          <div id="gestion-body" style="display:none;padding-top:14px">
-
-            <!-- EMPRESAS -->
-            <div style="margin-bottom:16px">
-              <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px">
-                <span style="padding:2px 8px;border-radius:8px;font-size:9px;font-weight:700;background:#ede9fe;color:#5b21b6">Empresas</span>
-                <span style="color:var(--muted);font-size:10px">empresas_correos</span>
-              </div>
-              <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px">
-                <table style="width:100%;border-collapse:collapse;font-size:12px">
-                  <thead><tr style="background:var(--bg)">
-                    <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Empresa</th>
-                    <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Correo</th>
-                    <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Contacto</th>
-                    <th style="border-bottom:1px solid var(--border);width:36px"></th>
-                  </tr></thead>
-                  <tbody id="tabla-emp-correos"></tbody>
-                </table>
-              </div>
-              <div style="background:var(--bg);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px">
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px">Agregar correo empresa</div>
-                <div style="display:flex;gap:6px">
-                  <select id="new-emp-empresa" style="width:110px;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;background:var(--surface);color:var(--text)"></select>
-                  <input id="new-emp-correo" type="email" placeholder="correo@empresa.com" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface)"/>
-                </div>
-                <div style="display:flex;gap:6px">
-                  <input id="new-emp-contacto" type="text" placeholder="Nombre contacto (opcional)" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface)"/>
-                  <button onclick="agregarEmpCorreo()" style="padding:8px 16px;border-radius:7px;border:none;background:var(--nav-bg);color:#fff;font-size:12px;font-weight:700;cursor:pointer">+ Agregar</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- HD CORREOS DESPLEGABLE -->
-            <div>
-              <div onclick="toggleHDLista()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border)">
-                <div style="display:flex;align-items:center;gap:8px">
-                  <span style="padding:2px 8px;border-radius:8px;font-size:9px;font-weight:700;background:#dbeafe;color:#1e40af">HD</span>
-                  <span style="font-size:12px;font-weight:700;color:var(--text)">Equipo interno</span>
-                  <span style="font-size:11px;color:var(--muted)" id="hd-count"></span>
-                </div>
-                <span id="hd-chevron" style="font-size:12px;color:var(--muted);transition:transform .2s">▼</span>
-              </div>
-              <div id="hd-lista-body" style="display:none;margin-top:8px">
-                <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
-                  <table style="width:100%;border-collapse:collapse;font-size:12px">
-                    <thead><tr style="background:var(--bg)">
-                      <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Correo equipo HD</th>
-                      <th style="border-bottom:1px solid var(--border);width:36px"></th>
-                    </tr></thead>
-                    <tbody id="tabla-hd-correos"></tbody>
-                  </table>
-                </div>
-                <div style="background:var(--bg);border-radius:8px;padding:10px;display:flex;gap:6px">
-                  <input id="new-hd-correo" type="email" placeholder="nuevo@correo.com" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface)"/>
-                  <button onclick="agregarHDCorreo()" style="padding:8px 16px;border-radius:7px;border:none;background:var(--nav-bg);color:#fff;font-size:12px;font-weight:700;cursor:pointer">+ Agregar</button>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -1105,6 +1048,164 @@ tr:hover td{background:#f7f9fc}
       </div>
 
     </div>
+    </div><!-- /anl-acta -->
+
+    <!-- ============ SUB: SOLICITUDES ============ -->
+    <div class="anl-sub-content" id="anl-solicitudes">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Registrar solicitud de personal</div>
+        <div style="display:grid;grid-template-columns:1.2fr 1fr 1.3fr 0.8fr auto;gap:12px;align-items:end">
+          <div>
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Fecha del turno</label>
+            <input type="date" class="form-input" id="sol-fecha"/>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Turno</label>
+            <select class="form-input" id="sol-turno"><option value="dia">Día</option><option value="noche">Noche</option></select>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Empresa</label>
+            <select class="form-input" id="sol-empresa"><option value="">Selecciona...</option></select>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Cantidad</label>
+            <input type="number" class="form-input" id="sol-cantidad" placeholder="10" min="1"/>
+          </div>
+          <button class="btn-form-save" onclick="solGuardar()" style="white-space:nowrap;padding:11px 20px">+ Agregar</button>
+        </div>
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:11px 14px;margin-top:16px;font-size:12px;color:#1e40af">
+          💡 La fecha es la del turno (no la de hoy). Esta cantidad se compara con el personal que asistió cuando se envía el reporte.
+        </div>
+        <div id="sol-resultado" style="display:none;margin-top:10px;padding:9px 12px;border-radius:8px;font-size:12px;font-weight:600"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Solicitudes registradas</span>
+          <span id="sol-count" style="font-size:11px;color:var(--muted);text-transform:none;font-weight:600">0 registros</span>
+        </div>
+        <div id="sol-lista"><div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">Cargando...</div></div>
+      </div>
+    </div><!-- /anl-solicitudes -->
+
+    <!-- ============ SUB: INDICADORES ============ -->
+    <div class="anl-sub-content" id="anl-indicadores">
+      <div class="card" style="margin-bottom:16px;padding:16px 20px">
+        <div style="display:flex;gap:14px;align-items:end;flex-wrap:wrap">
+          <div>
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Vista</label>
+            <select class="form-input" id="ind-vista" onchange="indCargar()"><option value="mes">Por mes</option><option value="dia">Por día</option></select>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Mes</label>
+            <input type="month" class="form-input" id="ind-mes" onchange="indCargar()"/>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Empresa</label>
+            <select class="form-input" id="ind-empresa" onchange="indCargar()"><option value="">Todas</option></select>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Turno</label>
+            <select class="form-input" id="ind-turno" onchange="indCargar()"><option value="">Ambos</option><option value="dia">Día</option><option value="noche">Noche</option></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- TARJETAS RESUMEN -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px" id="ind-cards">
+        <div class="card" style="text-align:center;padding:18px"><div style="font-size:30px;font-weight:800;color:var(--text)" id="ind-solicitado">0</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-top:4px">Solicitados</div></div>
+        <div class="card" style="text-align:center;padding:18px"><div style="font-size:30px;font-weight:800;color:#3b82f6" id="ind-asistio">0</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-top:4px">Asistieron</div></div>
+        <div class="card" style="text-align:center;padding:18px"><div style="font-size:30px;font-weight:800" id="ind-pct">0%</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-top:4px">Cumplimiento prom.</div></div>
+        <div class="card" style="text-align:center;padding:18px"><div style="font-size:30px;font-weight:800;color:#ef4444" id="ind-bajos">0</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-top:4px" id="ind-bajos-lbl">Registros &lt;85%</div></div>
+      </div>
+
+      <!-- GRAFICO -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title"><span id="ind-chart-titulo">Cumplimiento</span><span id="ind-chart-prom" style="font-size:11px;color:var(--muted);text-transform:none;font-weight:600"></span></div>
+        <div id="ind-chart" style="display:flex;align-items:flex-end;gap:8px;height:180px;padding:0 4px;overflow-x:auto"></div>
+        <div style="display:flex;gap:16px;font-size:11px;color:var(--muted);margin-top:14px;flex-wrap:wrap">
+          <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></span>&gt;100% Sobrecumplimiento</span>
+          <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#22c27a"></span>90-100% Óptimo</span>
+          <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#fbbf24"></span>85-89% Aceptable</span>
+          <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#ef4444"></span>&lt;85% Incumplimiento</span>
+        </div>
+      </div>
+
+      <!-- TABLA POR EMPRESA -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Cumplimiento por empresa</div>
+        <div id="ind-tabla-empresa"></div>
+      </div>
+
+      <!-- COMPARATIVO TURNO -->
+      <div class="card">
+        <div class="card-title">Cumplimiento por turno</div>
+        <div style="display:flex;gap:20px" id="ind-turnos"></div>
+      </div>
+    </div><!-- /anl-indicadores -->
+
+    <!-- ============ SUB: CORREOS ============ -->
+    <div class="anl-sub-content" id="anl-correos">
+      <div class="card" style="max-width:720px">
+        <!-- EMPRESAS -->
+        <div style="margin-bottom:20px">
+          <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+            <span style="padding:2px 8px;border-radius:8px;font-size:9px;font-weight:700;background:#ede9fe;color:#5b21b6">Empresas</span>
+            <span style="color:var(--muted);font-size:10px">Correos que reciben el reporte</span>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px">
+            <table style="width:100%;border-collapse:collapse;font-size:12px">
+              <thead><tr style="background:var(--bg)">
+                <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Empresa</th>
+                <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Correo</th>
+                <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Contacto</th>
+                <th style="border-bottom:1px solid var(--border);width:36px"></th>
+              </tr></thead>
+              <tbody id="tabla-emp-correos"></tbody>
+            </table>
+          </div>
+          <div style="background:var(--bg);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px">Agregar correo empresa</div>
+            <div style="display:flex;gap:6px">
+              <select id="new-emp-empresa" style="width:130px;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;background:var(--surface);color:var(--text)"></select>
+              <input id="new-emp-correo" type="email" placeholder="correo@empresa.com" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface)"/>
+            </div>
+            <div style="display:flex;gap:6px">
+              <input id="new-emp-contacto" type="text" placeholder="Nombre contacto (opcional)" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface)"/>
+              <button onclick="agregarEmpCorreo()" style="padding:8px 16px;border-radius:7px;border:none;background:var(--nav-bg);color:#fff;font-size:12px;font-weight:700;cursor:pointer">+ Agregar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- HD CORREOS -->
+        <div>
+          <div onclick="toggleHDLista()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="padding:2px 8px;border-radius:8px;font-size:9px;font-weight:700;background:#dbeafe;color:#1e40af">HD</span>
+              <span style="font-size:12px;font-weight:700;color:var(--text)">Equipo interno</span>
+              <span style="font-size:11px;color:var(--muted)" id="hd-count"></span>
+            </div>
+            <span id="hd-chevron" style="font-size:12px;color:var(--muted);transition:transform .2s">▼</span>
+          </div>
+          <div id="hd-lista-body" style="display:none;margin-top:8px">
+            <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
+              <table style="width:100%;border-collapse:collapse;font-size:12px">
+                <thead><tr style="background:var(--bg)">
+                  <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Correo equipo HD</th>
+                  <th style="border-bottom:1px solid var(--border);width:36px"></th>
+                </tr></thead>
+                <tbody id="tabla-hd-correos"></tbody>
+              </table>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:10px;display:flex;gap:6px">
+              <input id="new-hd-correo" type="email" placeholder="nuevo@correo.com" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface)"/>
+              <button onclick="agregarHDCorreo()" style="padding:8px 16px;border-radius:7px;border:none;background:var(--nav-bg);color:#fff;font-size:12px;font-weight:700;cursor:pointer">+ Agregar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /anl-correos -->
+
   </div>
 </div>
 
@@ -2349,15 +2450,16 @@ async function descargarResumen() {
     data = data.filter(e => esTurnoNoche(e.ingreso))
   }
   
-  // Construir índice de DNIs que tuvieron break por fecha (desde eventosData)
+  // Índice de breaks por persona y jornada usando fecha_iso (confiable para turno noche)
+  // Para cada break_salida, determinar a qué jornada (6am-6am) pertenece
   const breaksPorDniFecha = new Set()
   eventosData.forEach(ev => {
-    if (ev.tipo === 'break_salida') {
-      const fecha = ev.fecha?.split(' ')[0] || ''
-      // Convertir DD/MM/YYYY a YYYY-MM-DD para comparar
-      const partes = fecha.split('/')
-      const fechaIso = partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : ''
-      breaksPorDniFecha.add(`${ev.dni}_${fechaIso}`)
+    if (ev.tipo === 'break_salida' && ev.fecha_iso) {
+      // Jornada = fecha Lima con corte 6am del momento del evento
+      const lima = new Date(new Date(ev.fecha_iso).getTime() - 5*60*60*1000)
+      if (lima.getUTCHours() < 6) lima.setUTCDate(lima.getUTCDate() - 1)
+      const fechaJornada = lima.toISOString().slice(0,10)
+      breaksPorDniFecha.add(`${ev.dni}_${fechaJornada}`)
     }
   })
   
@@ -2889,16 +2991,26 @@ async function loginActas() {
     document.getElementById('actas-sup-ini').textContent = ini
     document.getElementById('actas-sup-nombre').textContent = data.nombre
     document.getElementById('actas-sup-cargo').textContent = data.cargo
-    document.getElementById('actas-sup-firma').textContent = data.nombre
     document.getElementById('actas-login').style.display = 'none'
     document.getElementById('actas-main').style.display = 'block'
     document.getElementById('actas-login-error').style.display = 'none'
     await initActas()
     await cargarTablaCorreos()
+    await initSolicitudes()
   } else {
     document.getElementById('actas-login-error').style.display = 'block'
     document.getElementById('actas-login-dni').value = ''
   }
+}
+
+// ─── SUB-TABS ANÁLISIS ─────────────────────────────────
+function anlSwitchSub(sub, btn) {
+  document.querySelectorAll('.anl-subtab').forEach(b=>b.classList.remove('active'))
+  btn.classList.add('active')
+  document.querySelectorAll('.anl-sub-content').forEach(c=>c.classList.remove('active'))
+  document.getElementById('anl-'+sub).classList.add('active')
+  if (sub === 'solicitudes') initSolicitudes()
+  if (sub === 'indicadores') initIndicadores()
 }
 
 function cerrarSesionActas() {
@@ -3002,10 +3114,11 @@ async function enviarCorreoSeleccionadas() {
 
 function toggleGestion() {
   const body = document.getElementById('gestion-body')
+  if (!body) { cargarTablaCorreos(); return }
   const chev = document.getElementById('gestion-chevron')
   const open = body.style.display === 'block'
   body.style.display = open ? 'none' : 'block'
-  chev.style.transform = open ? '' : 'rotate(180deg)'
+  if (chev) chev.style.transform = open ? '' : 'rotate(180deg)'
   if (!open) cargarTablaCorreos()
 }
 
@@ -4202,59 +4315,281 @@ function rkMostrarVacio(mensaje) {
   })
 }
 
-// ─── PRUEBA CORREOS ───────────────────────────────────
-async function probarReporte() {
-  await _probarEndpoint('/api/test-reporte', 'btn-probar-reporte')
+// ═══════════════════════════════════════════════════════════════
+// ─── SOLICITUDES DE PERSONAL ──────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+let solInicializado = false
+
+async function initSolicitudes() {
+  document.getElementById('sol-fecha').value = today()
+  // Cargar empresas en el desplegable (mismo catálogo que el resto)
+  const { data } = await db.from('personas').select('empresa')
+  const empresas = [...new Set((data||[]).map(x=>x.empresa).filter(Boolean))].sort()
+  const sel = document.getElementById('sol-empresa')
+  sel.innerHTML = '<option value="">Selecciona...</option>' + empresas.map(e=>`<option value="${e}">${e}</option>`).join('')
+  await solCargarLista()
+  solInicializado = true
 }
 
-async function probarAviso() {
-  await _probarEndpoint('/api/test-aviso', 'btn-probar-aviso')
-}
+async function solGuardar() {
+  const fecha = document.getElementById('sol-fecha').value
+  const turno = document.getElementById('sol-turno').value
+  const empresa = document.getElementById('sol-empresa').value
+  const cantidad = parseInt(document.getElementById('sol-cantidad').value)
+  const res = document.getElementById('sol-resultado')
 
-async function _probarEndpoint(url, btnId) {
-  const btn = document.getElementById(btnId)
-  const res = document.getElementById('correo-resultado')
-  const textoOriginal = btn.textContent
-  btn.textContent = '⏳ Enviando...'
-  btn.disabled = true
-  res.style.display = 'none'
-
-  try {
-    const resp = await fetch(url)
-    const data = await resp.json()
-    res.style.display = 'block'
-
-    if (!resp.ok) {
-      res.style.background = '#fce7f3'; res.style.color = '#9d174d'
-      res.textContent = '✗ Error: ' + (data.error || 'No se pudo enviar')
-    } else if (data.enviado === false && data.message) {
-      // Sin pendientes o sin datos — no es un error
-      res.style.background = '#d1fae5'; res.style.color = '#065f46'
-      res.textContent = '✓ ' + data.message
-    } else if (data.ok) {
-      const enviados = data.resultados?.filter(r=>r.enviado).length
-      if (enviados !== undefined) {
-        const sinDatos = data.resultados?.filter(r=>!r.enviado).length || 0
-        res.style.background = enviados > 0 ? '#d1fae5' : '#fef3c7'
-        res.style.color = enviados > 0 ? '#065f46' : '#92400e'
-        res.textContent = enviados > 0
-          ? `✓ ${enviados} correo${enviados!==1?'s':''} enviado${enviados!==1?'s':''} — revisa tu correo`
-          : `Sin registros para enviar hoy (${sinDatos} empresa${sinDatos!==1?'s':''} sin datos)`
-      } else {
-        res.style.background = '#d1fae5'; res.style.color = '#065f46'
-        res.textContent = data.pendientes > 0
-          ? `✓ Aviso enviado — ${data.pendientes} pendiente${data.pendientes!==1?'s':''}`
-          : '✓ Sin pendientes — no se envió aviso (todo está registrado)'
-      }
-    }
-  } catch (e) {
-    res.style.display = 'block'
-    res.style.background = '#fce7f3'; res.style.color = '#9d174d'
-    res.textContent = '✗ Error: ' + e.message
+  if (!fecha || !empresa || !cantidad || cantidad < 1) {
+    res.style.display='block'; res.style.background='#fce7f3'; res.style.color='#9d174d'
+    res.textContent='✗ Completa fecha, empresa y cantidad válida'
+    return
   }
 
-  btn.textContent = textoOriginal
-  btn.disabled = false
+  // upsert por fecha+turno+empresa (si ya existe, actualiza la cantidad)
+  const { error } = await db.from('solicitudes_personal')
+    .upsert({ fecha, turno, empresa, solicitado: cantidad }, { onConflict: 'fecha,turno,empresa' })
+
+  res.style.display='block'
+  if (error) {
+    res.style.background='#fce7f3'; res.style.color='#9d174d'
+    res.textContent='✗ Error: '+error.message
+  } else {
+    res.style.background='#d1fae5'; res.style.color='#065f46'
+    res.textContent=`✓ Guardado: ${empresa} · ${turno==='dia'?'Día':'Noche'} · ${cantidad} personas`
+    document.getElementById('sol-cantidad').value=''
+    await solCargarLista()
+  }
+  setTimeout(()=>{res.style.display='none'}, 3000)
+}
+
+async function solCargarLista() {
+  const { data } = await db.from('solicitudes_personal').select('*').order('fecha', { ascending: false })
+  const cont = document.getElementById('sol-lista')
+  const cnt = document.getElementById('sol-count')
+
+  if (!data?.length) {
+    cont.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">Sin solicitudes registradas aún</div>'
+    cnt.textContent = '0 registros'
+    return
+  }
+  cnt.textContent = data.length + ' registro' + (data.length!==1?'s':'')
+
+  // Agrupar por fecha
+  const grupos = {}
+  data.forEach(s => { if(!grupos[s.fecha]) grupos[s.fecha]=[]; grupos[s.fecha].push(s) })
+
+  const colores = {}
+  const palette = ['#3b82f6','#f59e0b','#22c27a','#8b5cf6','#e85d9b','#ef4444','#06b6d4']
+  let ci = 0
+  const colorEmp = emp => { if(!colores[emp]) colores[emp]=palette[ci++%palette.length]; return colores[emp] }
+
+  let html = '<table style="width:100%;border-collapse:collapse"><thead><tr>' +
+    '<th style="text-align:left;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border)">Empresa</th>' +
+    '<th style="text-align:center;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border)">Turno</th>' +
+    '<th style="text-align:center;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border)">Solicitado</th>' +
+    '<th style="text-align:center;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border)">Acción</th>' +
+    '</tr></thead><tbody>'
+
+  Object.keys(grupos).sort((a,b)=>b.localeCompare(a)).forEach(fecha => {
+    const fechaLabel = new Date(fecha+'T12:00:00Z').toLocaleDateString('es-PE',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
+    html += `<tr><td colspan="4" style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:14px 12px 6px;background:var(--bg)">📅 ${fechaLabel}</td></tr>`
+    grupos[fecha].forEach(s => {
+      const turnoStyle = s.turno==='noche' ? 'background:#ede9fe;color:#5b21b6' : 'background:#fef3c7;color:#92400e'
+      html += `<tr>
+        <td style="padding:11px 12px;font-size:13px;border-bottom:1px solid var(--bg)"><span style="display:flex;align-items:center;gap:8px;font-weight:700"><span style="width:9px;height:9px;border-radius:50%;background:${colorEmp(s.empresa)};flex-shrink:0"></span>${s.empresa}</span></td>
+        <td style="padding:11px 12px;text-align:center;border-bottom:1px solid var(--bg)"><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;${turnoStyle}">${s.turno==='noche'?'Noche':'Día'}</span></td>
+        <td style="padding:11px 12px;text-align:center;border-bottom:1px solid var(--bg)"><span style="font-family:monospace;font-size:14px;font-weight:700;background:var(--bg);padding:3px 12px;border-radius:7px">${s.solicitado}</span></td>
+        <td style="padding:11px 12px;text-align:center;border-bottom:1px solid var(--bg)"><button onclick="solEliminar(${s.id})" style="background:none;border:none;color:var(--border);cursor:pointer;font-size:15px;padding:4px 8px;border-radius:6px" onmouseover="this.style.background='#fce7f3';this.style.color='#9d174d'" onmouseout="this.style.background='none';this.style.color='var(--border)'">✕</button></td>
+      </tr>`
+    })
+  })
+  html += '</tbody></table>'
+  cont.innerHTML = html
+}
+
+async function solEliminar(id) {
+  if (!confirm('¿Eliminar esta solicitud?')) return
+  await db.from('solicitudes_personal').delete().eq('id', id)
+  await solCargarLista()
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ─── INDICADORES DE CUMPLIMIENTO ──────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+const colorPct = pct => pct > 100 ? '#f59e0b' : pct >= 90 ? '#22c27a' : pct >= 85 ? '#fbbf24' : '#ef4444'
+
+async function initIndicadores() {
+  // Default mes actual
+  const mesInput = document.getElementById('ind-mes')
+  if (!mesInput.value) {
+    const lima = new Date(Date.now() - 5*60*60*1000)
+    mesInput.value = lima.toISOString().slice(0,7)
+  }
+  // Empresas
+  const { data } = await db.from('personas').select('empresa')
+  const empresas = [...new Set((data||[]).map(x=>x.empresa).filter(Boolean))].sort()
+  const sel = document.getElementById('ind-empresa')
+  if (sel.options.length <= 1) {
+    sel.innerHTML = '<option value="">Todas</option>' + empresas.map(e=>`<option value="${e}">${e}</option>`).join('')
+  }
+  await indCargar()
+}
+
+async function indCargar() {
+  const mes = document.getElementById('ind-mes').value  // "2026-06"
+  const empresaFiltro = document.getElementById('ind-empresa').value
+  const turnoFiltro = document.getElementById('ind-turno').value
+  const vista = document.getElementById('ind-vista').value
+  if (!mes) return
+
+  // Rango del mes
+  const [yyyy, mm] = mes.split('-')
+  const primerDia = `${yyyy}-${mm}-01`
+  const ultimoDia = new Date(Date.UTC(+yyyy, +mm, 0)).toISOString().slice(0,10)
+
+  // Traer solicitudes del mes
+  let qs = db.from('solicitudes_personal').select('*').gte('fecha', primerDia).lte('fecha', ultimoDia)
+  if (empresaFiltro) qs = qs.eq('empresa', empresaFiltro)
+  if (turnoFiltro) qs = qs.eq('turno', turnoFiltro)
+  const { data: solicitudes } = await qs
+
+  // Traer estados del mes (para contar asistencia)
+  let qe = db.from('estado_hoy').select('*').gte('fecha', primerDia).lte('fecha', ultimoDia)
+  if (empresaFiltro) qe = qe.eq('empresa', empresaFiltro)
+  const { data: estados } = await qe
+
+  // Calcular asistencia por fecha+turno+empresa
+  const asistio = (fecha, turno, empresa) => {
+    return (estados||[]).filter(e => {
+      if (e.fecha !== fecha || e.empresa !== empresa) return false
+      const esTN = indEsTurnoNoche(e.ingreso)
+      return turno === 'noche' ? esTN : !esTN
+    }).length
+  }
+
+  // Construir dataset
+  const dataset = (solicitudes||[]).map(s => {
+    const asist = asistio(s.fecha, s.turno, s.empresa)
+    const pct = s.solicitado > 0 ? Math.round(asist / s.solicitado * 100) : 0
+    return { ...s, asistio: asist, pct }
+  })
+
+  indRender(dataset, vista)
+}
+
+function indEsTurnoNoche(ingreso) {
+  if (!ingreso) return false
+  const h = parseInt(ingreso.split(' ').slice(-1)[0]?.split(':')[0] || '0')
+  return h >= 21 || h < 6
+}
+
+function indRender(dataset, vista) {
+  // Tarjetas resumen
+  const totalSol = dataset.reduce((a,d)=>a+d.solicitado,0)
+  const totalAsist = dataset.reduce((a,d)=>a+d.asistio,0)
+  const pctProm = totalSol > 0 ? Math.round(totalAsist/totalSol*100) : 0
+  const bajos = dataset.filter(d=>d.pct < 85).length
+
+  document.getElementById('ind-solicitado').textContent = totalSol
+  document.getElementById('ind-asistio').textContent = totalAsist
+  const pctEl = document.getElementById('ind-pct')
+  pctEl.textContent = pctProm + '%'
+  pctEl.style.color = colorPct(pctProm)
+  document.getElementById('ind-bajos').textContent = bajos
+
+  // Grafico
+  const chart = document.getElementById('ind-chart')
+  if (!dataset.length) {
+    chart.innerHTML = '<div style="margin:auto;color:var(--muted);font-size:13px;padding:40px">Sin datos para los filtros seleccionados</div>'
+    document.getElementById('ind-chart-prom').textContent = ''
+    document.getElementById('ind-tabla-empresa').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Sin datos</div>'
+    document.getElementById('ind-turnos').innerHTML = ''
+    return
+  }
+  document.getElementById('ind-chart-prom').textContent = 'Promedio: ' + pctProm + '%'
+
+  // Agrupar para el gráfico
+  let chartData = []
+  if (vista === 'dia') {
+    document.getElementById('ind-chart-titulo').textContent = 'Cumplimiento por día'
+    const porFecha = {}
+    dataset.forEach(d => {
+      if (!porFecha[d.fecha]) porFecha[d.fecha] = { sol:0, asist:0 }
+      porFecha[d.fecha].sol += d.solicitado
+      porFecha[d.fecha].asist += d.asistio
+    })
+    chartData = Object.keys(porFecha).sort().map(f => ({
+      label: f.slice(8,10),
+      pct: porFecha[f].sol > 0 ? Math.round(porFecha[f].asist/porFecha[f].sol*100) : 0
+    }))
+  } else {
+    document.getElementById('ind-chart-titulo').textContent = 'Cumplimiento por empresa'
+    const porEmp = {}
+    dataset.forEach(d => {
+      if (!porEmp[d.empresa]) porEmp[d.empresa] = { sol:0, asist:0 }
+      porEmp[d.empresa].sol += d.solicitado
+      porEmp[d.empresa].asist += d.asistio
+    })
+    chartData = Object.keys(porEmp).sort().map(e => ({
+      label: e,
+      pct: porEmp[e].sol > 0 ? Math.round(porEmp[e].asist/porEmp[e].sol*100) : 0
+    }))
+  }
+
+  const maxPct = Math.max(100, ...chartData.map(c=>c.pct))
+  chart.innerHTML = chartData.map(c => {
+    const h = Math.round(c.pct / maxPct * 100)
+    return `<div style="flex:1;min-width:36px;display:flex;flex-direction:column;align-items:center;gap:6px">
+      <div style="width:100%;height:140px;display:flex;align-items:flex-end;background:var(--bg);border-radius:6px 6px 0 0;overflow:hidden">
+        <div style="width:100%;height:${h}%;background:${colorPct(c.pct)};border-radius:6px 6px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:4px"><span style="font-size:10px;font-weight:700;color:#fff">${c.pct}%</span></div>
+      </div>
+      <span style="font-size:10px;color:var(--muted);font-weight:600;text-align:center;word-break:break-word">${c.label}</span>
+    </div>`
+  }).join('')
+
+  // Tabla por empresa
+  const porEmp = {}
+  dataset.forEach(d => {
+    if (!porEmp[d.empresa]) porEmp[d.empresa] = { sol:0, asist:0 }
+    porEmp[d.empresa].sol += d.solicitado
+    porEmp[d.empresa].asist += d.asistio
+  })
+  const tablaEmp = Object.keys(porEmp).sort().map(e => {
+    const pct = porEmp[e].sol > 0 ? Math.round(porEmp[e].asist/porEmp[e].sol*100) : 0
+    const col = colorPct(pct)
+    return `<tr>
+      <td style="padding:12px;font-size:13px;border-bottom:1px solid var(--bg);font-weight:700">${e}</td>
+      <td style="padding:12px;text-align:center;font-size:13px;border-bottom:1px solid var(--bg)">${porEmp[e].sol}</td>
+      <td style="padding:12px;text-align:center;font-size:13px;border-bottom:1px solid var(--bg)">${porEmp[e].asist}</td>
+      <td style="padding:12px;text-align:center;border-bottom:1px solid var(--bg)">
+        <span style="width:80px;height:6px;background:var(--bg);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px"><span style="display:block;height:100%;width:${Math.min(100,pct)}%;background:${col};border-radius:3px"></span></span>
+        <span style="font-weight:700;font-size:14px;color:${col}">${pct}%</span>
+      </td>
+    </tr>`
+  }).join('')
+  document.getElementById('ind-tabla-empresa').innerHTML =
+    `<table style="width:100%;border-collapse:collapse"><thead><tr>
+      <th style="text-align:left;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border)">Empresa</th>
+      <th style="text-align:center;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border)">Solicitado</th>
+      <th style="text-align:center;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border)">Asistió</th>
+      <th style="text-align:center;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border)">Cumplimiento</th>
+    </tr></thead><tbody>${tablaEmp}</tbody></table>`
+
+  // Comparativo turno
+  const porTurno = { dia:{sol:0,asist:0}, noche:{sol:0,asist:0} }
+  dataset.forEach(d => { porTurno[d.turno].sol += d.solicitado; porTurno[d.turno].asist += d.asistio })
+  const pctDia = porTurno.dia.sol > 0 ? Math.round(porTurno.dia.asist/porTurno.dia.sol*100) : 0
+  const pctNoche = porTurno.noche.sol > 0 ? Math.round(porTurno.noche.asist/porTurno.noche.sol*100) : 0
+  document.getElementById('ind-turnos').innerHTML = `
+    <div style="flex:1;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:18px;text-align:center">
+      <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">☀️ Turno Día</div>
+      <div style="font-size:26px;font-weight:800;color:${colorPct(pctDia)}">${pctDia}%</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${porTurno.dia.asist} de ${porTurno.dia.sol} solicitados</div>
+    </div>
+    <div style="flex:1;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:18px;text-align:center">
+      <div style="font-size:11px;font-weight:700;color:#5b21b6;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">🌙 Turno Noche</div>
+      <div style="font-size:26px;font-weight:800;color:${colorPct(pctNoche)}">${pctNoche}%</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${porTurno.noche.asist} de ${porTurno.noche.sol} solicitados</div>
+    </div>`
 }
 
 // ─── INIT ─────────────────────────────────────────────
