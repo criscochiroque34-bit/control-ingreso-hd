@@ -51,7 +51,12 @@ export default async function handler(req, res) {
         p._trabajadoMin = trabajadoMin
       }
 
-      resumenHD.push({ empresa, total: personal.length, conSalida, sinSalida: sinSalida.length, personal })
+      // Cumplimiento para el resumen HD (si hay solicitud registrada)
+      const asistieronUnicosHD = new Set(personal.map(p => p.dni)).size
+      const solicitadoHD = await getSolicitud(fecha, 'noche', empresa)
+      const pctHD = solicitadoHD !== null && solicitadoHD > 0 ? Math.round(asistieronUnicosHD / solicitadoHD * 100) : null
+
+      resumenHD.push({ empresa, total: personal.length, conSalida, sinSalida: sinSalida.length, personal, solicitado: solicitadoHD, pct: pctHD })
 
       if (sinSalida.length > 0) {
         resultados.push({ empresa, enviado: false, razon: `${sinSalida.length} pendientes` })
@@ -151,15 +156,22 @@ function htmlReporte(empresa, fechaStr, turnoLabel, contacto, personal, conSalid
 }
 
 function htmlResumenHD(fechaStr, turnoLabel, resumen) {
-  const secciones = resumen.map(({ empresa, total, conSalida, sinSalida, personal }) => `
+  const secciones = resumen.map(({ empresa, total, conSalida, sinSalida, personal, solicitado, pct }) => {
+    let cumplLine = ''
+    if (solicitado !== null && solicitado !== undefined) {
+      const col = pct > 100 ? '#c2410c' : pct >= 90 ? '#065f46' : pct >= 85 ? '#854d0e' : '#991b1b'
+      cumplLine = ` · Solicitado: <strong>${solicitado}</strong> · Cumplimiento: <strong style="color:${col}">${pct}%</strong>`
+    }
+    return `
     <div style="margin-bottom:24px">
       <div style="font-size:13px;font-weight:bold;color:#1e2433;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #dde2ed">
-        ${empresa} — ${total} personas · ${conSalida} completas${sinSalida > 0 ? ` · <span style="color:#dc2626">${sinSalida} sin salida</span>` : ''}
+        ${empresa} — ${total} personas · ${conSalida} completas${sinSalida > 0 ? ` · <span style="color:#dc2626">${sinSalida} sin salida</span>` : ''}${cumplLine}
       </div>
       <div style="background:#fff;border:1px solid #dde2ed;border-radius:8px;overflow:hidden">
         ${tablaPersonal(personal)}
       </div>
-    </div>`).join('')
+    </div>`
+  }).join('')
 
   return `
     <div style="font-family:Arial,sans-serif;max-width:800px;margin:0 auto">
