@@ -1,4 +1,4 @@
-import { db, transporter, GMAIL, fechaLabel, calcTiempoTrabajado, esTurnoNoche, getCorreosHD, getCorreosEmpresas, getEventosFecha, calcBreakMinLocal, calcBanioLocal, tablaPersonal } from './_helpers.js'
+import { db, transporter, GMAIL, fechaLabel, calcTiempoTrabajado, esTurnoNoche, getCorreosHD, getCorreosEmpresas, getEventosFecha, calcBreakMinLocal, calcBanioLocal, tablaPersonal, getSolicitud, bannerCumplimiento } from './_helpers.js'
 
 // Turno Día: ingreso entre 6am y 8:59pm del mismo día
 const hoy = () => {
@@ -66,7 +66,9 @@ export default async function handler(req, res) {
       }
 
       // Reporte completo a la empresa
-      const html = htmlReporte(empresa, fechaStr, turnoLabel, nombreContacto, personal, conSalida)
+      const solicitado = await getSolicitud(fecha, 'dia', empresa)
+      const banner = bannerCumplimiento(solicitado, personal.length)
+      const html = htmlReporte(empresa, fechaStr, turnoLabel, nombreContacto, personal, conSalida, banner)
       const destinatarios = correosDest.map(c => c.correo).join(', ')
       await transporter.sendMail({
         from: `"Control HD" <${GMAIL}>`,
@@ -113,7 +115,7 @@ export default async function handler(req, res) {
   }
 }
 
-function htmlReporte(empresa, fechaStr, turnoLabel, contacto, personal, conSalida) {
+function htmlReporte(empresa, fechaStr, turnoLabel, contacto, personal, conSalida, banner) {
   return `
     <div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto">
       <div style="background:#1e2433;padding:18px 24px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center">
@@ -125,6 +127,7 @@ function htmlReporte(empresa, fechaStr, turnoLabel, contacto, personal, conSalid
       </div>
       <div style="background:#f7f9fc;padding:20px 24px;border-radius:0 0 8px 8px;border:1px solid #dde2ed;border-top:none">
         <p style="color:#1e2433;font-size:14px;margin:0 0 16px">Hola <strong>${contacto}</strong>, reporte del ${fechaStr}.</p>
+        ${banner || ''}
         <div style="display:flex;gap:10px;margin-bottom:16px">
           <div style="flex:1;background:#fff;border:1px solid #dde2ed;border-radius:8px;padding:10px;text-align:center">
             <div style="font-size:22px;font-weight:bold;color:#1e2433">${personal.length}</div>
