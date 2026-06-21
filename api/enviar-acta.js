@@ -44,7 +44,8 @@ export default async function handler(req, res) {
 
     // Banner de cumplimiento si existe solicitud para esta empresa/fecha/turno
     const solicitado = await getSolicitud(fecha, turno, empresa)
-    const banner = bannerCumplimiento(solicitado, personal.length)
+    const asistieronUnicos = new Set(personal.map(p => p.dni)).size
+    const banner = bannerCumplimiento(solicitado, asistieronUnicos)
 
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto">
