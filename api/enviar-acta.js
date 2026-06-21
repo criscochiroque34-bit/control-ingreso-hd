@@ -1,4 +1,4 @@
-import { db, transporter, GMAIL, fechaLabel, esTurnoNoche, getCorreosEmpresas, getEventosFecha, calcBreakMinLocal, calcBanioLocal, calcTiempoTrabajado, tablaPersonal } from './_helpers.js'
+import { db, transporter, GMAIL, fechaLabel, esTurnoNoche, getCorreosEmpresas, getEventosFecha, calcBreakMinLocal, calcBanioLocal, calcTiempoTrabajado, tablaPersonal, getSolicitud, bannerCumplimiento } from './_helpers.js'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -42,6 +42,10 @@ export default async function handler(req, res) {
     const nombreSupervisor = supervisor?.nombre || 'Supervisor HD'
     const cargoSupervisor = supervisor?.cargo || 'Home Delivery'
 
+    // Banner de cumplimiento si existe solicitud para esta empresa/fecha/turno
+    const solicitado = await getSolicitud(fecha, turno, empresa)
+    const banner = bannerCumplimiento(solicitado, personal.length)
+
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto">
         <div style="background:#1e2433;padding:18px 24px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center">
@@ -52,6 +56,7 @@ export default async function handler(req, res) {
           <div style="background:${turno==='noche'?'#8b5cf6':'#e85d9b'};color:#fff;font-size:11px;font-weight:bold;padding:4px 12px;border-radius:12px">${turnoLabel}</div>
         </div>
         <div style="background:#f7f9fc;padding:20px 24px;border-radius:0 0 8px 8px;border:1px solid #dde2ed;border-top:none">
+          ${banner || ''}
           <div style="display:flex;gap:10px;margin-bottom:16px">
             <div style="flex:1;background:#fff;border:1px solid #dde2ed;border-radius:8px;padding:10px;text-align:center">
               <div style="font-size:22px;font-weight:bold;color:#1e2433">${personal.length}</div>
