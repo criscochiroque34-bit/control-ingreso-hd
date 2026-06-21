@@ -1018,6 +1018,22 @@ tr:hover td{background:#f7f9fc}
           </div>
         </div>
 
+        <!-- BANNER CUMPLIMIENTO (solo si hay solicitud registrada) -->
+        <div id="acta-cumplimiento" style="display:none;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+          <div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center">
+            <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--text)" id="acta-cump-sol">0</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Solicitados</div>
+          </div>
+          <div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center">
+            <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#3b82f6" id="acta-cump-asist">0</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Asistieron</div>
+          </div>
+          <div id="acta-cump-pct-box" style="border-radius:8px;padding:10px;text-align:center">
+            <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800" id="acta-cump-pct">0%</div>
+            <div style="font-size:9px;text-transform:uppercase;letter-spacing:.06em;margin-top:2px" id="acta-cump-lbl">Cumplimiento</div>
+          </div>
+        </div>
+
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
           <div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center">
             <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--text)" id="acta-total">0</div>
@@ -1032,6 +1048,7 @@ tr:hover td{background:#f7f9fc}
             <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Sin salida</div>
           </div>
         </div>
+
 
         <div class="card-title">Detalle de personal</div>
         <div class="table-wrap">
@@ -2962,6 +2979,7 @@ const _guardarPersonaOrig = guardarPersona
 let actaData = []
 let actaSupervisor = null
 let actaFiltros = {}
+let actaCumplimiento = null  // {solicitado, asistio, pct} si hay solicitud registrada, null si no
 let allEmpresasSelected = false
 
 async function initActas() {
@@ -3048,6 +3066,30 @@ async function generarActa() {
   document.getElementById('acta-total').textContent = actaData.length
   document.getElementById('acta-con-salida').textContent = conSalida
   document.getElementById('acta-sin-salida').textContent = actaData.length - conSalida
+
+  // Banner de cumplimiento — solo si hay solicitud registrada para esta fecha/turno/empresa
+  const { data: solData } = await db.from('solicitudes_personal').select('solicitado')
+    .eq('fecha', fecha).eq('turno', turno).eq('empresa', empresa).maybeSingle()
+  const cumpBox = document.getElementById('acta-cumplimiento')
+  if (solData) {
+    const asistieronUnicos = new Set(actaData.map(p=>p.dni)).size
+    const pct = solData.solicitado > 0 ? Math.round(asistieronUnicos / solData.solicitado * 100) : 0
+    actaCumplimiento = { solicitado: solData.solicitado, asistio: asistieronUnicos, pct }
+    const col = colorPct(pct)
+    const colLbl = pct > 100 ? '#c2410c' : pct >= 90 ? '#065f46' : pct >= 85 ? '#854d0e' : '#991b1b'
+    const colBg = pct > 100 ? '#fff7ed' : pct >= 90 ? '#f0fdf4' : pct >= 85 ? '#fefce8' : '#fef2f2'
+    document.getElementById('acta-cump-sol').textContent = solData.solicitado
+    document.getElementById('acta-cump-asist').textContent = asistieronUnicos
+    document.getElementById('acta-cump-pct').textContent = pct + '%'
+    document.getElementById('acta-cump-pct').style.color = col
+    document.getElementById('acta-cump-pct-box').style.background = colBg
+    document.getElementById('acta-cump-lbl').style.color = colLbl
+    cumpBox.style.display = 'grid'
+  } else {
+    actaCumplimiento = null
+    cumpBox.style.display = 'none'
+  }
+
   document.getElementById('acta-preview-firma').textContent = actaSupervisor?.nombre || '—'
   document.getElementById('acta-preview-cargo').textContent = actaSupervisor?.cargo || '—'
   document.getElementById('acta-tabla-body').innerHTML = actaData.map((p,i) => {
@@ -3215,6 +3257,23 @@ function descargarActaPDF() {
   doc.text(actaFiltros.empresa,M+4,y+11); doc.text(fechaLabel,M+CW/2+7,y+11)
 
   y=60
+  // Banner de cumplimiento en el PDF — solo si hay solicitud registrada
+  if (actaCumplimiento) {
+    const { solicitado, asistio, pct } = actaCumplimiento
+    const pctColor = pct > 100 ? [245,158,11] : pct >= 90 ? [34,194,122] : pct >= 85 ? [234,179,8] : [239,68,68]
+    const pctBg = pct > 100 ? [255,247,237] : pct >= 90 ? [240,253,244] : pct >= 85 ? [254,252,232] : [254,242,242]
+    const cols3c = CW/3
+    ;[[solicitado,'SOLICITADOS',NAV,BG],[asistio,'ASISTIERON',[59,130,246],BG],[pct+'%','CUMPLIMIENTO',pctColor,pctBg]].forEach((r,i)=>{
+      const rx=M+i*(cols3c+1.5)
+      doc.setFillColor(...r[3]); doc.roundedRect(rx,y,cols3c-2,18,2,2,'F')
+      doc.setFontSize(16); doc.setFont('helvetica','bold'); doc.setTextColor(...r[2])
+      doc.text(String(r[0]),rx+(cols3c-2)/2,y+9,{align:'center'})
+      doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...MUTED)
+      doc.text(r[1],rx+(cols3c-2)/2,y+15,{align:'center'})
+    })
+    y += 24
+  }
+
   const total=actaData.length, conSalida=actaData.filter(p=>p.salida).length, cols3=CW/3
   ;[[total,'ASISTIERON',NAV],[conSalida,'SALIDA COMPLETA',GREEN],[total-conSalida,'SIN SALIDA',ACCENT]].forEach((r,i)=>{
     const rx=M+i*(cols3+1.5)
@@ -3225,7 +3284,7 @@ function descargarActaPDF() {
     doc.text(r[1],rx+(cols3-2)/2,y+16,{align:'center'})
   })
 
-  y=84
+  y += 24
   doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...MUTED)
   doc.text('DETALLE DE PERSONAL',M,y-2)
   doc.autoTable({
