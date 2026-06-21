@@ -4457,13 +4457,18 @@ async function indCargar() {
   if (empresaFiltro) qe = qe.eq('empresa', empresaFiltro)
   const { data: estados } = await qe
 
-  // Calcular asistencia por fecha+turno+empresa
+  // Calcular asistencia por fecha+turno+empresa — cuenta DNIs ÚNICOS (evita doble conteo por reingreso)
   const asistio = (fecha, turno, empresa) => {
-    return (estados||[]).filter(e => {
-      if (e.fecha !== fecha || e.empresa !== empresa) return false
-      const esTN = indEsTurnoNoche(e.ingreso)
-      return turno === 'noche' ? esTN : !esTN
-    }).length
+    const dnisUnicos = new Set(
+      (estados||[])
+        .filter(e => {
+          if (e.fecha !== fecha || e.empresa !== empresa) return false
+          const esTN = indEsTurnoNoche(e.ingreso)
+          return turno === 'noche' ? esTN : !esTN
+        })
+        .map(e => e.dni)
+    )
+    return dnisUnicos.size
   }
 
   // Construir dataset
