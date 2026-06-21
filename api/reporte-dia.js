@@ -67,7 +67,8 @@ export default async function handler(req, res) {
 
       // Reporte completo a la empresa
       const solicitado = await getSolicitud(fecha, 'dia', empresa)
-      const banner = bannerCumplimiento(solicitado, personal.length)
+      const asistieronUnicos = new Set(personal.map(p => p.dni)).size
+      const banner = bannerCumplimiento(solicitado, asistieronUnicos)
       const html = htmlReporte(empresa, fechaStr, turnoLabel, nombreContacto, personal, conSalida, banner)
       const destinatarios = correosDest.map(c => c.correo).join(', ')
       await transporter.sendMail({
