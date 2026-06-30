@@ -3412,11 +3412,9 @@ function banioJornadaInicio() {
 }
 
 async function initBanio() {
-  // Cargar catálogo planilla
-  if (!banioPlanilla.length) {
-    const { data } = await db.from('planilla').select('*').order('nombre')
-    banioPlanilla = data || []
-  }
+  // Siempre recargar planilla fresco — así aparecen nuevas personas sin necesidad de refrescar
+  const { data } = await db.from('planilla').select('*').order('nombre')
+  banioPlanilla = data || []
 
   // Suscripción realtime — sincroniza entre dispositivos (operaciones / prevención)
   if (!banioRealtimeActivo) {
