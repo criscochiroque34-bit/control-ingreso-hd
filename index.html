@@ -3620,7 +3620,7 @@ async function banioBuscar(val) {
   dd.innerHTML = matches.map(p => {
     const color = BANIO_COLORS[banioPlanilla.indexOf(p) % BANIO_COLORS.length]
     const veces = cntPorDni[p.dni] || 0
-    return `<div onclick="banioSel('${p.dni}')" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f0f2f6;transition:background .1s" onmouseover="this.style.background='#fffbeb'" onmouseout="this.style.background='transparent'">
+    return `<div onmousedown="event.preventDefault();banioSel('${p.dni}')" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f0f2f6;transition:background .1s" onmouseover="this.style.background='#fffbeb'" onmouseout="this.style.background='transparent'">
       <div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(p.nombre)}</div>
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">${p.nombre}</div>
