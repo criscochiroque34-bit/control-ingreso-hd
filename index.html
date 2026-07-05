@@ -3412,6 +3412,19 @@ async function initBanio() {
   const { data } = await db.from('planilla').select('*').order('nombre')
   banioPlanilla = data || []
 
+  // Listener delegado del dropdown (una sola vez) — robusto ante cualquier DNI
+  const dd = document.getElementById('banio-dd')
+  if (dd && !dd.dataset.listenerAttached) {
+    dd.dataset.listenerAttached = '1'
+    dd.addEventListener('mousedown', e => {
+      const item = e.target.closest('.banio-dd-item')
+      if (!item) return
+      e.preventDefault()
+      e.stopPropagation()
+      banioSel(item.dataset.dni)
+    })
+  }
+
   // Suscripción realtime — sincroniza entre dispositivos (operaciones / prevención)
   if (!banioRealtimeActivo) {
     banioRealtimeActivo = true
@@ -3617,10 +3630,10 @@ async function banioBuscar(val) {
   const cntPorDni = {}
   ;(registros||[]).forEach(r => cntPorDni[r.dni] = (cntPorDni[r.dni]||0) + 1)
 
-  dd.innerHTML = matches.map(p => {
+  dd.innerHTML = matches.map((p, idx) => {
     const color = BANIO_COLORS[banioPlanilla.indexOf(p) % BANIO_COLORS.length]
     const veces = cntPorDni[p.dni] || 0
-    return `<div onmousedown="event.preventDefault();banioSel('${p.dni}')" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f0f2f6;transition:background .1s" onmouseover="this.style.background='#fffbeb'" onmouseout="this.style.background='transparent'">
+    return `<div class="banio-dd-item" data-dni="${String(p.dni).trim().replace(/"/g,'&quot;')}" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f0f2f6;transition:background .1s" onmouseover="this.style.background='#fffbeb'" onmouseout="this.style.background='transparent'">
       <div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(p.nombre)}</div>
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">${p.nombre}</div>
