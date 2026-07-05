@@ -3453,7 +3453,7 @@ async function banioRecargar() {
   })
 
   for (const r of registros) {
-    const color = BANIO_COLORS[banioPlanilla.findIndex(p=>p.dni===r.dni) % BANIO_COLORS.length] || '#7a8299'
+    const color = BANIO_COLORS[banioPlanilla.findIndex(p=>String(p.dni).trim()===String(r.dni).trim()) % BANIO_COLORS.length] || '#7a8299'
     const tsol = r.solicitado_at ? new Date(r.solicitado_at).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Lima'}) : '—'
     const tprev = r.aprobado_seg_at ? new Date(r.aprobado_seg_at).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Lima'}) : null
     const tret = r.retorno_at ? new Date(r.retorno_at).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Lima'}) : null
@@ -3633,7 +3633,8 @@ async function banioBuscar(val) {
 }
 
 function banioSel(dni) {
-  const p = banioPlanilla.find(x => x.dni === dni)
+  const key = String(dni).trim()
+  const p = banioPlanilla.find(x => String(x.dni).trim() === key)
   if (!p) return
   banioSelPersona = p
   const color = BANIO_COLORS[banioPlanilla.indexOf(p) % BANIO_COLORS.length]
@@ -3801,7 +3802,7 @@ function banioRenderHistorial(registros) {
   orden.forEach(dni => {
     const rows = grupos[dni]
     const nombre = rows[0].nombre
-    const color = BANIO_COLORS[banioPlanilla.findIndex(p=>p.dni===dni) % BANIO_COLORS.length] || '#7a8299'
+    const color = BANIO_COLORS[banioPlanilla.findIndex(p=>String(p.dni).trim()===String(dni).trim()) % BANIO_COLORS.length] || '#7a8299'
     const acumMin = rows.reduce((acc,r) => acc + (r.tiempo_min||0), 0)
     const acumStr = Math.round(acumMin) + ' min'
     totalPersonas++
