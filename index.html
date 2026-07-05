@@ -638,14 +638,10 @@ tr:hover td{background:#f7f9fc}
       </div>
       <div style="padding:18px 20px">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Pendiente confirmar</div>
-        <div id="banio-col-prev" style="display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto;margin-bottom:14px">
-          <div style="text-align:center;padding:16px;color:var(--muted);font-size:12px">⏳ Nada pendiente</div>
-        </div>
+        <div id="banio-col-prev" style="display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto;margin-bottom:14px"></div>
         <div style="height:1px;background:var(--border);margin-bottom:14px"></div>
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">En baño ahora</div>
-        <div id="banio-col-banio" style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto">
-          <div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">🚻 Nadie en baño</div>
-        </div>
+        <div id="banio-col-banio" style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto"></div>
       </div>
     </div>
   </div>
@@ -3440,8 +3436,8 @@ async function banioRecargar() {
     .order('solicitado_at', { ascending: true })
 
   // Limpiar UI antes de reconstruir (siempre, incluso si está vacío)
-  document.getElementById('banio-col-prev').innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:12px">⏳ Nada pendiente</div>'
-  document.getElementById('banio-col-banio').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">🚻 Nadie en baño</div>'
+  document.getElementById('banio-col-prev').innerHTML = ''
+  document.getElementById('banio-col-banio').innerHTML = ''
   document.getElementById('banio-historial').innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Sin registros aún</div>'
 
   if (!registros?.length) {
@@ -3470,6 +3466,8 @@ async function banioRecargar() {
       // En baño — reconstruir timer desde aprobado_seg_at
       const startMs = new Date(r.aprobado_seg_at).getTime()
       const uid = ++banioUID
+      const motivo = r.motivo || 'Baño'
+      const motivoIcon = motivo === 'Baño' ? '🚻' : '📋'
       const bCard = document.createElement('div')
       bCard.style.cssText = 'border-radius:10px;padding:12px 14px;border:1px solid #86efac;background:#f0fdf4'
       bCard.dataset.dbid = r.id
@@ -3481,23 +3479,25 @@ async function banioRecargar() {
       bCard.dataset.tprev = tprev
       bCard.dataset.start = startMs
       bCard.dataset.uid = uid
+      bCard.dataset.motivo = motivo
       bCard.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
           <div style="width:34px;height:34px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(r.nombre)}</div>
           <div>
             <div style="font-size:13px;font-weight:700;color:var(--text)">${r.nombre}</div>
-            <div style="font-size:10px;color:var(--muted)">Prevención ${tprev}</div>
+            <div style="font-size:10px;color:var(--muted)">Prev ${tprev} · ${motivoIcon} ${motivo}</div>
           </div>
           <span style="margin-left:auto;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:#fce7f3;color:#9d174d">${banioVecLbl(r.veces_jornada)} vez</span>
         </div>
         <div style="font-family:monospace;font-size:22px;font-weight:700;text-align:center;padding:7px;border-radius:7px;background:rgba(0,0,0,.04);margin-bottom:9px;color:#22c27a" id="btmr-${uid}">00:00</div>
         <button onclick="banioRetorno(this)" style="width:100%;padding:9px;border-radius:7px;border:none;background:#22c27a;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">✓ Marcar retorno</button>`
       const colBanio = document.getElementById('banio-col-banio')
-      colBanio.querySelector('div[style*="Nadie"]')?.remove()
       colBanio.appendChild(bCard)
 
     } else {
       // Sin aprobar seg → pendiente confirmar (con X solo en ops)
+      const motivo = r.motivo || 'Baño'
+      const motivoIcon = motivo === 'Baño' ? '🚻' : '📋'
       const card = document.createElement('div')
       card.style.cssText = 'border-radius:10px;padding:12px 14px;border:1px solid #bfdbfe;background:#eff6ff'
       card.dataset.dbid = r.id
@@ -3506,12 +3506,13 @@ async function banioRecargar() {
       card.dataset.color = color
       card.dataset.veces = r.veces_jornada
       card.dataset.tsol = tsol
+      card.dataset.motivo = motivo
       card.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
           <div style="width:34px;height:34px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(r.nombre)}</div>
           <div>
             <div style="font-size:13px;font-weight:700;color:var(--text)">${r.nombre}</div>
-            <div style="font-size:10px;color:var(--muted)">Solicitó ${tsol}</div>
+            <div style="font-size:10px;color:var(--muted)">Solicitó ${tsol} · ${motivoIcon} ${motivo}</div>
           </div>
           <span style="margin-left:auto;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:#fce7f3;color:#9d174d">${banioVecLbl(r.veces_jornada)} vez</span>
         </div>
@@ -3520,7 +3521,6 @@ async function banioRecargar() {
           <button onclick="banioRechazar(this)" style="padding:8px 10px;border-radius:7px;border:1px solid #fce7f3;background:#fce7f3;color:#9d174d;font-size:12px;cursor:pointer;font-weight:700" class="banio-x-ops">✕</button>
         </div>`
       const colPrev = document.getElementById('banio-col-prev')
-      colPrev.querySelector('div[style*="Nada"]')?.remove()
       colPrev.appendChild(card)
     }
   }
@@ -3742,13 +3742,13 @@ async function banioConfirmar(btn) {
   bCard.dataset.start = startMs
   bCard.dataset.motivo = d.motivo
   bCard.dataset.uid = ++banioUID
-  const motivoIcon = d.motivo === 'Baño' ? '🚻' : '📋'
+  const motivoIcon = (d.motivo||'Baño') === 'Baño' ? '🚻' : '📋'
   bCard.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
       <div style="width:34px;height:34px;border-radius:50%;background:${d.color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${banioIni(d.nombre)}</div>
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">${d.nombre}</div>
-        <div style="font-size:10px;color:var(--muted)">Prev ${tprev} · ${motivoIcon} ${d.motivo}</div>
+        <div style="font-size:10px;color:var(--muted)">Prev ${tprev} · ${motivoIcon} ${d.motivo||'Baño'}</div>
       </div>
       <span style="margin-left:auto;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:#fce7f3;color:#9d174d">${banioVecLbl(parseInt(d.veces))} vez</span>
     </div>
@@ -3889,16 +3889,15 @@ async function banioRechazar(btn) {
 
 function banioCheckEmpty(colId, msg) {
   const col = document.getElementById(colId)
-  if (!col.querySelector('[data-dbid]')) {
-    col.innerHTML = `<div style="text-align:center;padding:${colId==='banio-col-banio'?'20':'16'}px;color:var(--muted);font-size:12px">${msg}</div>`
-  }
+  if (!col.querySelector('[data-dbid]')) col.innerHTML = ''
 }
 
 function banioActualizarCounts() {
   const prev = document.querySelectorAll('#banio-col-prev [data-dbid]').length
   const banio = document.querySelectorAll('#banio-col-banio [data-dbid]').length
-  document.getElementById('banio-cnt-ops').textContent = (prev + banio) + ' enviados'
-  document.getElementById('banio-cnt-seg').textContent = banio + ' en baño'
+  const total = prev + banio
+  document.getElementById('banio-cnt-ops').textContent = total + (total === 1 ? ' enviado' : ' enviados')
+  document.getElementById('banio-cnt-seg').textContent = banio + (banio === 1 ? ' en baño' : ' en baño')
 }
 
 // Timer baño
