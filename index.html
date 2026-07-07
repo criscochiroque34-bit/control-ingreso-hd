@@ -196,6 +196,7 @@ tr:hover td{background:#f7f9fc}
 .btn-masivo-v2:hover{border-color:var(--accent2);background:rgba(99,102,241,.05)}
 .btn-masivo-v2#btn-masivo-ingreso.active{background:#22c55e;border-color:#22c55e;color:#fff;box-shadow:0 2px 8px rgba(34,197,94,.3)}
 .btn-masivo-v2#btn-masivo-salida.active{background:#f47215;border-color:#f47215;color:#fff;box-shadow:0 2px 8px rgba(244,114,21,.3)}
+.btn-masivo-v2#btn-masivo-sctr.active{background:#3b82f6;border-color:#3b82f6;color:#fff;box-shadow:0 2px 8px rgba(59,130,246,.3)}
 .btn-masivo:hover{border-color:var(--accent2)}
 .btn-masivo.active{background:var(--accent2);border-color:var(--accent2)}
 .masivo-feedback{border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:13px;font-weight:600;align-items:center;gap:8px;display:none}
@@ -299,6 +300,8 @@ tr:hover td{background:#f7f9fc}
         <span class="persona-empty">Ingresa un DNI para continuar</span>
       </div>
 
+      <div id="sctr-resultado" style="display:none;margin-top:10px;border-radius:10px;padding:16px;text-align:center"></div>
+
       <!-- FORM PERSONA (nuevo o edición) -->
       <div id="form-persona" style="display:none">
         <div class="form-persona">
@@ -343,6 +346,10 @@ tr:hover td{background:#f7f9fc}
           <button class="btn-masivo-v2" id="btn-masivo-salida" onclick="toggleMasivo('salida')" title="Activar modo salida masiva">
             <span style="font-size:13px">⚡</span>
             <span>Salida masiva</span>
+          </button>
+          <button class="btn-masivo-v2" id="btn-masivo-sctr" onclick="toggleMasivo('sctr')" title="Activar modo validar SCTR">
+            <span style="font-size:13px">🛡️</span>
+            <span>Validar SCTR</span>
           </button>
         </div>
       </div>
@@ -1107,11 +1114,15 @@ tr:hover td{background:#f7f9fc}
         <div style="display:flex;gap:14px;align-items:end;flex-wrap:wrap">
           <div>
             <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Vista</label>
-            <select class="form-input" id="ind-vista" onchange="indCargar()"><option value="mes">Por mes</option><option value="dia">Por día</option></select>
+            <select class="form-input" id="ind-vista" onchange="indCambiarVista()"><option value="mes">Por mes</option><option value="dia">Por día</option><option value="especifico">Día específico</option></select>
           </div>
-          <div>
+          <div id="ind-mes-wrap">
             <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Mes</label>
             <input type="month" class="form-input" id="ind-mes" onchange="indCargar()"/>
+          </div>
+          <div id="ind-dia-wrap" style="display:none">
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Fecha</label>
+            <input type="date" class="form-input" id="ind-dia" onchange="indCargar()"/>
           </div>
           <div>
             <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Empresa</label>
@@ -1668,7 +1679,11 @@ document.getElementById('dni-input').addEventListener('input', async function() 
   // MODO MASIVO — auto-trigger a los 8 dígitos
   if (modoMasivo) {
     if (val.length >= 8 && !masivoProcessing) {
-      await procesarDniMasivo(val)
+      if (tipoMasivo === 'sctr') {
+        await validarSCTRMasivo(val)
+      } else {
+        await procesarDniMasivo(val)
+      }
     }
     return
   }
@@ -1679,12 +1694,72 @@ document.getElementById('dni-input').addEventListener('input', async function() 
   modoEdicion = false
   cerrarFormPersona()
   updatePersonaInfo(); updateButtons()
+  document.getElementById('sctr-resultado').style.display = 'none'
   if (val.length < 6) return
   const { data } = await db.from('personas').select('*').eq('dni',val).single()
   if (data) { currentPersona = data; updatePersonaInfo(true) }
   else if (val.length >= 8) { abrirFormNuevo() }
   updateButtons()
 })
+
+// ─── VALIDADOR SCTR ────────────────────────────────────
+// Semáforo basado en asistencia: si el DNI registró ingreso en 2+ días
+// distintos durante el mes vigente (incluyendo hoy), se considera SCTR validado.
+// Contador de días únicos por DNI — consulta Supabase
+async function contarDiasSCTR(dni) {
+  // Mes vigente derivado de la fecha de jornada (ya ajustada al corte 6am Lima)
+  // así el 1er día del mes antes de las 6am no se confunde con el mes anterior
+  const fechaHoy = today()
+  const primerDiaMes = fechaHoy.slice(0, 7) + '-01'
+
+  const { data, error } = await db.from('estado_hoy')
+    .select('fecha')
+    .eq('dni', dni)
+    .gte('fecha', primerDiaMes)
+    .lte('fecha', fechaHoy)
+
+  if (error) return { error }
+  // Contar DÍAS DISTINTOS (no filas) — un reingreso el mismo día no debe contar doble
+  const diasUnicos = new Set((data || []).map(r => r.fecha)).size
+  return { diasUnicos }
+}
+
+// Modo masivo: valida, muestra semáforo grande rojo/verde y limpia el input para el siguiente DNI
+async function validarSCTRMasivo(dni) {
+  if (masivoProcessing) return
+  masivoProcessing = true
+
+  const res = document.getElementById('sctr-resultado')
+  const nombrePersona = await db.from('personas').select('nombre').eq('dni', dni).single()
+  const { diasUnicos, error } = await contarDiasSCTR(dni)
+
+  res.style.display = 'block'
+
+  if (error) {
+    res.style.background = '#fce7f3'; res.style.border = '2px solid #f9a8d4'
+    res.innerHTML = `<div style="font-size:14px;font-weight:700;color:#9d174d">✗ Error al validar: ${error.message}</div>`
+  } else if (diasUnicos >= 2) {
+    res.style.background = '#dcfce7'; res.style.border = '3px solid #16a34a'
+    res.innerHTML = `
+      <div style="font-size:40px;line-height:1">🟢</div>
+      <div style="font-size:16px;font-weight:800;color:#166534;margin-top:6px">SCTR VALIDADO</div>
+      <div style="font-size:12px;color:#166534;margin-top:2px">${nombrePersona.data?.nombre || dni} · ${diasUnicos} días distintos este mes</div>`
+  } else {
+    res.style.background = '#fee2e2'; res.style.border = '3px solid #dc2626'
+    res.innerHTML = `
+      <div style="font-size:40px;line-height:1">🔴</div>
+      <div style="font-size:16px;font-weight:800;color:#991b1b;margin-top:6px">REVISAR SCTR</div>
+      <div style="font-size:12px;color:#991b1b;margin-top:2px">${nombrePersona.data?.nombre || dni} · ${diasUnicos === 0 ? 'sin registros este mes' : 'solo 1 día registrado'}</div>`
+  }
+
+  setFeedback('proc', '🛡️ Modo Validar SCTR — escribe el siguiente DNI')
+
+  // Limpiar para el siguiente escaneo
+  document.getElementById('dni-input').value = ''
+  currentDni = ''; currentPersona = null
+  masivoProcessing = false
+  document.getElementById('dni-input').focus()
+}
 
 function abrirFormNuevo() {
   modoEdicion = false
@@ -2731,10 +2806,12 @@ let modoMasivo = false
 let tipoMasivo = 'ingreso'  // 'ingreso' o 'salida'
 let masivoRegistrados = []
 let masivoProcessing = false
+let sctrPendienteIngreso = null  // {dni, persona} cuando SCTR sale en rojo y falta forzar
 
 function toggleMasivo(tipo) {
   const btnIngreso = document.getElementById('btn-masivo-ingreso')
   const btnSalida = document.getElementById('btn-masivo-salida')
+  const btnSctr = document.getElementById('btn-masivo-sctr')
   const banner = document.getElementById('masivo-banner')
   
   // Si ya está activo el mismo tipo, desactivar
@@ -2742,25 +2819,40 @@ function toggleMasivo(tipo) {
     modoMasivo = false
     btnIngreso.classList.remove('active')
     btnSalida.classList.remove('active')
+    btnSctr.classList.remove('active')
+    btnIngreso.disabled = false; btnSalida.disabled = false; btnSctr.disabled = false
+    btnIngreso.style.opacity = ''; btnSalida.style.opacity = ''; btnSctr.style.opacity = ''
     banner.style.display = 'none'
     
     // Salir del modo masivo
     masivoRegistrados = []
     masivoProcessing = false
+    sctrPendienteIngreso = null
     document.getElementById('masivo-feedback').className = 'masivo-feedback'
     document.getElementById('masivo-lista-wrap').style.display = 'none'
     document.getElementById('dni-input').className = 'dni-input'
+    document.getElementById('sctr-resultado').style.display = 'none'
     currentDni = ''; currentPersona = null; modoEdicion = false
     cerrarFormPersona(); updatePersonaInfo(); updateButtons()
     document.getElementById('dni-input').focus()
+  } else if (modoMasivo && tipoMasivo !== tipo) {
+    // Ya hay OTRO modo activo — no permitir mezclar, hay que apagarlo primero
+    return
   } else {
     // Activar modo masivo con el tipo seleccionado
     modoMasivo = true
     tipoMasivo = tipo
     
-    // Actualizar botones
+    // Actualizar botones — el activo queda resaltado, los otros dos bloqueados
     btnIngreso.classList.toggle('active', tipo === 'ingreso')
     btnSalida.classList.toggle('active', tipo === 'salida')
+    btnSctr.classList.toggle('active', tipo === 'sctr')
+    btnIngreso.disabled = tipo !== 'ingreso'
+    btnSalida.disabled = tipo !== 'salida'
+    btnSctr.disabled = tipo !== 'sctr'
+    btnIngreso.style.opacity = tipo !== 'ingreso' ? '.4' : ''
+    btnSalida.style.opacity = tipo !== 'salida' ? '.4' : ''
+    btnSctr.style.opacity = tipo !== 'sctr' ? '.4' : ''
     
     // Mostrar banner del modo activo
     banner.style.display = 'block'
@@ -2768,24 +2860,35 @@ function toggleMasivo(tipo) {
       banner.style.background = '#22c55e15'
       banner.style.border = '1.5px solid #22c55e60'
       banner.style.color = '#16a34a'
-      banner.innerHTML = '🟢 MODO INGRESO MASIVO ACTIVO — Cada DNI registrará INGRESO'
-    } else {
+      banner.innerHTML = '🟢 MODO INGRESO MASIVO ACTIVO — Valida SCTR y registra INGRESO automáticamente'
+    } else if (tipo === 'salida') {
       banner.style.background = '#f4721515'
       banner.style.border = '1.5px solid #f4721560'
       banner.style.color = '#c2410c'
       banner.innerHTML = '🟠 MODO SALIDA MASIVA ACTIVO — Cada DNI registrará SALIDA'
+    } else {
+      banner.style.background = '#3b82f615'
+      banner.style.border = '1.5px solid #3b82f660'
+      banner.style.color = '#1e40af'
+      banner.innerHTML = '🛡️ MODO VALIDAR SCTR ACTIVO — Escribe cada DNI, valida solo'
     }
     
     // Limpiar estado anterior
     masivoRegistrados = []
+    sctrPendienteIngreso = null
     document.getElementById('masivo-lista-wrap').style.display = 'none'
+    document.getElementById('sctr-resultado').style.display = 'none'
     document.getElementById('dni-input').value = ''
     currentDni = ''; currentPersona = null
     cerrarFormPersona(); updatePersonaInfo(); updateButtons()
     
-    const emoji = tipo === 'ingreso' ? '🟢' : '🟠'
-    const label = tipo === 'ingreso' ? 'INGRESO' : 'SALIDA'
-    setFeedback('proc', `⚡ Modo ${label} masivo — escribe el DNI ${emoji}`)
+    if (tipo === 'sctr') {
+      setFeedback('proc', `🛡️ Modo Validar SCTR — escribe el DNI`)
+    } else {
+      const emoji = tipo === 'ingreso' ? '🟢' : '🟠'
+      const label = tipo === 'ingreso' ? 'INGRESO' : 'SALIDA'
+      setFeedback('proc', `⚡ Modo ${label} masivo — escribe el DNI ${emoji}`)
+    }
     document.getElementById('dni-input').focus()
   }
 }
@@ -2819,13 +2922,60 @@ async function procesarDniMasivo(dni) {
   setFeedback('proc', '⏳ Buscando...')
 
   try {
-    const { data: persona } = await db.from('personas').select('*').eq('dni', dni).single()
+    // En modo INGRESO, la búsqueda de persona y la validación SCTR van EN PARALELO
+    // (no dependen una de otra) — así el SCTR no agrega tiempo de espera extra
+    const personaPromise = db.from('personas').select('*').eq('dni', dni).single()
+    const sctrPromise = tipoMasivo === 'ingreso' ? contarDiasSCTR(dni) : Promise.resolve(null)
+    const [{ data: persona }, sctrResult] = await Promise.all([personaPromise, sctrPromise])
 
     if (persona) {
-      // Persona encontrada — marcar ingreso directo
       currentPersona = persona
       currentDni = dni
-      await marcarMasivo()
+
+      if (tipoMasivo === 'ingreso') {
+        const res = document.getElementById('sctr-resultado')
+        if (sctrResult?.error) {
+          // Fail-safe: si no se pudo validar, NO se asume que está bien — requiere forzar manual
+          res.style.display = 'block'
+          res.style.background = '#fee2e2'; res.style.border = '3px solid #dc2626'
+          res.innerHTML = `
+            <div style="font-size:40px;line-height:1">🔴</div>
+            <div style="font-size:16px;font-weight:800;color:#991b1b;margin-top:6px">NO SE PUDO VALIDAR SCTR</div>
+            <div style="font-size:12px;color:#991b1b;margin-top:2px">${persona.nombre} · error de conexión</div>`
+          sctrPendienteIngreso = { dni, persona }
+          mostrarBotonForzarIngreso()
+          input.value = ''; input.className = 'dni-input'; input.disabled = false
+          masivoProcessing = false
+          setFeedback('proc', '🟢 Modo Ingreso + SCTR — escribe el siguiente DNI')
+          input.focus()
+        } else if (sctrResult.diasUnicos >= 2) {
+          // 🟢 Verde — registra el ingreso automáticamente
+          res.style.display = 'block'
+          res.style.background = '#dcfce7'; res.style.border = '3px solid #16a34a'
+          res.innerHTML = `
+            <div style="font-size:40px;line-height:1">🟢</div>
+            <div style="font-size:16px;font-weight:800;color:#166534;margin-top:6px">SCTR VALIDADO</div>
+            <div style="font-size:12px;color:#166534;margin-top:2px">${persona.nombre} · ${sctrResult.diasUnicos} días este mes</div>`
+          await marcarMasivo()
+        } else {
+          // 🔴 Rojo — NO registra, requiere click manual para forzar
+          res.style.display = 'block'
+          res.style.background = '#fee2e2'; res.style.border = '3px solid #dc2626'
+          res.innerHTML = `
+            <div style="font-size:40px;line-height:1">🔴</div>
+            <div style="font-size:16px;font-weight:800;color:#991b1b;margin-top:6px">REVISAR SCTR</div>
+            <div style="font-size:12px;color:#991b1b;margin-top:2px">${persona.nombre} · ${sctrResult.diasUnicos === 0 ? 'sin registros este mes' : 'solo 1 día registrado'}</div>`
+          sctrPendienteIngreso = { dni, persona }
+          mostrarBotonForzarIngreso()
+          input.value = ''; input.className = 'dni-input'; input.disabled = false
+          masivoProcessing = false
+          setFeedback('err', '🔴 ' + persona.nombre + ' — SCTR sin validar, revisar antes de ingresar')
+          input.focus()
+        }
+      } else {
+        // Modo SALIDA — sin validación SCTR
+        await marcarMasivo()
+      }
     } else {
       // No existe — abrir mini form
       input.className = 'dni-input dni-err'
@@ -2851,6 +3001,29 @@ async function procesarDniMasivo(dni) {
       }
     }, 2000)
   }
+}
+
+// Muestra el botón para forzar el ingreso cuando el SCTR salió en rojo
+function mostrarBotonForzarIngreso() {
+  const res = document.getElementById('sctr-resultado')
+  const btnHtml = `<button onclick="forzarIngresoMasivo()" style="width:100%;margin-top:12px;padding:11px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">
+    ✓ Registrar ingreso de todas formas
+    <span style="display:block;font-size:9px;font-weight:600;opacity:.85;margin-top:2px">Solo si ya verificaste el SCTR manualmente</span>
+  </button>`
+  res.insertAdjacentHTML('beforeend', btnHtml)
+}
+
+// Fuerza el registro de ingreso de la persona pendiente (SCTR en rojo)
+async function forzarIngresoMasivo() {
+  if (!sctrPendienteIngreso || masivoProcessing) return
+  masivoProcessing = true
+  const input = document.getElementById('dni-input')
+  input.disabled = true
+  currentPersona = sctrPendienteIngreso.persona
+  currentDni = sctrPendienteIngreso.dni
+  sctrPendienteIngreso = null
+  document.getElementById('sctr-resultado').style.display = 'none'
+  await marcarMasivo()
 }
 
 async function marcarMasivo() {
@@ -2960,6 +3133,7 @@ async function marcarMasivo() {
     currentDni = ''; currentPersona = null; modoEdicion = false
     cerrarFormPersona(); updatePersonaInfo(); updateButtons()
     masivoProcessing = false
+    document.getElementById('sctr-resultado').style.display = 'none'
     const emoji = tipoMasivo === 'ingreso' ? '🟢' : '🟠'
     const label = tipoMasivo === 'ingreso' ? 'INGRESO' : 'SALIDA'
     setFeedback('proc', `⚡ Modo ${label} masivo — escribe el DNI ${emoji}`)
@@ -4507,17 +4681,35 @@ async function initIndicadores() {
   await indCargar()
 }
 
+// Alterna entre selector de mes y selector de día específico según la vista elegida
+function indCambiarVista() {
+  const vista = document.getElementById('ind-vista').value
+  document.getElementById('ind-mes-wrap').style.display = vista === 'especifico' ? 'none' : 'block'
+  document.getElementById('ind-dia-wrap').style.display = vista === 'especifico' ? 'block' : 'none'
+  if (vista === 'especifico' && !document.getElementById('ind-dia').value) {
+    document.getElementById('ind-dia').value = today()
+  }
+  indCargar()
+}
+
 async function indCargar() {
-  const mes = document.getElementById('ind-mes').value  // "2026-06"
   const empresaFiltro = document.getElementById('ind-empresa').value
   const turnoFiltro = document.getElementById('ind-turno').value
   const vista = document.getElementById('ind-vista').value
-  if (!mes) return
 
-  // Rango del mes
-  const [yyyy, mm] = mes.split('-')
-  const primerDia = `${yyyy}-${mm}-01`
-  const ultimoDia = new Date(Date.UTC(+yyyy, +mm, 0)).toISOString().slice(0,10)
+  let primerDia, ultimoDia
+  if (vista === 'especifico') {
+    const dia = document.getElementById('ind-dia').value
+    if (!dia) return
+    primerDia = dia
+    ultimoDia = dia
+  } else {
+    const mes = document.getElementById('ind-mes').value  // "2026-06"
+    if (!mes) return
+    const [yyyy, mm] = mes.split('-')
+    primerDia = `${yyyy}-${mm}-01`
+    ultimoDia = new Date(Date.UTC(+yyyy, +mm, 0)).toISOString().slice(0,10)
+  }
 
   // Traer solicitudes del mes
   let qs = db.from('solicitudes_personal').select('*').gte('fecha', primerDia).lte('fecha', ultimoDia)
@@ -4600,7 +4792,10 @@ function indRender(dataset, vista) {
       pct: porFecha[f].sol > 0 ? Math.round(porFecha[f].asist/porFecha[f].sol*100) : 0
     }))
   } else {
-    document.getElementById('ind-chart-titulo').textContent = 'Cumplimiento por empresa'
+    const tituloBase = vista === 'especifico'
+      ? 'Cumplimiento por empresa — ' + new Date(dataset[0]?.fecha + 'T12:00:00Z').toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})
+      : 'Cumplimiento por empresa'
+    document.getElementById('ind-chart-titulo').textContent = tituloBase
     const porEmp = {}
     dataset.forEach(d => {
       if (!porEmp[d.empresa]) porEmp[d.empresa] = { sol:0, asist:0 }
