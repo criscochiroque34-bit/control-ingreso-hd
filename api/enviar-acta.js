@@ -1,4 +1,4 @@
-import { db, transporter, GMAIL, fechaLabel, esTurnoNoche, getCorreosEmpresas, getEventosFecha, calcBreakMinLocal, calcBanioLocal, calcTiempoTrabajado, tablaPersonal, getSolicitud, bannerCumplimiento } from './_helpers.js'
+import { db, transporter, GMAIL, fechaLabel, getTurno, TURNO_LABEL, getCorreosEmpresas, getEventosFecha, calcBreakMinLocal, calcBanioLocal, calcTiempoTrabajado, tablaPersonal, getSolicitud, bannerCumplimiento } from './_helpers.js'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -13,7 +13,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Faltan parámetros' })
     }
 
-    const turnoLabel = turno === 'dia' ? 'Turno Día' : 'Turno Noche'
+    const turnoLabel = 'Turno ' + (TURNO_LABEL[turno] || turno)
+    const turnoColor = turno === 'noche' ? '#8b5cf6' : turno === 'manana' ? '#06b6d4' : '#e85d9b'
     const fechaStr = fechaLabel(fecha)
     const empresasCorreos = await getCorreosEmpresas()
     const todosEventos = await getEventosFecha(fecha)
@@ -21,10 +22,7 @@ export default async function handler(req, res) {
     // Traer registros de la empresa y filtrar por turno
     const { data: registros } = await db.from('estado_hoy').select('*')
       .eq('empresa', empresa).eq('fecha', fecha)
-    const personal = (registros||[]).filter(p => {
-      const esTN = esTurnoNoche(p.ingreso)
-      return turno === 'noche' ? esTN : !esTN
-    })
+    const personal = (registros||[]).filter(p => getTurno(p.ingreso) === turno)
 
     if (!personal.length) return res.status(200).json({ enviados: 0, razon: 'Sin registros' })
 
@@ -54,7 +52,7 @@ export default async function handler(req, res) {
             <div style="font-size:16px;font-weight:bold;color:#fff">Reporte de Asistencia · ${empresa}</div>
             <div style="font-size:11px;color:#9aa3b8;margin-top:3px">Control de Ingreso · Home Delivery · ${fechaStr}</div>
           </div>
-          <div style="background:${turno==='noche'?'#8b5cf6':'#e85d9b'};color:#fff;font-size:11px;font-weight:bold;padding:4px 12px;border-radius:12px">${turnoLabel}</div>
+          <div style="background:${turnoColor};color:#fff;font-size:11px;font-weight:bold;padding:4px 12px;border-radius:12px">${turnoLabel}</div>
         </div>
         <div style="background:#f7f9fc;padding:20px 24px;border-radius:0 0 8px 8px;border:1px solid #dde2ed;border-top:none">
           ${banner || ''}
