@@ -1,6 +1,6 @@
-import { db, transporter, GMAIL, fechaLabel, calcTiempoTrabajado, esTurnoNoche, getCorreosHD, getCorreosEmpresas, getEventosFecha, calcBreakMinLocal, calcBanioLocal, tablaPersonal, getSolicitud, bannerCumplimiento } from './_helpers.js'
+import { db, transporter, GMAIL, fechaLabel, calcTiempoTrabajado, getTurno, getCorreosHD, getCorreosEmpresas, getEventosFecha, calcBreakMinLocal, calcBanioLocal, tablaPersonal, getSolicitud, bannerCumplimiento } from './_helpers.js'
 
-// Turno Noche: ingreso entre 9pm del dia anterior y 5:59am
+// Turno Noche: ingreso entre 9pm del dia anterior y 4:59am (fecha = día en que inició)
 const ayer = () => {
   const lima = new Date(Date.now() - 5 * 60 * 60 * 1000)
   lima.setUTCDate(lima.getUTCDate() - 1)
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     ])
 
     const { data: registros } = await db.from('estado_hoy').select('*').eq('fecha', fecha)
-    const registrosNoche = (registros||[]).filter(r => esTurnoNoche(r.ingreso))
+    const registrosNoche = (registros||[]).filter(r => getTurno(r.ingreso) === 'noche')
     const todosEventos = await getEventosFecha(fecha)
 
     const empresas = [...new Set(empresasCorreos.map(e => e.empresa))]
