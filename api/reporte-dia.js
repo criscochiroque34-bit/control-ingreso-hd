@@ -1,9 +1,10 @@
-import { db, transporter, GMAIL, fechaLabel, calcTiempoTrabajado, esTurnoNoche, getCorreosHD, getCorreosEmpresas, getEventosFecha, calcBreakMinLocal, calcBanioLocal, tablaPersonal, getSolicitud, bannerCumplimiento } from './_helpers.js'
+import { db, transporter, GMAIL, fechaLabel, calcTiempoTrabajado, getTurno, getCorreosHD, getCorreosEmpresas, getEventosFecha, calcBreakMinLocal, calcBanioLocal, tablaPersonal, getSolicitud, bannerCumplimiento } from './_helpers.js'
 
-// Turno Día: ingreso entre 6am y 8:59pm del mismo día
+// Turno Día: ingreso entre 1pm y 8:59pm del mismo día
+// Corte de jornada 5am (coincide con inicio del turno mañana)
 const hoy = () => {
   const lima = new Date(Date.now() - 5 * 60 * 60 * 1000)
-  if (lima.getUTCHours() < 6) lima.setUTCDate(lima.getUTCDate() - 1)
+  if (lima.getUTCHours() < 5) lima.setUTCDate(lima.getUTCDate() - 1)
   return lima.toISOString().slice(0, 10)
 }
 
@@ -20,7 +21,7 @@ export default async function handler(req, res) {
     ])
 
     const { data: registros } = await db.from('estado_hoy').select('*').eq('fecha', fecha)
-    const registrosDia = (registros||[]).filter(r => !esTurnoNoche(r.ingreso))
+    const registrosDia = (registros||[]).filter(r => getTurno(r.ingreso) === 'dia')
     const todosEventos = await getEventosFecha(fecha)
 
     const empresas = [...new Set(empresasCorreos.map(e => e.empresa))]
