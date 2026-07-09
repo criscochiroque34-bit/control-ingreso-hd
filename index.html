@@ -412,6 +412,7 @@ tr:hover td{background:#f7f9fc}
     <div class="filtro-bar" style="margin-bottom:0">
       <span class="filtro-bar-label">Turno:</span>
       <button class="emp-btn active" id="btn-turno-todos" onclick="filtrarTurno('todos')">Todos</button>
+      <button class="emp-btn" id="btn-turno-manana" onclick="filtrarTurno('manana')" style="background:#cffafe;border-color:#06b6d4;color:#155e75">🌅 Mañana</button>
       <button class="emp-btn" id="btn-turno-dia" onclick="filtrarTurno('dia')" style="background:#fef3c7;border-color:#f59e0b;color:#92400e">☀️ Día</button>
       <button class="emp-btn" id="btn-turno-noche" onclick="filtrarTurno('noche')" style="background:#ede9fe;border-color:#8b5cf6;color:#5b21b6">🌙 Noche</button>
     </div>
@@ -426,11 +427,20 @@ tr:hover td{background:#f7f9fc}
   <!-- BARRA TURNOS -->
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 20px;margin-bottom:22px;display:flex;align-items:center;gap:24px">
     <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:8px;height:8px;border-radius:50%;background:#06b6d4"></div>
+      <div>
+        <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#155e75" id="sa-manana">0</span>
+        <span style="font-size:12px;font-weight:600;color:#155e75;margin-left:4px">Turno Mañana</span>
+        <div style="font-size:10px;color:var(--muted)">ingreso 5am — 12:59pm</div>
+      </div>
+    </div>
+    <div style="width:1px;height:32px;background:var(--border)"></div>
+    <div style="display:flex;align-items:center;gap:10px">
       <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></div>
       <div>
         <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#92400e" id="sa-dia">0</span>
         <span style="font-size:12px;font-weight:600;color:#92400e;margin-left:4px">Turno Día</span>
-        <div style="font-size:10px;color:var(--muted)">ingreso 6am — 8:59pm</div>
+        <div style="font-size:10px;color:var(--muted)">ingreso 1pm — 8:59pm</div>
       </div>
     </div>
     <div style="width:1px;height:32px;background:var(--border)"></div>
@@ -439,7 +449,7 @@ tr:hover td{background:#f7f9fc}
       <div>
         <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#5b21b6" id="sa-noche">0</span>
         <span style="font-size:12px;font-weight:600;color:#5b21b6;margin-left:4px">Turno Noche</span>
-        <div style="font-size:10px;color:var(--muted)">ingreso 9pm — 5:59am</div>
+        <div style="font-size:10px;color:var(--muted)">ingreso 9pm — 4:59am</div>
       </div>
     </div>
   </div>
@@ -494,6 +504,7 @@ tr:hover td{background:#f7f9fc}
     <div class="filtro-bar" style="margin-bottom:20px">
       <span class="filtro-bar-label">Turno:</span>
       <button class="emp-btn active" id="res-turno-todos" onclick="filtrarTurnoResumen('todos')">Todos</button>
+      <button class="emp-btn" id="res-turno-manana" onclick="filtrarTurnoResumen('manana')" style="background:#cffafe;border-color:#06b6d4;color:#155e75">🌅 Mañana</button>
       <button class="emp-btn" id="res-turno-dia" onclick="filtrarTurnoResumen('dia')" style="background:#fef3c7;border-color:#f59e0b;color:#92400e">☀️ Día</button>
       <button class="emp-btn" id="res-turno-noche" onclick="filtrarTurnoResumen('noche')" style="background:#ede9fe;border-color:#8b5cf6;color:#5b21b6">🌙 Noche</button>
     </div>
@@ -975,6 +986,7 @@ tr:hover td{background:#f7f9fc}
           <div style="margin-bottom:14px">
             <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;display:block">Turno</label>
             <select class="form-input" id="acta-turno">
+              <option value="manana">Mañana</option>
               <option value="dia">Día</option>
               <option value="noche">Noche</option>
             </select>
@@ -1081,7 +1093,7 @@ tr:hover td{background:#f7f9fc}
           </div>
           <div>
             <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Turno</label>
-            <select class="form-input" id="sol-turno"><option value="dia">Día</option><option value="noche">Noche</option></select>
+            <select class="form-input" id="sol-turno"><option value="manana">Mañana</option><option value="dia">Día</option><option value="noche">Noche</option></select>
           </div>
           <div>
             <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Empresa</label>
@@ -1130,7 +1142,11 @@ tr:hover td{background:#f7f9fc}
           </div>
           <div>
             <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Turno</label>
-            <select class="form-input" id="ind-turno" onchange="indCargar()"><option value="">Ambos</option><option value="dia">Día</option><option value="noche">Noche</option></select>
+            <select class="form-input" id="ind-turno" onchange="indCargar()"><option value="">Todos</option><option value="manana">Mañana</option><option value="dia">Día</option><option value="noche">Noche</option></select>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button onclick="indDescargar('xlsx')" id="btn-ind-xlsx" style="padding:10px 16px;border-radius:8px;border:none;background:var(--accent2);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">⬇️ Excel</button>
+            <button onclick="indDescargar('csv')" id="btn-ind-csv" style="padding:10px 16px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">CSV</button>
           </div>
         </div>
       </div>
@@ -1311,8 +1327,9 @@ let avatarIdx = 0
 // ─── HELPERS ──────────────────────────────────────────
 const today = () => {
   // Restar exactamente 5 horas al UTC para obtener hora Lima — sin depender del browser
+  // Corte de jornada 5am: el turno noche (21:00–04:59) pertenece al día en que inició
   const lima = new Date(Date.now() - 5 * 60 * 60 * 1000)
-  if (lima.getUTCHours() < 6) lima.setUTCDate(lima.getUTCDate() - 1)
+  if (lima.getUTCHours() < 5) lima.setUTCDate(lima.getUTCDate() - 1)
   return lima.toISOString().slice(0, 10)
 }
 
@@ -1344,7 +1361,25 @@ const horaIngreso = str => {
   const p = str.split(' ')
   return p.length >= 2 ? parseInt(p[1].split(':')[0]) : null
 }
-const esTurnoNoche = str => { const h = horaIngreso(str); return h !== null && (h >= 21 || h < 6) }
+// ─── TURNOS (3) ───────────────────────────────────────
+// Noche  : 21:00 – 04:59  (cruza medianoche, pertenece al día en que inició)
+// Mañana : 05:00 – 12:59
+// Día    : 13:00 – 20:59
+const getTurno = str => {
+  const h = horaIngreso(str)
+  if (h === null) return null
+  if (h >= 21 || h < 5) return 'noche'
+  if (h < 13) return 'manana'
+  return 'dia'
+}
+const TURNO_LABEL = { noche: 'Noche', manana: 'Mañana', dia: 'Día' }
+const TURNO_COLOR = {
+  noche:  { bg: '#ede9fe', text: '#5b21b6', dot: '#8b5cf6' },
+  manana: { bg: '#cffafe', text: '#155e75', dot: '#06b6d4' },
+  dia:    { bg: '#fef3c7', text: '#92400e', dot: '#f59e0b' }
+}
+// Compat: usado por Rankings (oculto) y código antiguo
+const esTurnoNoche = str => getTurno(str) === 'noche'
 
 // alerta: persona dentro más de 10 horas (usando Lima UTC-5)
 const ALERTA_HORAS = 10
@@ -2084,6 +2119,7 @@ function filtrarTurno(turno) {
   
   // Actualizar botones
   document.getElementById('btn-turno-todos').classList.toggle('active', turno === 'todos')
+  document.getElementById('btn-turno-manana').classList.toggle('active', turno === 'manana')
   document.getElementById('btn-turno-dia').classList.toggle('active', turno === 'dia')
   document.getElementById('btn-turno-noche').classList.toggle('active', turno === 'noche')
   
@@ -2097,10 +2133,8 @@ function renderSituacion() {
     : estadoHoy.filter(e => filtroEmpresas.includes(e.empresa))
   
   // Filtrar por turno
-  if (filtroTurno === 'dia') {
-    data = data.filter(e => !esTurnoNoche(e.ingreso))
-  } else if (filtroTurno === 'noche') {
-    data = data.filter(e => esTurnoNoche(e.ingreso))
+  if (filtroTurno !== 'todos') {
+    data = data.filter(e => getTurno(e.ingreso) === filtroTurno)
   }
   
   const activos = data.filter(e => e.estado !== 'salida')
@@ -2109,13 +2143,14 @@ function renderSituacion() {
   document.getElementById('sa-dentro').textContent = data.filter(e => e.estado === 'dentro').length
   document.getElementById('sa-break').textContent = data.filter(e => ['break', 'banio'].includes(e.estado)).length
   document.getElementById('sa-salida').textContent = data.filter(e => e.estado === 'salida').length
-  document.getElementById('sa-dia').textContent = activos.filter(e => !esTurnoNoche(e.ingreso)).length
-  document.getElementById('sa-noche').textContent = activos.filter(e => esTurnoNoche(e.ingreso)).length
+  document.getElementById('sa-manana').textContent = activos.filter(e => getTurno(e.ingreso) === 'manana').length
+  document.getElementById('sa-dia').textContent = activos.filter(e => getTurno(e.ingreso) === 'dia').length
+  document.getElementById('sa-noche').textContent = activos.filter(e => getTurno(e.ingreso) === 'noche').length
   
   // Título dinámico
   let titulo = filtroEmpresas.length === 0 ? 'Todas las empresas' : filtroEmpresas.join(', ')
   if (filtroTurno !== 'todos') {
-    titulo += ` — Turno ${filtroTurno === 'dia' ? 'Día' : 'Noche'}`
+    titulo += ` — Turno ${TURNO_LABEL[filtroTurno] || filtroTurno}`
   }
   document.getElementById('sa-titulo').textContent = titulo
 
@@ -2133,9 +2168,11 @@ function renderSituacion() {
       ? `<span class="timer ${timerClass}" id="tmr-${e.dni}">--:--</span>` : ''
     const horas = horasDesdeIngreso(e.ingreso)
     const alertaLarga = e.estado === 'dentro' && horas > ALERTA_HORAS
-    const turnoTag = esTurnoNoche(e.ingreso)
-      ? `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:#ede9fe;color:#5b21b6">Noche</span>`
-      : `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:#fef3c7;color:#92400e">Día</span>`
+    const _t = getTurno(e.ingreso)
+    const _tc = TURNO_COLOR[_t] || { bg:'#f0f2f6', text:'#7a8299' }
+    const turnoTag = _t
+      ? `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:${_tc.bg};color:${_tc.text}">${TURNO_LABEL[_t]}</span>`
+      : ''
     const alertaHtml = alertaLarga
       ? `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:#fef3c7;color:#92400e">+${Math.floor(horas)}h sin salida</span>` : ''
     const banioCount = e.banio_count || 0
@@ -2454,6 +2491,7 @@ function filtrarTurnoResumen(turno) {
   resumenTurno = turno
   
   document.getElementById('res-turno-todos').classList.toggle('active', turno === 'todos')
+  document.getElementById('res-turno-manana').classList.toggle('active', turno === 'manana')
   document.getElementById('res-turno-dia').classList.toggle('active', turno === 'dia')
   document.getElementById('res-turno-noche').classList.toggle('active', turno === 'noche')
   
@@ -2467,10 +2505,8 @@ function renderResumen() {
     : resumenData.filter(e => resumenEmpresas.includes(e.empresa))
   
   // Filtrar por turno
-  if (resumenTurno === 'dia') {
-    data = data.filter(e => !esTurnoNoche(e.ingreso))
-  } else if (resumenTurno === 'noche') {
-    data = data.filter(e => esTurnoNoche(e.ingreso))
+  if (resumenTurno !== 'todos') {
+    data = data.filter(e => getTurno(e.ingreso) === resumenTurno)
   }
   
   // Stats generales (sobre data filtrada)
@@ -2492,10 +2528,10 @@ function renderResumen() {
   
   tbody.innerHTML = data.map(e => {
     const b = ESTADO_BADGE[e.estado] || { label: e.estado, cls: '' }
-    const turno = esTurnoNoche(e.ingreso) ? 'Noche' : 'Día'
-    const turnoStyle = esTurnoNoche(e.ingreso) 
-      ? 'background:#ede9fe;color:#5b21b6' 
-      : 'background:#fef3c7;color:#92400e'
+    const _t = getTurno(e.ingreso)
+    const _tc = TURNO_COLOR[_t] || { bg:'#f0f2f6', text:'#7a8299' }
+    const turno = _t ? TURNO_LABEL[_t] : '—'
+    const turnoStyle = `background:${_tc.bg};color:${_tc.text}`
     
     // Marcar pendientes (sin salida)
     const sinSalida = !e.salida || e.salida === ''
@@ -2532,10 +2568,8 @@ async function descargarResumen() {
     ? [...resumenData] 
     : resumenData.filter(e => resumenEmpresas.includes(e.empresa))
   
-  if (resumenTurno === 'dia') {
-    data = data.filter(e => !esTurnoNoche(e.ingreso))
-  } else if (resumenTurno === 'noche') {
-    data = data.filter(e => esTurnoNoche(e.ingreso))
+  if (resumenTurno !== 'todos') {
+    data = data.filter(e => getTurno(e.ingreso) === resumenTurno)
   }
   
   // Índice de breaks por persona y jornada usando fecha_iso (confiable para turno noche)
@@ -2545,7 +2579,7 @@ async function descargarResumen() {
     if (ev.tipo === 'break_salida' && ev.fecha_iso) {
       // Jornada = fecha Lima con corte 6am del momento del evento
       const lima = new Date(new Date(ev.fecha_iso).getTime() - 5*60*60*1000)
-      if (lima.getUTCHours() < 6) lima.setUTCDate(lima.getUTCDate() - 1)
+      if (lima.getUTCHours() < 5) lima.setUTCDate(lima.getUTCDate() - 1)
       const fechaJornada = lima.toISOString().slice(0,10)
       breaksPorDniFecha.add(`${ev.dni}_${fechaJornada}`)
     }
@@ -2554,7 +2588,7 @@ async function descargarResumen() {
   const rows = [['DNI', 'Nombre', 'Empresa', 'Área', 'Fecha', 'Turno', 'Ingreso', 'Salida', 'Estado', 'Break']]
   
   data.forEach(e => {
-    const turno = esTurnoNoche(e.ingreso) ? 'Noche' : 'Día'
+    const turno = TURNO_LABEL[getTurno(e.ingreso)] || ''
     const estado = ESTADO_BADGE[e.estado]?.label || e.estado || ''
     const tuvoBreak = breaksPorDniFecha.has(`${e.dni}_${e.fecha}`) ? 1 : 0
     
@@ -3218,14 +3252,9 @@ async function generarActa() {
   const { data } = await db.from('estado_hoy').select('*')
     .eq('empresa', empresa).eq('fecha', fecha).order('ingreso', { ascending: true })
   if (!data?.length) { showToast('Sin registros para este filtro', 'warning'); return }
-  actaData = data.filter(p => {
-    const esTN = esTurnoNoche(p.ingreso)
-    if (turno === 'dia') return !esTN
-    if (turno === 'noche') return esTN
-    return true
-  })
+  actaData = data.filter(p => getTurno(p.ingreso) === turno)
   if (!actaData.length) { showToast('Sin personal para este turno', 'warning'); return }
-  const turnoLabel = turno === 'dia' ? 'Turno Día' : 'Turno Noche'
+  const turnoLabel = 'Turno ' + (TURNO_LABEL[turno] || turno)
   const fechaLabel = new Date(fecha + 'T12:00:00').toLocaleDateString('es-PE')
   const conSalida = actaData.filter(p=>p.salida).length
   document.getElementById('acta-preview-titulo').textContent = 'Acta de Asistencia · ' + empresa
@@ -4601,7 +4630,7 @@ async function solGuardar() {
     res.textContent='✗ Error: '+error.message
   } else {
     res.style.background='#d1fae5'; res.style.color='#065f46'
-    res.textContent=`✓ Guardado: ${empresa} · ${turno==='dia'?'Día':'Noche'} · ${cantidad} personas`
+    res.textContent=`✓ Guardado: ${empresa} · ${TURNO_LABEL[turno]||turno} · ${cantidad} personas`
     document.getElementById('sol-cantidad').value=''
     await solCargarLista()
   }
@@ -4640,10 +4669,11 @@ async function solCargarLista() {
     const fechaLabel = new Date(fecha+'T12:00:00Z').toLocaleDateString('es-PE',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
     html += `<tr><td colspan="4" style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:14px 12px 6px;background:var(--bg)">📅 ${fechaLabel}</td></tr>`
     grupos[fecha].forEach(s => {
-      const turnoStyle = s.turno==='noche' ? 'background:#ede9fe;color:#5b21b6' : 'background:#fef3c7;color:#92400e'
+      const _sc = TURNO_COLOR[s.turno] || { bg:'#f0f2f6', text:'#7a8299' }
+      const turnoStyle = `background:${_sc.bg};color:${_sc.text}`
       html += `<tr>
         <td style="padding:11px 12px;font-size:13px;border-bottom:1px solid var(--bg)"><span style="display:flex;align-items:center;gap:8px;font-weight:700"><span style="width:9px;height:9px;border-radius:50%;background:${colorEmp(s.empresa)};flex-shrink:0"></span>${s.empresa}</span></td>
-        <td style="padding:11px 12px;text-align:center;border-bottom:1px solid var(--bg)"><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;${turnoStyle}">${s.turno==='noche'?'Noche':'Día'}</span></td>
+        <td style="padding:11px 12px;text-align:center;border-bottom:1px solid var(--bg)"><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;${turnoStyle}">${TURNO_LABEL[s.turno]||s.turno}</span></td>
         <td style="padding:11px 12px;text-align:center;border-bottom:1px solid var(--bg)"><span style="font-family:monospace;font-size:14px;font-weight:700;background:var(--bg);padding:3px 12px;border-radius:7px">${s.solicitado}</span></td>
         <td style="padding:11px 12px;text-align:center;border-bottom:1px solid var(--bg)"><button onclick="solEliminar(${s.id})" style="background:none;border:none;color:var(--border);cursor:pointer;font-size:15px;padding:4px 8px;border-radius:6px" onmouseover="this.style.background='#fce7f3';this.style.color='#9d174d'" onmouseout="this.style.background='none';this.style.color='var(--border)'">✕</button></td>
       </tr>`
@@ -4663,6 +4693,7 @@ async function solEliminar(id) {
 // ─── INDICADORES DE CUMPLIMIENTO ──────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 const colorPct = pct => pct > 100 ? '#f59e0b' : pct >= 90 ? '#22c27a' : pct >= 85 ? '#fbbf24' : '#ef4444'
+let indDataset = []  // dataset visible actual (para el descargable)
 
 async function initIndicadores() {
   // Default mes actual
@@ -4728,8 +4759,7 @@ async function indCargar() {
       (estados||[])
         .filter(e => {
           if (e.fecha !== fecha || e.empresa !== empresa) return false
-          const esTN = indEsTurnoNoche(e.ingreso)
-          return turno === 'noche' ? esTN : !esTN
+          return getTurno(e.ingreso) === turno
         })
         .map(e => e.dni)
     )
@@ -4743,14 +4773,73 @@ async function indCargar() {
     return { ...s, asistio: asist, pct }
   })
 
+  indDataset = dataset  // guardar para el descargable (respeta filtros activos)
   indRender(dataset, vista)
 }
 
-function indEsTurnoNoche(ingreso) {
-  if (!ingreso) return false
-  const h = parseInt(ingreso.split(' ').slice(-1)[0]?.split(':')[0] || '0')
-  return h >= 21 || h < 6
+// ─── DESCARGABLE INDICADORES ──────────────────────────
+// Cuadro simple: Fecha · Turno · Empresa · Solicitado · Real · Cumplimiento
+function indArmarFilas() {
+  return [...indDataset]
+    .sort((a,b) => a.fecha === b.fecha
+      ? (a.empresa||'').localeCompare(b.empresa||'')
+      : a.fecha.localeCompare(b.fecha))
+    .map(d => ({
+      Fecha: d.fecha,
+      Turno: TURNO_LABEL[d.turno] || d.turno,
+      Empresa: d.empresa,
+      Solicitado: d.solicitado,
+      Real: d.asistio,
+      'Cumplimiento %': d.pct
+    }))
 }
+
+async function indDescargar(formato) {
+  if (!indDataset.length) { showToast('No hay datos para descargar', 'warning'); return }
+  const filas = indArmarFilas()
+
+  // Nombre según filtro activo
+  const vista = document.getElementById('ind-vista').value
+  const sufijo = vista === 'especifico'
+    ? document.getElementById('ind-dia').value
+    : document.getElementById('ind-mes').value
+  const nombre = `cumplimiento_${sufijo}`
+
+  if (formato === 'csv') {
+    const cols = Object.keys(filas[0])
+    const esc = v => {
+      const t = String(v ?? '')
+      return /[",\n;]/.test(t) ? '"' + t.replace(/"/g,'""') + '"' : t
+    }
+    // BOM para que Excel abra bien los acentos
+    const csv = '\uFEFF' + [cols.join(';'), ...filas.map(f => cols.map(c => esc(f[c])).join(';'))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = nombre + '.csv'
+    a.click()
+    URL.revokeObjectURL(a.href)
+  } else {
+    const btn = document.getElementById('btn-ind-xlsx')
+    const txt = btn.textContent
+    btn.textContent = '⏳ Generando...'
+    btn.disabled = true
+    try {
+      const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
+      const ws = XLSX.utils.json_to_sheet(filas)
+      ws['!cols'] = [{wch:12},{wch:10},{wch:22},{wch:12},{wch:8},{wch:15}]
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Cumplimiento')
+      XLSX.writeFile(wb, nombre + '.xlsx')
+    } catch (e) {
+      showToast('Error al generar Excel: ' + e.message, 'warning')
+    }
+    btn.textContent = txt
+    btn.disabled = false
+  }
+}
+
+// Indicadores usa getTurno() central — sin lógica duplicada
 
 function indRender(dataset, vista) {
   // Tarjetas resumen
@@ -4848,11 +4937,20 @@ function indRender(dataset, vista) {
     </tr></thead><tbody>${tablaEmp}</tbody></table>`
 
   // Comparativo turno
-  const porTurno = { dia:{sol:0,asist:0}, noche:{sol:0,asist:0} }
-  dataset.forEach(d => { porTurno[d.turno].sol += d.solicitado; porTurno[d.turno].asist += d.asistio })
-  const pctDia = porTurno.dia.sol > 0 ? Math.round(porTurno.dia.asist/porTurno.dia.sol*100) : 0
-  const pctNoche = porTurno.noche.sol > 0 ? Math.round(porTurno.noche.asist/porTurno.noche.sol*100) : 0
+  const porTurno = { manana:{sol:0,asist:0}, dia:{sol:0,asist:0}, noche:{sol:0,asist:0} }
+  dataset.forEach(d => {
+    if (!porTurno[d.turno]) porTurno[d.turno] = { sol:0, asist:0 }  // guard: turno desconocido no rompe
+    porTurno[d.turno].sol += d.solicitado
+    porTurno[d.turno].asist += d.asistio
+  })
+  const pctT = t => porTurno[t].sol > 0 ? Math.round(porTurno[t].asist/porTurno[t].sol*100) : 0
+  const pctManana = pctT('manana'), pctDia = pctT('dia'), pctNoche = pctT('noche')
   document.getElementById('ind-turnos').innerHTML = `
+    <div style="flex:1;background:#ecfeff;border:1px solid #a5f3fc;border-radius:10px;padding:18px;text-align:center">
+      <div style="font-size:11px;font-weight:700;color:#155e75;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">🌅 Turno Mañana</div>
+      <div style="font-size:26px;font-weight:800;color:${colorPct(pctManana)}">${pctManana}%</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${porTurno.manana.asist} de ${porTurno.manana.sol} solicitados</div>
+    </div>
     <div style="flex:1;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:18px;text-align:center">
       <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">☀️ Turno Día</div>
       <div style="font-size:26px;font-weight:800;color:${colorPct(pctDia)}">${pctDia}%</div>
