@@ -50,11 +50,23 @@ export const calcTiempoTrabajado = (ingreso, salida, breakMin) => {
   } catch { return null }
 }
 
-export const esTurnoNoche = ingreso => {
-  if (!ingreso) return false
-  const h = parseInt(ingreso.split(' ')[1]?.split(':')[0] || '0')
-  return h >= 21 || h < 6
+// ─── TURNOS (3) ───────────────────────────────────────
+// Noche  : 21:00 – 04:59  (pertenece al día en que inició)
+// Mañana : 05:00 – 12:59
+// Día    : 13:00 – 20:59
+export const getTurno = ingreso => {
+  if (!ingreso) return null
+  const p = ingreso.split(' ')
+  if (p.length < 2) return null
+  const h = parseInt(p[1].split(':')[0])
+  if (isNaN(h)) return null
+  if (h >= 21 || h < 5) return 'noche'
+  if (h < 13) return 'manana'
+  return 'dia'
 }
+export const TURNO_LABEL = { noche: 'Noche', manana: 'Mañana', dia: 'Día' }
+// Compat
+export const esTurnoNoche = ingreso => getTurno(ingreso) === 'noche'
 
 // Traer correos del equipo HD desde hd_config
 export async function getCorreosHD() {
@@ -69,17 +81,17 @@ export async function getCorreosEmpresas() {
   return data || []
 }
 
-// Calcular break en minutos desde eventos — ventana 6am-6am Lima (cubre turno noche completo)
+// Calcular break en minutos desde eventos — ventana 5am-5am Lima (cubre turno noche completo)
 export async function calcBreakMin(dni, fechaIso) {
   const fechaSig = (() => {
-    const d = new Date(fechaIso + 'T11:00:00Z')
+    const d = new Date(fechaIso + 'T10:00:00Z')
     d.setUTCDate(d.getUTCDate() + 1)
     return d.toISOString().slice(0,10)
   })()
   const { data: evs } = await db.from('eventos').select('*')
     .eq('dni', dni)
-    .gte('fecha_iso', fechaIso + 'T11:00:00Z')
-    .lt('fecha_iso', fechaSig + 'T11:00:00Z')
+    .gte('fecha_iso', fechaIso + 'T10:00:00Z')
+    .lt('fecha_iso', fechaSig + 'T10:00:00Z')
   const salidas = (evs||[]).filter(e=>e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
   const retornos = (evs||[]).filter(e=>e.tipo==='break_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
   let mins = 0
@@ -90,17 +102,17 @@ export async function calcBreakMin(dni, fechaIso) {
   return mins
 }
 
-// Calcular baño desde eventos — ventana 6am-6am Lima
+// Calcular baño desde eventos — ventana 5am-5am Lima
 export async function calcBanio(dni, fechaIso) {
   const fechaSig = (() => {
-    const d = new Date(fechaIso + 'T11:00:00Z')
+    const d = new Date(fechaIso + 'T10:00:00Z')
     d.setUTCDate(d.getUTCDate() + 1)
     return d.toISOString().slice(0,10)
   })()
   const { data: evs } = await db.from('eventos').select('*')
     .eq('dni', dni)
-    .gte('fecha_iso', fechaIso + 'T11:00:00Z')
-    .lt('fecha_iso', fechaSig + 'T11:00:00Z')
+    .gte('fecha_iso', fechaIso + 'T10:00:00Z')
+    .lt('fecha_iso', fechaSig + 'T10:00:00Z')
   const salidas = (evs||[]).filter(e=>e.tipo==='banio_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
   const retornos = (evs||[]).filter(e=>e.tipo==='banio_retorno').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
   let mins = 0
@@ -114,13 +126,13 @@ export async function calcBanio(dni, fechaIso) {
 // Versión optimizada: traer TODOS los eventos de la jornada en una sola query
 export async function getEventosFecha(fechaIso) {
   const fechaSig = (() => {
-    const d = new Date(fechaIso + 'T11:00:00Z')
+    const d = new Date(fechaIso + 'T10:00:00Z')
     d.setUTCDate(d.getUTCDate() + 1)
     return d.toISOString().slice(0,10)
   })()
   const { data } = await db.from('eventos').select('*')
-    .gte('fecha_iso', fechaIso + 'T11:00:00Z')
-    .lt('fecha_iso', fechaSig + 'T11:00:00Z')
+    .gte('fecha_iso', fechaIso + 'T10:00:00Z')
+    .lt('fecha_iso', fechaSig + 'T10:00:00Z')
   return data || []
 }
 
