@@ -73,7 +73,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .b-d{background:#d1fae5;color:#065f46}.b-b{background:#dbeafe;color:#1e40af}
 .b-bn{background:#fef3c7;color:#92400e}.b-s{background:#fce7f3;color:#9d174d}
 .tp{padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600}
-.tp-d{background:#fef3c7;color:#92400e}.tp-n{background:#ede9fe;color:#5b21b6}
+.tp-d{background:#fef3c7;color:#92400e}.tp-n{background:#ede9fe;color:#5b21b6}.tp-m{background:#cffafe;color:#155e75}
 .sg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding-top:10px;border-top:1px solid var(--border)}
 .si{display:flex;flex-direction:column;gap:2px}
 .si-l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
@@ -151,10 +151,18 @@ tr:hover td{background:#f7f9fc}
 
       <div class="turno-bar">
         <div class="turno-item">
+          <div class="turno-dot" style="background:#06b6d4"></div>
+          <div>
+            <div><span class="turno-num" id="rt-manana" style="color:#155e75">—</span><span class="turno-lbl" style="color:#155e75">Turno Mañana</span></div>
+            <div class="turno-sub">ingreso 5am — 12:59pm</div>
+          </div>
+        </div>
+        <div class="turno-sep"></div>
+        <div class="turno-item">
           <div class="turno-dot" style="background:#f59e0b"></div>
           <div>
             <div><span class="turno-num" id="rt-dia" style="color:#92400e">—</span><span class="turno-lbl" style="color:#92400e">Turno Día</span></div>
-            <div class="turno-sub">ingreso 6am — 8:59pm</div>
+            <div class="turno-sub">ingreso 1pm — 8:59pm</div>
           </div>
         </div>
         <div class="turno-sep"></div>
@@ -162,7 +170,7 @@ tr:hover td{background:#f7f9fc}
           <div class="turno-dot" style="background:#8b5cf6"></div>
           <div>
             <div><span class="turno-num" id="rt-noche" style="color:#5b21b6">—</span><span class="turno-lbl" style="color:#5b21b6">Turno Noche</span></div>
-            <div class="turno-sub">ingreso 9pm — 5:59am</div>
+            <div class="turno-sub">ingreso 9pm — 4:59am</div>
           </div>
         </div>
       </div>
@@ -180,6 +188,7 @@ tr:hover td{background:#f7f9fc}
           <label>Turno</label>
           <select id="r-turno" style="width:120px">
             <option value="">Todos</option>
+            <option value="manana">Mañana</option>
             <option value="dia">Día</option>
             <option value="noche">Noche</option>
           </select>
@@ -210,19 +219,22 @@ let reporteData = []
 const pad = n => String(n).padStart(2,'0')
 const today = () => {
   const lima = new Date(Date.now() - 5 * 60 * 60 * 1000)
-  if (lima.getUTCHours() < 6) lima.setUTCDate(lima.getUTCDate() - 1)
+  if (lima.getUTCHours() < 5) lima.setUTCDate(lima.getUTCDate() - 1)
   return lima.toISOString().slice(0,10)
 }
 const todayLabel = () => {
   const lima = new Date(Date.now() - 5 * 60 * 60 * 1000)
-  if (lima.getUTCHours() < 6) lima.setUTCDate(lima.getUTCDate() - 1)
+  if (lima.getUTCHours() < 5) lima.setUTCDate(lima.getUTCDate() - 1)
   const dd = pad(lima.getUTCDate())
   const mm = pad(lima.getUTCMonth()+1)
   const yyyy = lima.getUTCFullYear()
   return `${dd}/${mm}/${yyyy}`
 }
 const horaStr = str => { if(!str) return null; const p=str.split(' '); return p.length>=2?parseInt(p[1].split(':')[0]):null }
-const esTurnoNoche = str => { const h=horaStr(str); return h!==null&&(h>=21||h<6) }
+// Turnos: noche 21:00–04:59 | mañana 05:00–12:59 | día 13:00–20:59
+const getTurno = str => { const h=horaStr(str); if(h===null) return null; if(h>=21||h<5) return 'noche'; if(h<13) return 'manana'; return 'dia' }
+const TURNO_LABEL = { noche:'Noche', manana:'Mañana', dia:'Día' }
+const esTurnoNoche = str => getTurno(str)==='noche'
 const ini = n => n?.split(' ').map(x=>x[0]).slice(0,2).join('')||'?'
 
 const AVATARES_COLORS = ['#22c27a','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#06b6d4']
@@ -315,21 +327,23 @@ async function cargarDatos() {
   const salida = personas.filter(p=>p.estado==='salida').length
   const total = personas.length
   const activos = personas.filter(p=>p.estado!=='salida')
-  const dia = activos.filter(p=>!esTurnoNoche(p.ingreso)).length
-  const noche = activos.filter(p=>esTurnoNoche(p.ingreso)).length
+  const manana = activos.filter(p=>getTurno(p.ingreso)==='manana').length
+  const dia = activos.filter(p=>getTurno(p.ingreso)==='dia').length
+  const noche = activos.filter(p=>getTurno(p.ingreso)==='noche').length
 
   document.getElementById('rt-dentro').textContent = dentro
   document.getElementById('rt-salida').textContent = salida
   document.getElementById('rt-total').textContent = total
+  document.getElementById('rt-manana').textContent = manana
   document.getElementById('rt-dia').textContent = dia
   document.getElementById('rt-noche').textContent = noche
 
-  // Eventos por ventana de timestamp (6am ayer → 6am mañana) — cubre turno noche completo
+  // Eventos por ventana de timestamp (5am ayer → 5am mañana) — cubre turno noche completo
   // La columna 'fecha' guarda formato con hora, por eso filtramos por fecha_iso que es confiable
-  const winInicio = fechaAyer + 'T11:00:00Z'  // 6am Lima ayer
+  const winInicio = fechaAyer + 'T10:00:00Z'  // 5am Lima ayer
   const finLima = new Date(Date.now() - 5*60*60*1000)
   finLima.setUTCDate(finLima.getUTCDate() + 1)
-  const winFin = finLima.toISOString().slice(0,10) + 'T11:00:00Z'  // 6am Lima mañana
+  const winFin = finLima.toISOString().slice(0,10) + 'T10:00:00Z'  // 5am Lima mañana
   const { data: evData } = await db.from('eventos').select('*')
     .eq('empresa', empresaActual)
     .gte('fecha_iso', winInicio)
@@ -342,10 +356,8 @@ async function cargarDatos() {
   lista.innerHTML = personas.map(p => {
     const b = ESTADO_BADGE[p.estado]||{label:p.estado,cls:''}
     const color = getColor(p.empresa)
-    const turno = esTurnoNoche(p.ingreso)
-    const turnoTag = turno
-      ? `<span class="tp tp-n">Noche</span>`
-      : `<span class="tp tp-d">Día</span>`
+    const _t = getTurno(p.ingreso)
+    const turnoTag = _t ? `<span class="tp tp-${_t==='noche'?'n':_t==='manana'?'m':'d'}">${TURNO_LABEL[_t]}</span>` : ''
 
     // Calcular break — suma TODOS los pares (igual que el correo)
     const evBreakOut = eventos?.filter(e=>e.dni===p.dni&&e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)||[]
@@ -407,23 +419,22 @@ async function buscarReporte() {
 
   // Traer eventos del rango — ventana amplia por fecha_iso (6am del primer día a 6am después del último)
   let qe = db.from('eventos').select('*').eq('empresa', empresaActual)
-  if (desde) qe = qe.gte('fecha_iso', desde+'T11:00:00Z')  // 6am Lima del primer día
-  if (hasta) { const nd=new Date(hasta+'T11:00:00Z'); nd.setUTCDate(nd.getUTCDate()+1); qe = qe.lt('fecha_iso', nd.toISOString().slice(0,10)+'T11:00:00Z') }
+  if (desde) qe = qe.gte('fecha_iso', desde+'T10:00:00Z')  // 6am Lima del primer día
+  if (hasta) { const nd=new Date(hasta+'T10:00:00Z'); nd.setUTCDate(nd.getUTCDate()+1); qe = qe.lt('fecha_iso', nd.toISOString().slice(0,10)+'T10:00:00Z') }
   const { data: eventos } = await qe
 
   // Helper: eventos de una persona en SU jornada (fecha F = 6am F a 6am F+1 Lima)
   const eventosDeJornada = (dni, fechaReg) => {
     if (!fechaReg) return []
-    const ini = fechaReg + 'T11:00:00Z'
-    const sig = new Date(fechaReg + 'T11:00:00Z'); sig.setUTCDate(sig.getUTCDate()+1)
-    const fin = sig.toISOString().slice(0,10) + 'T11:00:00Z'
+    const ini = fechaReg + 'T10:00:00Z'
+    const sig = new Date(fechaReg + 'T10:00:00Z'); sig.setUTCDate(sig.getUTCDate()+1)
+    const fin = sig.toISOString().slice(0,10) + 'T10:00:00Z'
     return (eventos||[]).filter(e => e.dni===dni && e.fecha_iso >= ini && e.fecha_iso < fin)
   }
 
   let rows = estados.map(p => {
-    const esTN = esTurnoNoche(p.ingreso)
-    if (turno==='dia'&&esTN) return null
-    if (turno==='noche'&&!esTN) return null
+    const _t = getTurno(p.ingreso)
+    if (turno && turno !== 'todos' && _t !== turno) return null
 
     const evs = eventosDeJornada(p.dni, p.fecha)
     const evBO = evs.filter(e=>e.tipo==='break_salida').sort((a,b)=>a.fecha_iso>b.fecha_iso?1:-1)
@@ -444,17 +455,17 @@ async function buscarReporte() {
     evBOut.forEach((bo,i)=>{ const bi=evBIn[i]; if(bi){ const m=minEntre(bo.fecha_iso,bi.fecha_iso); if(m) banioMin+=m } })
     const banioStr = evBOut.length===0?'0 veces':`${evBOut.length} ${evBOut.length===1?'vez':'veces'}${banioMin>0?' / '+fmtMin(banioMin):''}`
 
-    return { p, esTN, breakStr, banioStr }
+    return { p, _t, breakStr, banioStr }
   }).filter(Boolean)
 
   reporteData = rows
 
   if (!rows.length) { tbody.innerHTML='<tr><td colspan="7" class="empty">Sin resultados con los filtros aplicados</td></tr>'; return }
 
-  tbody.innerHTML = rows.map(({p,esTN,breakStr,banioStr})=>`<tr>
+  tbody.innerHTML = rows.map(({p,_t,breakStr,banioStr})=>`<tr>
     <td>${p.nombre}</td>
     <td>${p.area||'—'}</td>
-    <td><span class="tp ${esTN?'tp-n':'tp-d'}">${esTN?'Noche':'Día'}</span></td>
+    <td><span class="tp ${_t==='noche'?'tp-n':_t==='manana'?'tp-m':'tp-d'}">${TURNO_LABEL[_t]||'—'}</span></td>
     <td>${p.ingreso||'—'}</td>
     <td>${p.salida||'—'}</td>
     <td>${breakStr}</td>
@@ -466,8 +477,8 @@ async function descargarReporte() {
   if (!reporteData.length) { alert('Primero busca los datos'); return }
   const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
   const rows = [['Nombre','Área','Turno','Ingreso','Salida','Break','Baño']]
-  reporteData.forEach(({p,esTN,breakStr,banioStr})=>{
-    rows.push([p.nombre, p.area||'', esTN?'Noche':'Día', p.ingreso||'', p.salida||'', breakStr, banioStr])
+  reporteData.forEach(({p,_t,breakStr,banioStr})=>{
+    rows.push([p.nombre, p.area||'', TURNO_LABEL[_t]||'', p.ingreso||'', p.salida||'', breakStr, banioStr])
   })
   const ws = XLSX.utils.aoa_to_sheet(rows)
   ws['!cols']=[{wch:24},{wch:16},{wch:10},{wch:20},{wch:20},{wch:14},{wch:18}]
