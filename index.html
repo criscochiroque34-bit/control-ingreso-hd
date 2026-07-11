@@ -431,7 +431,7 @@ tr:hover td{background:#f7f9fc}
       <div>
         <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#155e75" id="sa-manana">0</span>
         <span style="font-size:12px;font-weight:600;color:#155e75;margin-left:4px">Turno Mañana</span>
-        <div style="font-size:10px;color:var(--muted)">ingreso 5am — 12:59pm</div>
+        <div style="font-size:10px;color:var(--muted)">ingreso 5am — 10:59am</div>
       </div>
     </div>
     <div style="width:1px;height:32px;background:var(--border)"></div>
@@ -440,7 +440,7 @@ tr:hover td{background:#f7f9fc}
       <div>
         <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#92400e" id="sa-dia">0</span>
         <span style="font-size:12px;font-weight:600;color:#92400e;margin-left:4px">Turno Día</span>
-        <div style="font-size:10px;color:var(--muted)">ingreso 1pm — 8:59pm</div>
+        <div style="font-size:10px;color:var(--muted)">ingreso 11am — 8:59pm</div>
       </div>
     </div>
     <div style="width:1px;height:32px;background:var(--border)"></div>
@@ -1126,15 +1126,19 @@ tr:hover td{background:#f7f9fc}
         <div style="display:flex;gap:14px;align-items:end;flex-wrap:wrap">
           <div>
             <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Vista</label>
-            <select class="form-input" id="ind-vista" onchange="indCambiarVista()"><option value="mes">Por mes</option><option value="dia">Por día</option><option value="especifico">Día específico</option></select>
+            <select class="form-input" id="ind-vista" onchange="indCambiarVista()"><option value="mes">Por mes</option><option value="dia">Por día</option><option value="rango">Rango de días</option></select>
           </div>
           <div id="ind-mes-wrap">
             <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Mes</label>
             <input type="month" class="form-input" id="ind-mes" onchange="indCargar()"/>
           </div>
-          <div id="ind-dia-wrap" style="display:none">
-            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Fecha</label>
-            <input type="date" class="form-input" id="ind-dia" onchange="indCargar()"/>
+          <div id="ind-rango-wrap" style="display:none">
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Desde</label>
+            <input type="date" class="form-input" id="ind-desde" onchange="indCargar()"/>
+          </div>
+          <div id="ind-rango-wrap2" style="display:none">
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Hasta</label>
+            <input type="date" class="form-input" id="ind-hasta" onchange="indCargar()"/>
           </div>
           <div>
             <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Empresa</label>
@@ -1169,6 +1173,18 @@ tr:hover td{background:#f7f9fc}
           <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#fbbf24"></span>85-89% Aceptable</span>
           <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#ef4444"></span>&lt;85% Incumplimiento</span>
         </div>
+      </div>
+
+      <!-- TENDENCIA POR PROVEEDOR (líneas) -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title"><span>Tendencia por proveedor — cumplimiento diario</span><span id="ind-lineas-leyenda" style="font-size:11px;text-transform:none;font-weight:600;display:flex;gap:12px;flex-wrap:wrap"></span></div>
+        <div id="ind-lineas" style="overflow-x:auto"></div>
+      </div>
+
+      <!-- MATRIZ DÍA × EMPRESA × TURNO -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Detalle por día, empresa y turno</div>
+        <div id="ind-matriz" style="overflow-x:auto"></div>
       </div>
 
       <!-- TABLA POR EMPRESA -->
@@ -1363,13 +1379,13 @@ const horaIngreso = str => {
 }
 // ─── TURNOS (3) ───────────────────────────────────────
 // Noche  : 21:00 – 04:59  (cruza medianoche, pertenece al día en que inició)
-// Mañana : 05:00 – 12:59
-// Día    : 13:00 – 20:59
+// Mañana : 05:00 – 10:59
+// Día    : 11:00 – 20:59
 const getTurno = str => {
   const h = horaIngreso(str)
   if (h === null) return null
   if (h >= 21 || h < 5) return 'noche'
-  if (h < 13) return 'manana'
+  if (h < 11) return 'manana'
   return 'dia'
 }
 const TURNO_LABEL = { noche: 'Noche', manana: 'Mañana', dia: 'Día' }
@@ -3356,16 +3372,6 @@ async function enviarCorreoSeleccionadas() {
   btn.innerHTML='📧 Enviar a seleccionadas';btn.disabled=false
 }
 
-function toggleGestion() {
-  const body = document.getElementById('gestion-body')
-  if (!body) { cargarTablaCorreos(); return }
-  const chev = document.getElementById('gestion-chevron')
-  const open = body.style.display === 'block'
-  body.style.display = open ? 'none' : 'block'
-  if (chev) chev.style.transform = open ? '' : 'rotate(180deg)'
-  if (!open) cargarTablaCorreos()
-}
-
 function toggleHDLista() {
   const body = document.getElementById('hd-lista-body')
   const chev = document.getElementById('hd-chevron')
@@ -4715,10 +4721,16 @@ async function initIndicadores() {
 // Alterna entre selector de mes y selector de día específico según la vista elegida
 function indCambiarVista() {
   const vista = document.getElementById('ind-vista').value
-  document.getElementById('ind-mes-wrap').style.display = vista === 'especifico' ? 'none' : 'block'
-  document.getElementById('ind-dia-wrap').style.display = vista === 'especifico' ? 'block' : 'none'
-  if (vista === 'especifico' && !document.getElementById('ind-dia').value) {
-    document.getElementById('ind-dia').value = today()
+  const esRango = vista === 'rango'
+  document.getElementById('ind-mes-wrap').style.display = esRango ? 'none' : 'block'
+  document.getElementById('ind-rango-wrap').style.display = esRango ? 'block' : 'none'
+  document.getElementById('ind-rango-wrap2').style.display = esRango ? 'block' : 'none'
+  if (esRango) {
+    if (!document.getElementById('ind-hasta').value) document.getElementById('ind-hasta').value = today()
+    if (!document.getElementById('ind-desde').value) {
+      const d = new Date(today() + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 6)
+      document.getElementById('ind-desde').value = d.toISOString().slice(0,10)  // últimos 7 días por defecto
+    }
   }
   indCargar()
 }
@@ -4729,11 +4741,13 @@ async function indCargar() {
   const vista = document.getElementById('ind-vista').value
 
   let primerDia, ultimoDia
-  if (vista === 'especifico') {
-    const dia = document.getElementById('ind-dia').value
-    if (!dia) return
-    primerDia = dia
-    ultimoDia = dia
+  if (vista === 'rango') {
+    let desde = document.getElementById('ind-desde').value
+    let hasta = document.getElementById('ind-hasta').value
+    if (!desde || !hasta) return
+    if (desde > hasta) [desde, hasta] = [hasta, desde]  // corrige rango invertido
+    primerDia = desde
+    ultimoDia = hasta
   } else {
     const mes = document.getElementById('ind-mes').value  // "2026-06"
     if (!mes) return
@@ -4775,6 +4789,121 @@ async function indCargar() {
 
   indDataset = dataset  // guardar para el descargable (respeta filtros activos)
   indRender(dataset, vista)
+  indRenderLineas(dataset)
+  indRenderMatriz(dataset)
+}
+
+// ─── TENDENCIA POR PROVEEDOR (gráfico de líneas SVG) ──
+const IND_PALETTE = ['#3b82f6','#f59e0b','#22c27a','#8b5cf6','#e85d9b','#ef4444','#06b6d4','#84cc16']
+
+function indRenderLineas(dataset) {
+  const cont = document.getElementById('ind-lineas')
+  const ley = document.getElementById('ind-lineas-leyenda')
+  if (!dataset.length) { cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Sin datos</div>'; ley.innerHTML=''; return }
+
+  // Agregar por fecha+empresa (suma turnos filtrados activos)
+  const fechas = [...new Set(dataset.map(d=>d.fecha))].sort()
+  const empresas = [...new Set(dataset.map(d=>d.empresa))].sort()
+  const agg = {}
+  dataset.forEach(d => {
+    const k = d.fecha + '|' + d.empresa
+    if (!agg[k]) agg[k] = { sol:0, asist:0 }
+    agg[k].sol += d.solicitado
+    agg[k].asist += d.asistio
+  })
+  const pctDe = (f,e) => {
+    const a = agg[f+'|'+e]
+    if (!a || a.sol === 0) return null   // sin solicitud ese día → hueco en la línea
+    return Math.round(a.asist / a.sol * 100)
+  }
+
+  // Dimensiones SVG
+  const W = Math.max(560, fechas.length * 64), H = 220
+  const padL = 38, padR = 14, padT = 14, padB = 34
+  const maxPct = Math.max(110, ...dataset.map(d=>d.pct))
+  const x = i => padL + (fechas.length === 1 ? (W-padL-padR)/2 : i * (W-padL-padR)/(fechas.length-1))
+  const y = p => padT + (H-padT-padB) * (1 - p/maxPct)
+
+  // Grid horizontal (0/50/85/90/100)
+  let grid = ''
+  ;[0,50,85,100].forEach(g => {
+    if (g > maxPct) return
+    grid += `<line x1="${padL}" y1="${y(g)}" x2="${W-padR}" y2="${y(g)}" stroke="#eef1f6" stroke-width="1"/>
+             <text x="${padL-6}" y="${y(g)+3}" text-anchor="end" font-size="9" fill="#9aa3b8">${g}%</text>`
+  })
+  // Banda verde 90-100 de referencia
+  grid += `<rect x="${padL}" y="${y(100)}" width="${W-padL-padR}" height="${y(90)-y(100)}" fill="#22c27a" opacity=".07"/>`
+
+  // Líneas por empresa
+  let lineas = ''
+  empresas.forEach((emp, ei) => {
+    const color = IND_PALETTE[ei % IND_PALETTE.length]
+    let path = '', puntos = ''
+    let prev = false
+    fechas.forEach((f, i) => {
+      const p = pctDe(f, emp)
+      if (p === null) { prev = false; return }
+      path += (prev ? ' L' : ' M') + x(i).toFixed(1) + ' ' + y(p).toFixed(1)
+      puntos += `<circle cx="${x(i)}" cy="${y(p)}" r="3.5" fill="${color}"><title>${emp} · ${f} · ${p}%</title></circle>`
+      prev = true
+    })
+    if (path) lineas += `<path d="${path.trim()}" fill="none" stroke="${color}" stroke-width="2"/>` + puntos
+  })
+
+  // Eje X: días
+  let ejeX = ''
+  fechas.forEach((f, i) => {
+    ejeX += `<text x="${x(i)}" y="${H-10}" text-anchor="middle" font-size="9" fill="#7a8299">${f.slice(8,10)}/${f.slice(5,7)}</text>`
+  })
+
+  cont.innerHTML = `<svg width="${W}" height="${H}" style="min-width:100%">${grid}${lineas}${ejeX}</svg>`
+  ley.innerHTML = empresas.map((e,i)=>`<span style="display:flex;align-items:center;gap:4px;color:var(--text)"><span style="width:10px;height:3px;border-radius:2px;background:${IND_PALETTE[i%IND_PALETTE.length]}"></span>${e}</span>`).join('')
+}
+
+// ─── MATRIZ DÍA × EMPRESA × TURNO ─────────────────────
+function indRenderMatriz(dataset) {
+  const cont = document.getElementById('ind-matriz')
+  if (!dataset.length) { cont.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Sin datos</div>'; return }
+
+  const fechas = [...new Set(dataset.map(d=>d.fecha))].sort()
+  const empresas = [...new Set(dataset.map(d=>d.empresa))].sort()
+  const TURNOS = ['manana','dia','noche']
+  const TLBL = { manana:'M', dia:'D', noche:'N' }
+
+  const mapa = {}
+  dataset.forEach(d => { mapa[d.fecha+'|'+d.empresa+'|'+d.turno] = d })
+
+  const celda = (f,e,t) => {
+    const d = mapa[f+'|'+e+'|'+t]
+    if (!d) return '<td style="padding:6px 8px;text-align:center;color:var(--border);font-size:11px;border-bottom:1px solid var(--bg)">—</td>'
+    const col = colorPct(d.pct)
+    return `<td style="padding:6px 8px;text-align:center;border-bottom:1px solid var(--bg)" title="${e} · ${TURNO_LABEL[t]} · ${d.asistio}/${d.solicitado}">
+      <span style="font-size:12px;font-weight:700;color:${col}">${d.pct}%</span>
+      <div style="font-size:9px;color:var(--muted)">${d.asistio}/${d.solicitado}</div>
+    </td>`
+  }
+
+  let head1 = '<th rowspan="2" style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid var(--border);vertical-align:bottom">Fecha</th>'
+  let head2 = ''
+  empresas.forEach(e => {
+    head1 += `<th colspan="3" style="padding:6px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text);border-bottom:1px solid var(--border)">${e}</th>`
+    TURNOS.forEach(t => {
+      head2 += `<th style="padding:4px 8px;text-align:center;font-size:9px;font-weight:700;color:var(--muted);border-bottom:2px solid var(--border)">${TLBL[t]}</th>`
+    })
+  })
+
+  let body = ''
+  fechas.forEach(f => {
+    body += `<tr><td style="padding:6px 10px;font-size:12px;font-weight:600;color:var(--text);border-bottom:1px solid var(--bg);white-space:nowrap">${f.slice(8,10)}/${f.slice(5,7)}</td>`
+    empresas.forEach(e => { TURNOS.forEach(t => { body += celda(f,e,t) }) })
+    body += '</tr>'
+  })
+
+  cont.innerHTML = `<table style="border-collapse:collapse;min-width:100%">
+    <thead><tr>${head1}</tr><tr>${head2}</tr></thead>
+    <tbody>${body}</tbody>
+  </table>
+  <div style="font-size:10px;color:var(--muted);margin-top:8px">M = Mañana · D = Día · N = Noche · Cada celda: % cumplimiento y real/solicitado</div>`
 }
 
 // ─── DESCARGABLE INDICADORES ──────────────────────────
@@ -4800,8 +4929,8 @@ async function indDescargar(formato) {
 
   // Nombre según filtro activo
   const vista = document.getElementById('ind-vista').value
-  const sufijo = vista === 'especifico'
-    ? document.getElementById('ind-dia').value
+  const sufijo = vista === 'rango'
+    ? document.getElementById('ind-desde').value + '_a_' + document.getElementById('ind-hasta').value
     : document.getElementById('ind-mes').value
   const nombre = `cumplimiento_${sufijo}`
 
@@ -4881,8 +5010,8 @@ function indRender(dataset, vista) {
       pct: porFecha[f].sol > 0 ? Math.round(porFecha[f].asist/porFecha[f].sol*100) : 0
     }))
   } else {
-    const tituloBase = vista === 'especifico'
-      ? 'Cumplimiento por empresa — ' + new Date(dataset[0]?.fecha + 'T12:00:00Z').toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})
+    const tituloBase = vista === 'rango'
+      ? 'Cumplimiento por empresa — rango seleccionado'
       : 'Cumplimiento por empresa'
     document.getElementById('ind-chart-titulo').textContent = tituloBase
     const porEmp = {}
