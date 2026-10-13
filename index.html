@@ -947,6 +947,7 @@ tr:hover td{background:#f7f9fc}
         <button class="anl-subtab" data-sub="solicitudes" onclick="anlSwitchSub('solicitudes',this)">📋 Solicitudes</button>
         <button class="anl-subtab" data-sub="indicadores" onclick="anlSwitchSub('indicadores',this)">📊 Indicadores</button>
         <button class="anl-subtab" data-sub="correos" onclick="anlSwitchSub('correos',this)">✉️ Correos</button>
+        <button class="anl-subtab" data-sub="planilla" onclick="anlSwitchSub('planilla',this)">👷 Planilla</button>
       </div>
       <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 12px">
         <div style="width:30px;height:30px;border-radius:50%;background:var(--nav-bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0" id="actas-sup-ini">—</div>
@@ -1199,6 +1200,78 @@ tr:hover td{background:#f7f9fc}
         <div style="display:flex;gap:20px" id="ind-turnos"></div>
       </div>
     </div><!-- /anl-indicadores -->
+
+    <!-- ============ SUB: PLANILLA ============ -->
+    <div class="anl-sub-content" id="anl-planilla">
+      <div class="card" style="max-width:980px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--text)">👷 Personal planilla</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">Esta lista alimenta el buscador de <strong>Baño planilla</strong>. <span id="pla-resumen"></span></div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button onclick="plaAbrirForm()" style="padding:9px 14px;border-radius:8px;border:none;background:var(--nav-bg);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">+ Agregar</button>
+            <button onclick="plaDescargarPlantilla()" style="padding:9px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">⬇️ Plantilla Excel</button>
+            <button onclick="document.getElementById('pla-file').click()" style="padding:9px 14px;border-radius:8px;border:none;background:var(--accent2);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">⬆️ Carga masiva</button>
+            <input type="file" id="pla-file" accept=".xlsx,.xls" style="display:none" onchange="plaLeerExcel(this.files[0]);this.value=''"/>
+          </div>
+        </div>
+
+        <!-- Formulario agregar / editar -->
+        <div id="pla-form" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
+          <div id="pla-form-titulo" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Agregar personal</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+            <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">DNI</label>
+              <input id="pla-dni" type="text" inputmode="numeric" maxlength="8" placeholder="8 dígitos" style="padding:9px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif;width:100%"/>
+              <div id="pla-dni-nota" style="display:none;font-size:10px;color:var(--muted);margin-top:3px">🔒 <a href="#" onclick="plaDesbloquearDni();return false" style="color:var(--accent3)">Desbloquear</a> solo para corregir un error de tipeo</div></div>
+            <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">Nombre completo</label>
+              <input id="pla-nombre" type="text" placeholder="Apellidos y nombres" style="padding:9px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif;width:100%"/></div>
+            <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">Área</label>
+              <input id="pla-area" type="text" list="pla-dl-area" placeholder="Elige o escribe" style="padding:9px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif;width:100%"/><datalist id="pla-dl-area"></datalist></div>
+            <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">Cargo</label>
+              <input id="pla-cargo" type="text" list="pla-dl-cargo" placeholder="Elige o escribe" style="padding:9px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif;width:100%"/><datalist id="pla-dl-cargo"></datalist></div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:12px">
+            <button onclick="plaGuardar()" id="pla-btn-guardar" style="padding:9px 18px;border-radius:8px;border:none;background:var(--accent2);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Guardar</button>
+            <button onclick="plaCerrarForm()" style="padding:9px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+          </div>
+        </div>
+
+        <!-- Vista previa carga masiva -->
+        <div id="pla-masivo" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:6px">Vista previa de la carga</div>
+          <div id="pla-masivo-resumen" style="font-size:12px;color:var(--text);line-height:1.6"></div>
+          <div id="pla-masivo-errores" style="font-size:11px;color:#b91c1c;margin-top:6px;max-height:110px;overflow:auto"></div>
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <button onclick="plaConfirmarMasivo()" id="pla-btn-masivo" style="padding:9px 18px;border-radius:8px;border:none;background:var(--accent2);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Confirmar carga</button>
+            <button onclick="plaCancelarMasivo()" style="padding:9px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <input id="pla-buscar" type="text" placeholder="🔍 Buscar por nombre o DNI" oninput="plaRender()" style="flex:1;min-width:200px;padding:9px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif;"/>
+          <select id="pla-estado" onchange="plaRender()" style="padding:9px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;background:var(--surface);color:var(--text)">
+            <option value="activos">Activos</option><option value="baja">De baja</option><option value="todos">Todos</option>
+          </select>
+          <select id="pla-f-area" onchange="plaRender()" style="padding:9px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;background:var(--surface);color:var(--text)"><option value="">Todas las áreas</option></select>
+        </div>
+
+        <div style="border:1px solid var(--border);border-radius:8px;overflow:auto;max-height:520px">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:var(--bg);position:sticky;top:0">
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">DNI</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Nombre</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Área</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Cargo</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)">Estado</th>
+              <th style="border-bottom:1px solid var(--border);width:150px"></th>
+            </tr></thead>
+            <tbody id="pla-tbody"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--muted)">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /anl-planilla -->
 
     <!-- ============ SUB: CORREOS ============ -->
     <div class="anl-sub-content" id="anl-correos">
@@ -3242,6 +3315,198 @@ async function loginActas() {
 }
 
 // ─── SUB-TABS ANÁLISIS ─────────────────────────────────
+
+// ============ PLANILLA (CRUD) ============
+let plaData = []
+let plaEditDni = null      // DNI original en edición (null = nuevo)
+let plaMasivoFilas = []
+let plaMasivoBusy = false
+const plaEsc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+const plaActivo = p => p.activo !== false
+
+async function initPlanilla() {
+  const { data, error } = await db.from('planilla').select('*').order('nombre')
+  if (error) { showToast('Error cargando planilla: ' + error.message, 'error'); return }
+  plaData = data || []
+  plaRefrescarListas()
+  plaRender()
+  const tb = document.getElementById('pla-tbody')
+  if (tb && !tb.dataset.listener) {
+    tb.dataset.listener = '1'
+    tb.addEventListener('click', e => {
+      const b = e.target.closest('button[data-acc]')
+      if (!b) return
+      const dni = b.dataset.dni
+      if (b.dataset.acc === 'edit') plaAbrirForm(dni)
+      else if (b.dataset.acc === 'baja') plaCambiarEstado(dni, false)
+      else if (b.dataset.acc === 'alta') plaCambiarEstado(dni, true)
+    })
+  }
+}
+
+function plaRefrescarListas() {
+  const uniq = k => [...new Set(plaData.map(p => (p[k]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'))
+  const areas = uniq('area'), cargos = uniq('cargo')
+  document.getElementById('pla-dl-area').innerHTML = areas.map(a=>`<option value="${plaEsc(a)}">`).join('')
+  document.getElementById('pla-dl-cargo').innerHTML = cargos.map(a=>`<option value="${plaEsc(a)}">`).join('')
+  const sel = document.getElementById('pla-f-area'), cur = sel.value
+  sel.innerHTML = '<option value="">Todas las áreas</option>' + areas.map(a=>`<option value="${plaEsc(a)}">${plaEsc(a)}</option>`).join('')
+  sel.value = areas.includes(cur) ? cur : ''
+}
+
+function plaRender() {
+  const q = document.getElementById('pla-buscar').value.trim().toLowerCase()
+  const est = document.getElementById('pla-estado').value
+  const area = document.getElementById('pla-f-area').value
+  const lista = plaData.filter(p => {
+    if (est === 'activos' && !plaActivo(p)) return false
+    if (est === 'baja' && plaActivo(p)) return false
+    if (area && (p.area||'').trim() !== area) return false
+    if (q && !(String(p.nombre||'').toLowerCase().includes(q) || String(p.dni||'').includes(q))) return false
+    return true
+  })
+  const act = plaData.filter(plaActivo).length
+  document.getElementById('pla-resumen').textContent = `${act} activos · ${plaData.length-act} de baja`
+  const tb = document.getElementById('pla-tbody')
+  if (!lista.length) { tb.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--muted)">Sin resultados</td></tr>'; return }
+  const btn = 'padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-size:11px;font-weight:700;cursor:pointer;font-family:\'DM Sans\',sans-serif;'
+  tb.innerHTML = lista.map(p => {
+    const a = plaActivo(p)
+    return `<tr style="border-bottom:1px solid var(--bg);${a?'':'opacity:.6'}">
+      <td style="padding:8px 10px;font-family:monospace">${plaEsc(p.dni)}</td>
+      <td style="padding:8px 10px;font-weight:600">${plaEsc(p.nombre)}</td>
+      <td style="padding:8px 10px">${plaEsc(p.area)||'—'}</td>
+      <td style="padding:8px 10px">${plaEsc(p.cargo)||'—'}</td>
+      <td style="padding:8px 10px"><span style="padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:${a?'#dcfce7':'#fee2e2'};color:${a?'#166534':'#991b1b'}">${a?'Activo':'De baja'}</span></td>
+      <td style="padding:8px 10px;text-align:right;white-space:nowrap">
+        <button data-acc="edit" data-dni="${plaEsc(p.dni)}" style="${btn}color:var(--accent3)">Editar</button>
+        ${a ? `<button data-acc="baja" data-dni="${plaEsc(p.dni)}" style="${btn}color:#b91c1c">Dar de baja</button>`
+            : `<button data-acc="alta" data-dni="${plaEsc(p.dni)}" style="${btn}color:#166534">Reactivar</button>`}
+      </td></tr>`
+  }).join('')
+}
+
+function plaAbrirForm(dni) {
+  plaEditDni = dni || null
+  const p = dni ? plaData.find(x => String(x.dni).trim() === String(dni).trim()) : null
+  document.getElementById('pla-form-titulo').textContent = p ? 'Editar personal' : 'Agregar personal'
+  const d = document.getElementById('pla-dni')
+  d.value = p ? String(p.dni).trim() : ''
+  d.disabled = !!p
+  document.getElementById('pla-dni-nota').style.display = p ? 'block' : 'none'
+  document.getElementById('pla-nombre').value = p?.nombre || ''
+  document.getElementById('pla-area').value = p?.area || ''
+  document.getElementById('pla-cargo').value = p?.cargo || ''
+  document.getElementById('pla-form').style.display = 'block'
+  document.getElementById('pla-form').scrollIntoView({ behavior:'smooth', block:'nearest' })
+  setTimeout(() => (p ? document.getElementById('pla-nombre') : d).focus(), 50)
+}
+function plaCerrarForm() { document.getElementById('pla-form').style.display = 'none'; plaEditDni = null }
+function plaDesbloquearDni() { const d = document.getElementById('pla-dni'); d.disabled = false; d.focus() }
+
+async function plaGuardar() {
+  const dni = document.getElementById('pla-dni').value.trim()
+  const nombre = document.getElementById('pla-nombre').value.trim().replace(/\s+/g,' ')
+  const area = document.getElementById('pla-area').value.trim()
+  const cargo = document.getElementById('pla-cargo').value.trim()
+  if (!/^\d{8}$/.test(dni)) { showToast('El DNI debe tener 8 dígitos', 'error'); return }
+  if (!nombre) { showToast('Ingresa el nombre', 'error'); return }
+  const btn = document.getElementById('pla-btn-guardar'); btn.disabled = true
+  try {
+    if (!plaEditDni) {
+      const ex = plaData.find(x => String(x.dni).trim() === dni)
+      if (ex) { showToast(plaActivo(ex) ? 'Ese DNI ya existe en la planilla' : 'Ese DNI está de baja: usa "Reactivar"', 'error'); return }
+      const { error } = await db.from('planilla').insert({ dni, nombre, area: area||null, cargo: cargo||null, activo: true })
+      if (error) { showToast('Error: ' + error.message, 'error'); return }
+      showToast('✓ Personal agregado')
+    } else {
+      if (dni !== String(plaEditDni).trim() && plaData.some(x => String(x.dni).trim() === dni)) { showToast('Ese DNI ya pertenece a otra persona', 'error'); return }
+      const { error } = await db.from('planilla').update({ dni, nombre, area: area||null, cargo: cargo||null }).eq('dni', plaEditDni)
+      if (error) { showToast('Error: ' + error.message, 'error'); return }
+      showToast('✓ Cambios guardados')
+    }
+    plaCerrarForm()
+    await initPlanilla()
+  } finally { btn.disabled = false }
+}
+
+async function plaCambiarEstado(dni, activo) {
+  const p = plaData.find(x => String(x.dni).trim() === String(dni).trim())
+  if (!p) return
+  if (!activo && !confirm(`¿Dar de baja a ${p.nombre}?\n\nDejará de aparecer en el buscador de Baño planilla. Su historial se conserva y puedes reactivarlo cuando quieras.`)) return
+  const { error } = await db.from('planilla').update({ activo }).eq('dni', p.dni)
+  if (error) { showToast('Error: ' + error.message, 'error'); return }
+  showToast(activo ? '✓ Personal reactivado' : '✓ Personal dado de baja')
+  await initPlanilla()
+}
+
+async function plaDescargarPlantilla() {
+  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
+  const rows = [['DNI','Nombre','Area','Cargo'], ['12345678','APELLIDO NOMBRE (ejemplo, borrar)','Almacén','Operario']]
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols'] = [{wch:12},{wch:36},{wch:20},{wch:20}]
+  // DNI como texto para no perder ceros
+  ws['A2'] = { t:'s', v:'12345678' }
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Planilla')
+  XLSX.writeFile(wb, 'plantilla_planilla.xlsx')
+}
+
+async function plaLeerExcel(file) {
+  if (!file) return
+  try {
+    const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
+    const wb = XLSX.read(await file.arrayBuffer())
+    const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, raw:false, defval:'' })
+    if (!raw.length) { showToast('El archivo está vacío', 'error'); return }
+    const norm = s => String(s).trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+    const hdr = raw[0].map(norm)
+    const ix = { dni: hdr.indexOf('dni'), nombre: hdr.indexOf('nombre'), area: hdr.indexOf('area'), cargo: hdr.indexOf('cargo') }
+    if (ix.dni < 0 || ix.nombre < 0) { showToast('Usa la plantilla: faltan columnas DNI y Nombre', 'error'); return }
+    const validas = new Map(), errores = []
+    raw.slice(1).forEach((r, i) => {
+      const linea = i + 2
+      if (r.every(c => String(c).trim() === '')) return
+      let dni = String(r[ix.dni]).trim().replace(/\D/g,'')
+      if (dni.length === 7) dni = '0' + dni
+      const nombre = String(r[ix.nombre]).trim().replace(/\s+/g,' ')
+      if (!/^\d{8}$/.test(dni)) { errores.push(`Fila ${linea}: DNI inválido (${plaEsc(r[ix.dni])})`); return }
+      if (!nombre) { errores.push(`Fila ${linea}: sin nombre`); return }
+      if (validas.has(dni)) errores.push(`Fila ${linea}: DNI ${dni} repetido en el archivo (se usa la última)`)
+      validas.set(dni, { dni, nombre,
+        area: ix.area >= 0 ? (String(r[ix.area]).trim() || null) : null,
+        cargo: ix.cargo >= 0 ? (String(r[ix.cargo]).trim() || null) : null,
+        activo: true })
+    })
+    plaMasivoFilas = [...validas.values()]
+    const existentes = new Set(plaData.map(p => String(p.dni).trim()))
+    const nuevos = plaMasivoFilas.filter(f => !existentes.has(f.dni)).length
+    const upd = plaMasivoFilas.length - nuevos
+    document.getElementById('pla-masivo-resumen').innerHTML =
+      `✅ <strong>${nuevos}</strong> nuevos · 🔄 <strong>${upd}</strong> ya existen (se actualizan nombre, área y cargo; si estaban de baja se reactivan) · ⚠️ <strong>${errores.length}</strong> con observaciones`
+    document.getElementById('pla-masivo-errores').innerHTML = errores.join('<br>')
+    document.getElementById('pla-btn-masivo').disabled = !plaMasivoFilas.length
+    document.getElementById('pla-masivo').style.display = 'block'
+  } catch (e) { showToast('No se pudo leer el Excel: ' + e.message, 'error') }
+}
+
+function plaCancelarMasivo() { plaMasivoFilas = []; document.getElementById('pla-masivo').style.display = 'none' }
+
+async function plaConfirmarMasivo() {
+  if (plaMasivoBusy || !plaMasivoFilas.length) return
+  plaMasivoBusy = true
+  const btn = document.getElementById('pla-btn-masivo'); btn.disabled = true; btn.textContent = 'Cargando…'
+  try {
+    for (let i = 0; i < plaMasivoFilas.length; i += 200) {
+      const { error } = await db.from('planilla').upsert(plaMasivoFilas.slice(i, i+200), { onConflict: 'dni' })
+      if (error) { showToast('Error en la carga: ' + error.message, 'error'); return }
+    }
+    showToast(`✓ ${plaMasivoFilas.length} registros cargados`)
+    plaCancelarMasivo()
+    await initPlanilla()
+  } finally { plaMasivoBusy = false; btn.disabled = false; btn.textContent = 'Confirmar carga' }
+}
+
 function anlSwitchSub(sub, btn) {
   document.querySelectorAll('.anl-subtab').forEach(b=>b.classList.remove('active'))
   btn.classList.add('active')
@@ -3249,6 +3514,7 @@ function anlSwitchSub(sub, btn) {
   document.getElementById('anl-'+sub).classList.add('active')
   if (sub === 'solicitudes') initSolicitudes()
   if (sub === 'indicadores') initIndicadores()
+  if (sub === 'planilla') initPlanilla()
 }
 
 function cerrarSesionActas() {
@@ -3619,7 +3885,7 @@ function banioJornadaInicio() {
 async function initBanio() {
   // Siempre recargar planilla fresco — así aparecen nuevas personas sin necesidad de refrescar
   const { data } = await db.from('planilla').select('*').order('nombre')
-  banioPlanilla = data || []
+  banioPlanilla = (data || []).filter(p => p.activo !== false) // excluye dados de baja
 
   // Listener delegado del dropdown (una sola vez) — robusto ante cualquier DNI
   const dd = document.getElementById('banio-dd')
