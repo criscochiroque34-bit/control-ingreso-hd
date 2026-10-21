@@ -3,8 +3,10 @@ import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = 'https://lflenisloinbqyuptxzc.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbGVuaXNsb2luYnF5dXB0eHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MzAxNDQsImV4cCI6MjA5MTEwNjE0NH0.jcjKs2xCgxf4mvGbf9a5eRETWAOKf0SXg_JC0iy4UsI'
-const GMAIL_USER = 'hdoperacionqolqas@gmail.com'
-const GMAIL_PASS = 'weytzxkexzeyushf'
+const GMAIL_USER = process.env.GMAIL_USER || 'hdoperacionqolqas@gmail.com'
+// La contraseña de aplicación se lee SOLO de la variable de entorno GMAIL_PASS (Vercel). Se quitan espacios.
+const GMAIL_PASS = (process.env.GMAIL_PASS || '').replace(/\s+/g, '')
+export const GMAIL_PASS_CONFIGURADA = GMAIL_PASS.length === 16
 
 export const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 
@@ -52,8 +54,8 @@ export const calcTiempoTrabajado = (ingreso, salida, breakMin) => {
 
 // ─── TURNOS (3) ───────────────────────────────────────
 // Noche  : 21:00 – 04:59  (pertenece al día en que inició)
-// Mañana : 05:00 – 12:59
-// Día    : 13:00 – 20:59
+// Mañana : 05:00 – 10:59
+// Día    : 11:00 – 20:59
 export const getTurno = ingreso => {
   if (!ingreso) return null
   const p = ingreso.split(' ')
@@ -61,7 +63,7 @@ export const getTurno = ingreso => {
   const h = parseInt(p[1].split(':')[0])
   if (isNaN(h)) return null
   if (h >= 21 || h < 5) return 'noche'
-  if (h < 13) return 'manana'
+  if (h < 11) return 'manana'
   return 'dia'
 }
 export const TURNO_LABEL = { noche: 'Noche', manana: 'Mañana', dia: 'Día' }
