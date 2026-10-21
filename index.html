@@ -1275,6 +1275,15 @@ tr:hover td{background:#f7f9fc}
 
     <!-- ============ SUB: CORREOS ============ -->
     <div class="anl-sub-content" id="anl-correos">
+      <div class="card" style="max-width:720px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px">🔧 Diagnóstico de correo <span style="color:var(--muted);font-weight:500">· prueba la conexión antes del envío automático</span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <input id="diag-to" type="email" placeholder="correo para la prueba" style="flex:1;min-width:200px;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface)"/>
+          <button onclick="diagCorreo('verificar')" style="padding:8px 14px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-weight:700;cursor:pointer">Verificar conexión</button>
+          <button onclick="diagCorreo('enviar')" style="padding:8px 14px;border-radius:7px;border:none;background:var(--nav-bg);color:#fff;font-size:12px;font-weight:700;cursor:pointer">Enviar prueba</button>
+        </div>
+        <div id="diag-res" style="display:none;margin-top:10px;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.5"></div>
+      </div>
       <div class="card" style="max-width:720px">
         <!-- EMPRESAS -->
         <div style="margin-bottom:20px">
@@ -3505,6 +3514,23 @@ async function plaConfirmarMasivo() {
     plaCancelarMasivo()
     await initPlanilla()
   } finally { plaMasivoBusy = false; btn.disabled = false; btn.textContent = 'Confirmar carga' }
+}
+
+async function diagCorreo(modo) {
+  const box = document.getElementById('diag-res')
+  const to = document.getElementById('diag-to').value.trim()
+  if (modo === 'enviar' && !to) { showToast('Escribe un correo para la prueba', 'error'); return }
+  box.style.display = 'block'; box.style.background = 'var(--bg)'; box.style.color = 'var(--text)'; box.textContent = 'Probando…'
+  try {
+    const r = await fetch('/api/test-correo', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ modo, to }) })
+    const d = await r.json()
+    const ok = !!d.ok
+    box.style.background = ok ? '#dcfce7' : '#fee2e2'; box.style.color = ok ? '#166534' : '#991b1b'
+    box.textContent = ''
+    const t = document.createElement('div'); t.style.fontWeight = '700'
+    t.textContent = ok ? '✓ ' + d.mensaje : '✗ Falló en: ' + (d.paso || '?') ; box.appendChild(t)
+    if (!ok) { [d.error, d.ayuda].filter(Boolean).forEach(x => { const l = document.createElement('div'); l.textContent = x; box.appendChild(l) }) }
+  } catch (e) { box.style.background = '#fee2e2'; box.style.color = '#991b1b'; box.textContent = '✗ No se pudo contactar al servidor: ' + e.message }
 }
 
 function anlSwitchSub(sub, btn) {
