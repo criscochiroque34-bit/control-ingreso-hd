@@ -958,6 +958,7 @@ tr:hover td{background:#f7f9fc}
         <button class="anl-subtab" data-sub="indicadores" onclick="anlSwitchSub('indicadores',this)">📊 Indicadores</button>
         <button class="anl-subtab" data-sub="correos" onclick="anlSwitchSub('correos',this)">✉️ Correos</button>
         <button class="anl-subtab" data-sub="planilla" onclick="anlSwitchSub('planilla',this)">👷 Planilla</button>
+        <button class="anl-subtab" data-sub="editar" onclick="anlSwitchSub('editar',this)">✏️ Editar registros</button>
       </div>
       <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 12px">
         <div style="width:30px;height:30px;border-radius:50%;background:var(--nav-bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0" id="actas-sup-ini">—</div>
@@ -1340,6 +1341,63 @@ tr:hover td{background:#f7f9fc}
         </div>
       </div>
     </div><!-- /anl-planilla -->
+
+    <!-- ============ SUB: EDITAR REGISTROS ============ -->
+    <div class="anl-sub-content" id="anl-editar">
+      <!-- Panel de edición -->
+      <div class="card" id="er-panel" style="display:none;margin-bottom:16px;border:1.5px solid var(--accent3)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+          <div><div id="er-nombre" style="font-size:16px;font-weight:700"></div><div id="er-meta" style="font-size:12px;color:var(--muted);margin-top:2px"></div></div>
+          <div><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4pxtext-align:right">Estado resultante</span><span id="er-estado" class="badge"></span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+          <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Ingreso</label>
+            <div style="display:flex;gap:8px"><input type="date" class="form-input" id="er-i-f" style="flex:1.3"/><input type="time" class="form-input" id="er-i-h" style="flex:1"/></div></div>
+          <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Salida <span style="text-transform:none;letter-spacing:0;font-weight:500">(vacía = sigue dentro)</span></label>
+            <div style="display:flex;gap:8px"><input type="date" class="form-input" id="er-s-f" style="flex:1.3"/><input type="time" class="form-input" id="er-s-h" style="flex:1"/></div>
+            <button type="button" onclick="erQuitarSalida()" style="margin-top:5px;background:none;border:none;color:var(--accent3);font-size:11px;font-weight:700;cursor:pointer;padding:0;font-family:'DM Sans',sans-serif">✕ Quitar salida</button></div>
+        </div>
+
+        <div style="margin-top:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4pxmargin:0">☕ Breaks</span>
+            <button type="button" onclick="erAgregarPar('break')" style="padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;padding:5px 10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text)">+ Agregar break</button></div>
+          <div id="er-pares-break"></div>
+        </div>
+        <div style="margin-top:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4pxmargin:0">🚻 Baños</span>
+            <button type="button" onclick="erAgregarPar('banio')" style="padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;padding:5px 10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text)">+ Agregar baño</button></div>
+          <div id="er-pares-banio"></div>
+        </div>
+
+        <div id="er-aviso" style="display:none;font-size:12px;font-weight:600;padding:9px 12px;border-radius:8px;margin-top:14px"></div>
+        <div style="display:flex;gap:6px;margin-top:14px">
+          <button onclick="erGuardar()" id="er-btn" style="padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;border:none;background:var(--accent2);color:#fff">Guardar cambios</button>
+          <button onclick="erCerrar()" style="padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;border:1.5px solid var(--border);background:var(--surface);color:var(--muted)">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Editar registros de asistencia <span style="font-size:11px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:500">· cualquier fecha, sin límite de antigüedad</span></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px">
+          <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Desde</label><input type="date" id="er-desde" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif"/></div>
+          <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Hasta</label><input type="date" id="er-hasta" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif"/></div>
+          <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Empresa</label><select id="er-empresa" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif"><option value="">Todas</option></select></div>
+          <div style="flex:1;min-width:180px"><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Buscar</label><input type="text" id="er-buscar" placeholder="DNI o nombre" oninput="erRender()" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif;width:100%"/></div>
+          <button onclick="erBuscar()" style="padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;border:none;background:var(--nav-bg);color:#fff">Buscar</button>
+        </div>
+        <div id="er-count" style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:8px"></div>
+        <div style="border:1px solid var(--border);border-radius:8px;overflow:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:var(--bg)">
+              <th style="padding:9px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);text-align:left">Fecha</th><th style="padding:9px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);text-align:left">DNI</th><th style="padding:9px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);text-align:left">Nombre</th><th style="padding:9px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);text-align:left">Empresa</th>
+              <th style="padding:9px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);text-align:center">Turno</th><th style="padding:9px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);text-align:left">Ingreso</th><th style="padding:9px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);text-align:left">Salida</th><th style="padding:9px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);text-align:center">Estado</th><th style="padding:9px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);text-align:center">🚻</th><th style="padding:9px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);width:70px"></th>
+            </tr></thead>
+            <tbody id="er-tbody"><tr><td colspan="10" style="text-align:center;padding:26px;color:var(--muted)">Elige fechas y pulsa Buscar</td></tr></tbody>
+          </table>
+        </div>
+        <div id="er-pager" style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:12px;font-size:12px;color:var(--muted)"></div>
+      </div>
+    </div><!-- /anl-editar -->
 
     <!-- ============ SUB: CORREOS ============ -->
     <div class="anl-sub-content" id="anl-correos">
@@ -3867,6 +3925,272 @@ async function diagCorreo(modo) {
   } catch (e) { box.style.background = '#fee2e2'; box.style.color = '#991b1b'; box.textContent = '✗ No se pudo contactar al servidor: ' + e.message }
 }
 
+// ═══ EDITAR REGISTROS (cualquier fecha) ══════════════════════════════
+let erRows = [], erPagina = 1, erActual = null, erPairs = [], erBounds = null, erBusy = false
+const ER_PAGE = 25
+const erFmtIso = iso => fmt(new Date(iso))
+
+async function initEditarRegistros() {
+  const d = document.getElementById('er-desde'), h = document.getElementById('er-hasta')
+  if (!d.value) { d.value = today(); h.value = today() }
+  const { data } = await db.from('personas').select('empresa')
+  const emps = [...new Set((data || []).map(x => x.empresa).filter(Boolean))].sort()
+  const sel = document.getElementById('er-empresa'), cur = sel.value
+  sel.innerHTML = '<option value="">Todas</option>' + emps.map(e => `<option value="${plaEsc(e)}">${plaEsc(e)}</option>`).join('')
+  sel.value = emps.includes(cur) ? cur : ''
+  await erBuscar()
+}
+
+async function erBuscar() {
+  const desde = document.getElementById('er-desde').value, hasta = document.getElementById('er-hasta').value
+  const emp = document.getElementById('er-empresa').value
+  if (!desde || !hasta) { showToast('Elige el rango de fechas', 'error'); return }
+  let out = [], ini = 0
+  try {
+    for (;;) {
+      let q = db.from('estado_hoy').select('*').gte('fecha', desde).lte('fecha', hasta)
+      if (emp) q = q.eq('empresa', emp)
+      const { data, error } = await q.order('fecha', { ascending: false }).order('dni').order('jornada').range(ini, ini + 999)
+      if (error) throw error
+      out = out.concat(data || [])
+      if (!data || data.length < 1000) break
+      ini += 1000
+    }
+  } catch (e) { showToast('Error cargando registros: ' + e.message, 'error'); return }
+  erRows = out.sort((a, b) => b.fecha.localeCompare(a.fecha) || (mdlMs(b.ingreso) || 0) - (mdlMs(a.ingreso) || 0))
+  erPagina = 1
+  erRender()
+}
+
+function erRender() {
+  const q = document.getElementById('er-buscar').value.trim().toLowerCase()
+  const lista = erRows.filter(r => !q || String(r.dni).includes(q) || String(r.nombre || '').toLowerCase().includes(q))
+  const paginas = Math.max(1, Math.ceil(lista.length / ER_PAGE))
+  if (erPagina > paginas) erPagina = paginas
+  document.getElementById('er-count').textContent = `${lista.length} registro${lista.length !== 1 ? 's' : ''}`
+  const tb = document.getElementById('er-tbody')
+  if (!lista.length) tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:26px;color:var(--muted)">Sin registros en este filtro</td></tr>'
+  else tb.innerHTML = lista.slice((erPagina - 1) * ER_PAGE, erPagina * ER_PAGE).map(r => {
+    const t = getTurno(r.ingreso), tc = TURNO_COLOR[t] || { bg: '#f0f2f6', text: '#7a8299' }
+    const bd = ESTADO_BADGE[r.estado] || { label: r.estado, cls: '' }
+    const j = (r.jornada || 1) > 1 ? ` <span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:#dbeafe;color:#1e40af">J${r.jornada}</span>` : ''
+    return `<tr style="border-bottom:1px solid var(--bg)">
+      <td style="padding:8px 10px;white-space:nowrap">${solFmtFecha(r.fecha)}</td>
+      <td style="padding:8px 10px;font-family:monospace;font-weight:700">${plaEsc(r.dni)}</td>
+      <td style="padding:8px 10px">${plaEsc(r.nombre)}${j}</td>
+      <td style="padding:8px 10px">${plaEsc(r.empresa)}</td>
+      <td style="padding:8px 10px;text-align:center">${t ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:${tc.bg};color:${tc.text}">${TURNO_LABEL[t]}</span>` : '—'}</td>
+      <td style="padding:8px 10px;white-space:nowrap">${plaEsc(r.ingreso) || '—'}</td>
+      <td style="padding:8px 10px;white-space:nowrap">${plaEsc(r.salida) || '<span style="color:var(--muted)">—</span>'}</td>
+      <td style="padding:8px 10px;text-align:center"><span class="badge ${bd.cls}">${bd.label}</span></td>
+      <td style="padding:8px 10px;text-align:center">${r.banio_count || 0}</td>
+      <td style="padding:8px 10px;text-align:center"><button data-er="${plaEsc(r.dni)}|${plaEsc(r.fecha)}|${r.jornada || 1}" class="btn-edit">Editar</button></td></tr>`
+  }).join('')
+  const b = (txt, pg, dis) => `<button ${dis ? 'disabled' : ''} onclick="erPagina=${pg};erRender()" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-weight:700;cursor:${dis ? 'default' : 'pointer'};opacity:${dis ? .4 : 1}">${txt}</button>`
+  document.getElementById('er-pager').innerHTML = lista.length > ER_PAGE ? `${b('« Anterior', erPagina - 1, erPagina <= 1)}<span>Página <strong style="color:var(--text)">${erPagina}</strong> de ${paginas}</span>${b('Siguiente »', erPagina + 1, erPagina >= paginas)}` : ''
+  if (!tb.dataset.listener) {
+    tb.dataset.listener = '1'
+    tb.addEventListener('click', e => { const bt = e.target.closest('button[data-er]'); if (bt) { const [dni, fecha, j] = bt.dataset.er.split('|'); erAbrir(dni, fecha, +j) } })
+  }
+}
+
+function erAviso(msg, tipo) {
+  const el = document.getElementById('er-aviso')
+  if (!msg) { el.style.display = 'none'; return }
+  el.style.display = 'block'; el.textContent = msg
+  el.style.background = tipo === 'error' ? '#fee2e2' : '#dbeafe'; el.style.color = tipo === 'error' ? '#991b1b' : '#1e40af'
+}
+
+// Construye pares salida/retorno a partir de los eventos
+function erConstruirPares(evs) {
+  const out = []
+  ;['break', 'banio'].forEach(kind => {
+    const lista = evs.filter(e => e.tipo.startsWith(kind + '_')).sort((a, b) => a.fecha_iso.localeCompare(b.fecha_iso))
+    let abierto = null
+    lista.forEach(e => {
+      if (e.tipo === kind + '_salida') { abierto = { kind, s: erFmtIso(e.fecha_iso), r: '' }; out.push(abierto) }
+      else if (abierto && !abierto.r) { abierto.r = erFmtIso(e.fecha_iso); abierto = null }
+      else out.push({ kind, s: '', r: erFmtIso(e.fecha_iso) })   // retorno huérfano
+    })
+  })
+  return out
+}
+
+async function erAbrir(dni, fecha, jornada) {
+  const r = erRows.find(x => String(x.dni).trim() === String(dni).trim() && x.fecha === fecha && (x.jornada || 1) === jornada)
+  if (!r) return
+  // Límites del registro dentro de la jornada (5am → 5am Lima); con reingreso, hasta el siguiente ingreso
+  const ws = Date.parse(fecha + 'T10:00:00Z'), we = ws + 24 * 3600 * 1000
+  const { data: hermanos } = await db.from('estado_hoy').select('jornada,ingreso').eq('dni', r.dni).eq('fecha', fecha).order('jornada')
+  const lst = hermanos || [], idx = lst.findIndex(x => (x.jornada || 1) === jornada)
+  const sig = lst[idx + 1], ant = idx > 0
+  erBounds = {
+    start: ant ? (mdlMs(r.ingreso) ?? ws) - 60000 : ws,
+    end: sig ? (mdlMs(sig.ingreso) ?? we) - 60000 : we
+  }
+  const { data: evs, error } = await db.from('eventos').select('*').eq('dni', r.dni)
+    .gte('fecha_iso', new Date(erBounds.start).toISOString()).lt('fecha_iso', new Date(erBounds.end).toISOString()).order('fecha_iso')
+  if (error) { showToast('Error cargando eventos: ' + error.message, 'error'); return }
+  erActual = r
+  erPairs = erConstruirPares(evs || [])
+  document.getElementById('er-nombre').textContent = r.nombre + ((r.jornada || 1) > 1 ? ` (Jornada ${r.jornada})` : '')
+  document.getElementById('er-meta').textContent = `${r.empresa}${r.area ? ' · ' + r.area : ''} · Jornada del ${solFmtFecha(fecha)}`
+  const ing = mdlParse(r.ingreso), sal = mdlParse(r.salida)
+  document.getElementById('er-i-f').value = ing.f || fecha; document.getElementById('er-i-h').value = ing.h
+  document.getElementById('er-s-f').value = sal.f || (sal.h ? fecha : ''); document.getElementById('er-s-h').value = sal.h
+  erAviso('')
+  erRenderPares()
+  document.getElementById('er-panel').style.display = 'block'
+  document.getElementById('er-panel').scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function erCerrar() { document.getElementById('er-panel').style.display = 'none'; erActual = null; erPairs = [] }
+
+function erQuitarSalida() { document.getElementById('er-s-f').value = ''; document.getElementById('er-s-h').value = ''; erEstadoCalc() }
+
+// Lee los pares desde el formulario (antes de agregar/quitar/guardar)
+function erCapturar() {
+  document.querySelectorAll('#er-panel .er-par').forEach(el => {
+    const p = erPairs[+el.dataset.i]; if (!p) return
+    p.s = mdlJoin(el.querySelector('[data-k="sf"]').value, el.querySelector('[data-k="sh"]').value)
+    p.r = mdlJoin(el.querySelector('[data-k="rf"]').value, el.querySelector('[data-k="rh"]').value)
+  })
+}
+
+function erRenderPares() {
+  ;['break', 'banio'].forEach(kind => {
+    const box = document.getElementById('er-pares-' + kind)
+    const items = erPairs.map((p, i) => ({ p, i })).filter(x => x.p.kind === kind)
+    const inp = "padding:7px 8px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif"
+    box.innerHTML = items.length ? items.map(({ p, i }) => {
+      const s = mdlParse(p.s), r = mdlParse(p.r)
+      return `<div class="er-par" data-i="${i}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+        <span style="font-size:11px;font-weight:700;color:var(--muted);width:50px">Salida</span>
+        <input type="date" data-k="sf" value="${s.f}" style="${inp}"/><input type="time" data-k="sh" value="${s.h}" style="${inp}"/>
+        <span style="font-size:11px;font-weight:700;color:var(--muted);width:56px;margin-left:8px">Retorno</span>
+        <input type="date" data-k="rf" value="${r.f}" style="${inp}"/><input type="time" data-k="rh" value="${r.h}" style="${inp}"/>
+        <button type="button" data-del="${i}" title="Quitar" style="margin-left:auto;background:none;border:none;color:#b91c1c;font-size:16px;cursor:pointer">🗑</button></div>`
+    }).join('') : `<div style="font-size:12px;color:var(--muted);padding:4px 2px">Sin ${kind === 'break' ? 'breaks' : 'baños'} en este registro</div>`
+  })
+  const panel = document.getElementById('er-panel')
+  if (!panel.dataset.listener) {
+    panel.dataset.listener = '1'
+    panel.addEventListener('click', e => {
+      const d = e.target.closest('button[data-del]'); if (!d) return
+      erCapturar(); erPairs.splice(+d.dataset.del, 1); erRenderPares()
+    })
+    panel.addEventListener('change', e => {
+      const t = e.target
+      // Si se escribió solo la hora, deducir la fecha (misma del ingreso, o el día siguiente si cruza medianoche)
+      const mapa = { 'er-s-h': 'er-s-f', 'er-i-h': 'er-i-f' }
+      let fEl = null, hEl = null
+      if (mapa[t.id]) { hEl = t; fEl = document.getElementById(mapa[t.id]) }
+      else if (t.dataset.k === 'sh' || t.dataset.k === 'rh') { hEl = t; fEl = t.parentElement.querySelector(`[data-k="${t.dataset.k[0]}f"]`) }
+      if (hEl && hEl.value && fEl && !fEl.value) {
+        const fIng = document.getElementById('er-i-f').value, hIng = document.getElementById('er-i-h').value
+        if (fIng) { const d = new Date(fIng + 'T12:00:00Z'); if (hIng && hEl.value < hIng) d.setUTCDate(d.getUTCDate() + 1); fEl.value = d.toISOString().slice(0, 10) }
+      }
+      erEstadoCalc()
+    })
+  }
+  erEstadoCalc()
+}
+
+function erAgregarPar(kind) {
+  erCapturar()
+  erPairs.push({ kind, s: '', r: '' })
+  erRenderPares()
+}
+
+// Estado resultante: salida → «Salió»; par abierto → Break/Baño; si no → Dentro
+function erEstadoCalc() {
+  erCapturar()
+  const salida = mdlJoin(document.getElementById('er-s-f').value, document.getElementById('er-s-h').value)
+  const abierto = erPairs.find(p => p.s && !p.r)
+  const estado = salida ? 'salida' : abierto ? (abierto.kind === 'break' ? 'break' : 'banio') : 'dentro'
+  const bd = ESTADO_BADGE[estado] || { label: estado, cls: '' }
+  const el = document.getElementById('er-estado'); el.className = 'badge ' + bd.cls; el.textContent = bd.label
+  return estado
+}
+
+async function erGuardar() {
+  if (erBusy || !erActual) return
+  const r = erActual
+  erCapturar()
+  const ingreso = mdlJoin(document.getElementById('er-i-f').value, document.getElementById('er-i-h').value)
+  const salida = mdlJoin(document.getElementById('er-s-f').value, document.getElementById('er-s-h').value)
+  const err = m => { erAviso(m, 'error'); return false }
+
+  // ── Validaciones ──
+  if (!ingreso) return err('Completa la fecha y hora de ingreso.')
+  const iMs = mdlMs(ingreso), sMs = salida ? mdlMs(salida) : null
+  const ws = Date.parse(r.fecha + 'T10:00:00Z')
+  if (iMs < ws || iMs >= ws + 24 * 3600 * 1000) return err(`El ingreso debe quedar dentro de la jornada del ${solFmtFecha(r.fecha)} (de 5:00 am a 4:59 am del día siguiente).`)
+  if (sMs !== null) {
+    if (sMs <= iMs) return err('La salida debe ser posterior al ingreso.')
+    if (sMs - iMs > 24 * 3600 * 1000 && !confirm('La salida es más de 24 horas después del ingreso. ¿Guardar igual?')) return
+  }
+  const pares = erPairs.filter(p => p.s || p.r)
+  const tramos = []
+  for (const p of pares) {
+    const nom = p.kind === 'break' ? 'break' : 'baño'
+    if (!p.s) return err(`Hay un retorno de ${nom} sin hora de salida. Completa la salida o quita ese ${nom}.`)
+    const a = mdlMs(p.s), z = p.r ? mdlMs(p.r) : null
+    if (z !== null && z <= a) return err(`El retorno de un ${nom} debe ser posterior a su salida.`)
+    if (a < iMs) return err(`Un ${nom} empieza antes del ingreso.`)
+    if (sMs !== null && (a >= sMs || (z !== null && z > sMs))) return err(`Un ${nom} queda fuera del horario de trabajo (después de la salida).`)
+    if (z === null && sMs !== null) return err(`Hay un ${nom} sin retorno pero la persona ya tiene salida. Pon el retorno.`)
+    tramos.push({ p, a, z: z === null ? Infinity : z })
+  }
+  tramos.sort((x, y) => x.a - y.a)
+  for (let i = 1; i < tramos.length; i++) if (tramos[i].a < tramos[i - 1].z) return err('Hay breaks/baños que se superponen en el tiempo. Revisa las horas.')
+  if (tramos.filter(t => t.z === Infinity).length > 1) return err('Solo puede haber un break o baño abierto (sin retorno).')
+
+  const estado = erEstadoCalc()
+  const abierto = tramos.find(t => t.z === Infinity)
+  const nBanios = pares.filter(p => p.kind === 'banio').length
+
+  erBusy = true
+  const btn = document.getElementById('er-btn'); btn.disabled = true; btn.textContent = 'Guardando…'
+  try {
+    const { error: e1 } = await db.from('estado_hoy').update({
+      estado, ingreso, salida,
+      break_inicio: abierto ? new Date(abierto.a).toISOString() : null,
+      banio_count: nBanios, updated_at: new Date().toISOString()
+    }).eq('dni', r.dni).eq('fecha', r.fecha).eq('jornada', r.jornada || 1)
+    if (e1) throw e1
+
+    // Eventos del registro: se reemplazan por el conjunto editado (con respaldo por si falla)
+    const ini = new Date(erBounds.start).toISOString(), fin = new Date(erBounds.end).toISOString()
+    const { data: previos } = await db.from('eventos').select('*').eq('dni', r.dni).gte('fecha_iso', ini).lt('fecha_iso', fin)
+    const respaldo = (previos || []).map(({ id, ...resto }) => resto)
+    const base = { dni: r.dni, nombre: r.nombre, empresa: r.empresa, area: r.area || '' }
+    const nuevos = [{ ...base, tipo: 'ingreso', fecha: ingreso, fecha_iso: mdlIso(ingreso) }]
+    pares.forEach(p => {
+      nuevos.push({ ...base, tipo: p.kind + '_salida', fecha: p.s, fecha_iso: mdlIso(p.s) })
+      if (p.r) nuevos.push({ ...base, tipo: p.kind + '_retorno', fecha: p.r, fecha_iso: mdlIso(p.r) })
+    })
+    if (salida) nuevos.push({ ...base, tipo: 'salida', fecha: salida, fecha_iso: mdlIso(salida) })
+
+    const { error: eDel } = await db.from('eventos').delete().eq('dni', r.dni).gte('fecha_iso', ini).lt('fecha_iso', fin)
+    if (eDel) throw eDel
+    const { error: eIns } = await db.from('eventos').insert(nuevos)
+    if (eIns) {
+      if (respaldo.length) await db.from('eventos').insert(respaldo)   // restaurar
+      throw eIns
+    }
+
+    showToast('Registro actualizado ✓')
+    erCerrar()
+    await erBuscar()
+    loadEstadoHoy()
+    if (typeof cumpRefrescar === 'function') cumpRefrescar()
+  } catch (e) {
+    console.error(e)
+    erAviso('Error al guardar: ' + (e.message || 'intenta de nuevo') + '. Los eventos anteriores se restauraron.', 'error')
+  } finally { erBusy = false; btn.disabled = false; btn.textContent = 'Guardar cambios' }
+}
+
 function anlSwitchSub(sub, btn) {
   document.querySelectorAll('.anl-subtab').forEach(b=>b.classList.remove('active'))
   btn.classList.add('active')
@@ -3875,6 +4199,7 @@ function anlSwitchSub(sub, btn) {
   if (sub === 'solicitudes') initSolicitudes()
   if (sub === 'indicadores') initIndicadores()
   if (sub === 'planilla') initPlanilla()
+  if (sub === 'editar') initEditarRegistros()
 }
 
 function cerrarSesionActas() {
