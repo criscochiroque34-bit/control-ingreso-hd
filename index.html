@@ -1241,7 +1241,7 @@ tr:hover td{background:#f7f9fc}
         <div id="pla-masivo" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:14px">
           <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:6px">Vista previa de la carga</div>
           <div id="pla-masivo-resumen" style="font-size:12px;color:var(--text);line-height:1.6"></div>
-          <div id="pla-masivo-errores" style="font-size:11px;color:#b91c1c;margin-top:6px;max-height:110px;overflow:auto"></div>
+          <div id="pla-masivo-errores" style="font-size:11px;color:#b91c1c;margin-top:6px;max-height:280px;overflow:auto"></div>
           <div style="display:flex;gap:6px;margin-top:10px">
             <button onclick="plaConfirmarMasivo()" id="pla-btn-masivo" style="padding:9px 18px;border-radius:8px;border:none;background:var(--accent2);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Confirmar carga</button>
             <button onclick="plaCancelarMasivo()" style="padding:9px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
@@ -3329,6 +3329,7 @@ async function loginActas() {
 let plaData = []
 let plaEditDni = null      // DNI original en edición (null = nuevo)
 let plaMasivoFilas = []
+let plaMasivoErrores = []
 let plaMasivoBusy = false
 const plaEsc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 const plaActivo = p => p.activo !== false
@@ -3479,9 +3480,11 @@ async function plaLeerExcel(file) {
       let dni = String(r[ix.dni]).trim().replace(/\D/g,'')
       if (dni.length === 7) dni = '0' + dni
       const nombre = String(r[ix.nombre]).trim().replace(/\s+/g,' ')
-      if (!/^\d{8}$/.test(dni)) { errores.push(`Fila ${linea}: DNI inválido (${plaEsc(r[ix.dni])})`); return }
-      if (!nombre) { errores.push(`Fila ${linea}: sin nombre`); return }
-      if (validas.has(dni)) errores.push(`Fila ${linea}: DNI ${dni} repetido en el archivo (se usa la última)`)
+      const dniOrig = String(r[ix.dni]).trim()
+      if (!dniOrig) { errores.push({ fila: linea, motivo: 'DNI vacío', dni: '', nombre }); return }
+      if (!/^\d{8}$/.test(dni)) { errores.push({ fila: linea, motivo: `DNI inválido: debe tener 8 dígitos y tiene ${dni.length}`, dni: dniOrig, nombre }); return }
+      if (!nombre) { errores.push({ fila: linea, motivo: 'Sin nombre', dni, nombre: '' }); return }
+      if (validas.has(dni)) errores.push({ fila: linea, motivo: 'DNI repetido en el archivo (se usa la última fila)', dni, nombre })
       validas.set(dni, { dni, nombre,
         area: ix.area >= 0 ? (String(r[ix.area]).trim() || null) : null,
         cargo: ix.cargo >= 0 ? (String(r[ix.cargo]).trim() || null) : null,
@@ -3493,10 +3496,26 @@ async function plaLeerExcel(file) {
     const upd = plaMasivoFilas.length - nuevos
     document.getElementById('pla-masivo-resumen').innerHTML =
       `✅ <strong>${nuevos}</strong> nuevos · 🔄 <strong>${upd}</strong> ya existen (se actualizan nombre, área y cargo; si estaban de baja se reactivan) · ⚠️ <strong>${errores.length}</strong> con observaciones`
-    document.getElementById('pla-masivo-errores').innerHTML = errores.join('<br>')
+    plaMasivoErrores = errores
+    const porMotivo = {}
+    errores.forEach(e => { const k = e.motivo.replace(/ y tiene \d+$/, ''); porMotivo[k] = (porMotivo[k]||0) + 1 })
+    document.getElementById('pla-masivo-errores').innerHTML = errores.length
+      ? `<div style="font-weight:700;margin-bottom:4px">Motivos: ${Object.entries(porMotivo).map(([k,v])=>`${plaEsc(k)} (${v})`).join(' · ')}</div>` +
+        errores.map(e => `Fila ${e.fila}: ${plaEsc(e.motivo)} — DNI «${plaEsc(e.dni)}» · ${plaEsc(e.nombre)||'(sin nombre)'}`).join('<br>') +
+        `<div style="margin-top:6px"><a href="#" onclick="plaDescargarErrores();return false" style="color:var(--accent3);font-weight:700">⬇️ Descargar lista de observaciones</a></div>`
+      : ''
     document.getElementById('pla-btn-masivo').disabled = !plaMasivoFilas.length
     document.getElementById('pla-masivo').style.display = 'block'
   } catch (e) { showToast('No se pudo leer el Excel: ' + e.message, 'error') }
+}
+
+async function plaDescargarErrores() {
+  if (!plaMasivoErrores.length) return
+  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
+  const rows = [['Fila Excel','Motivo','DNI leído','Nombre'], ...plaMasivoErrores.map(e => [e.fila, e.motivo, e.dni, e.nombre])]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Observaciones')
+  XLSX.writeFile(wb, 'observaciones_planilla.xlsx')
 }
 
 function plaCancelarMasivo() { plaMasivoFilas = []; document.getElementById('pla-masivo').style.display = 'none' }
