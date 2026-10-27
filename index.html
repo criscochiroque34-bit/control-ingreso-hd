@@ -2863,12 +2863,18 @@ async function handleFile(file) {
 
   if (iDni<0||iNom<0) { showToast('Faltan columnas DNI o Nombre','error'); return }
 
-  uploadData = raw.slice(1).filter(r=>r[iDni]).map(r=>({
+  const limpio = v => String(v||'').trim().replace(/\s+/g,' ')
+  const filas = raw.slice(1).filter(r=>r[iDni]).map(r=>({
     dni: String(r[iDni]||'').trim(),
-    nombre: String(r[iNom]||'').trim(),
-    empresa: iEmp>=0 ? String(r[iEmp]||'').trim() : '',
-    area: iArea>=0 ? String(r[iArea]||'').trim() : ''
+    nombre: limpio(r[iNom]),
+    empresa: iEmp>=0 ? limpio(r[iEmp]) : '',
+    area: iArea>=0 ? limpio(r[iArea]) : ''
   })).filter(p=>p.dni&&p.nombre)
+  // Un DNI repetido en el archivo hacía fallar todo el lote: se deja solo la última fila de cada DNI
+  const porDni = new Map(); filas.forEach(f => porDni.set(f.dni, f))
+  const repetidos = filas.length - porDni.size
+  uploadData = [...porDni.values()]
+  if (repetidos > 0) showToast(`${repetidos} DNI repetido(s) en el archivo: se cargará una sola vez`, 'error')
 
   if (!uploadData.length) { showToast('No se encontraron filas válidas','error'); return }
 
@@ -2889,12 +2895,17 @@ async function subirPersonal() {
 
   // Upsert en lotes de 50
   let ok=0, err=0
+  const fallos = []
   const chunks = []
   for (let i=0;i<uploadData.length;i+=50) chunks.push(uploadData.slice(i,i+50))
   for (const chunk of chunks) {
     const { error } = await db.from('personas').upsert(chunk, {onConflict:'dni'})
-    if (error) err+=chunk.length
-    else ok+=chunk.length
+    if (!error) { ok+=chunk.length; continue }
+    // Si falla el lote, se reintenta fila por fila para saber exactamente cuáles fallan y por qué
+    for (const fila of chunk) {
+      const { error: e1 } = await db.from('personas').upsert(fila, {onConflict:'dni'})
+      if (e1) { err++; fallos.push(`${fila.dni} ${fila.nombre}: ${e1.message}`) } else ok++
+    }
   }
 
   const res = document.getElementById('upload-result')
@@ -2902,8 +2913,9 @@ async function subirPersonal() {
   res.style.background = err>0 ? '#fef3c7' : '#d1fae5'
   res.style.color = err>0 ? '#92400e' : '#065f46'
   res.textContent = err>0
-    ? `✓ ${ok} cargados correctamente · ✗ ${err} con error`
+    ? `✓ ${ok} cargados correctamente · ✗ ${err} con error` + '\n' + fallos.slice(0,15).join('\n')
     : `✓ ${ok} personas cargadas correctamente`
+  res.style.whiteSpace = 'pre-wrap'
 
   btn.textContent='Cargar personal'
   btn.disabled=false
