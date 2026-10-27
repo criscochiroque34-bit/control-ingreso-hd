@@ -1112,12 +1112,70 @@ tr:hover td{background:#f7f9fc}
         <div id="sol-resultado" style="display:none;margin-top:10px;padding:9px 12px;border-radius:8px;font-size:12px;font-weight:600"></div>
       </div>
 
-      <div class="card">
-        <div class="card-title">
-          <span>Solicitudes registradas</span>
-          <span id="sol-count" style="font-size:11px;color:var(--muted);text-transform:none;font-weight:600">0 registros</span>
+      <!-- Panel de edición -->
+      <div class="card" id="sol-edit" style="display:none;margin-bottom:16px;border:1.5px solid var(--accent3)">
+        <div class="card-title">✏️ Editar solicitud</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;align-items:end">
+          <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Fecha del turno</label><input type="date" class="form-input" id="sol-e-fecha"/></div>
+          <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Turno</label><select class="form-input" id="sol-e-turno"><option value="manana">Mañana</option><option value="dia">Día</option><option value="noche">Noche</option></select></div>
+          <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Empresa</label><select class="form-input" id="sol-e-empresa"></select></div>
+          <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Cantidad</label><input type="number" class="form-input" id="sol-e-cantidad" min="1"/></div>
         </div>
-        <div id="sol-lista"><div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">Cargando...</div></div>
+        <div style="display:flex;gap:6px;margin-top:14px">
+          <button onclick="solGuardarEdit()" id="sol-e-btn" style="padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;border:none;background:var(--accent2);color:#fff">Guardar cambios</button>
+          <button onclick="solCerrarEdit()" style="padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;border:1.5px solid var(--border);background:var(--surface);color:var(--muted)">Cancelar</button>
+        </div>
+      </div>
+
+      <!-- Vista previa carga masiva -->
+      <div id="sol-masivo" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:6px">Vista previa de la carga</div>
+        <div id="sol-masivo-resumen" style="font-size:12px;color:var(--text);line-height:1.6"></div>
+        <div id="sol-masivo-errores" style="font-size:11px;color:#b91c1c;margin-top:6px;max-height:260px;overflow:auto"></div>
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <button onclick="solConfirmarMasivo()" id="sol-btn-masivo" style="padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;border:none;background:var(--accent2);color:#fff">Confirmar carga</button>
+          <button onclick="solCancelarMasivo()" style="padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;border:1.5px solid var(--border);background:var(--surface);color:var(--muted)">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="flex-wrap:wrap;gap:8px">
+          <span>Solicitudes registradas</span>
+          <span style="display:flex;gap:6px;flex-wrap:wrap;text-transform:none;letter-spacing:0">
+            <button onclick="solDescargarPlantilla()" style="padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;border:1.5px solid var(--border);background:var(--surface);color:var(--text)">⬇️ Plantilla Excel</button>
+            <button onclick="document.getElementById('sol-file').click()" style="padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;border:none;background:var(--accent2);color:#fff">⬆️ Carga masiva</button>
+            <input type="file" id="sol-file" accept=".xlsx,.xls" style="display:none" onchange="solLeerExcel(this.files[0]);this.value=''"/>
+          </span>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px">
+          <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Desde</label><input type="date" id="sol-f-desde" onchange="solCargarLista()" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif"/></div>
+          <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Hasta</label><input type="date" id="sol-f-hasta" onchange="solCargarLista()" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif"/></div>
+          <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Empresa</label><select id="sol-f-empresa" onchange="solCargarLista()" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif"><option value="">Todas</option></select></div>
+          <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Turno</label><select id="sol-f-turno" onchange="solCargarLista()" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif"><option value="">Todos</option><option value="manana">Mañana</option><option value="dia">Día</option><option value="noche">Noche</option></select></div>
+          <button onclick="solFiltroMes()" style="padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;border:1.5px solid var(--border);background:var(--surface);color:var(--muted)">Mes actual</button>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;font-size:12px;color:var(--muted)">
+          <span id="sol-count" style="font-weight:600">0 registros</span>
+          <span id="sol-bulk" style="display:none"><strong id="sol-bulk-n" style="color:var(--text)"></strong>
+            <button onclick="solEliminarSel()" style="padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;border:none;background:#ef4444;color:#fff;margin-left:8px;padding:6px 12px">🗑 Eliminar seleccionadas</button></span>
+        </div>
+
+        <div style="border:1px solid var(--border);border-radius:8px;overflow:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr style="background:var(--bg)">
+              <th style="padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);width:34px"><input type="checkbox" id="sol-chk-all" onchange="solSelPagina(this.checked)"/></th>
+              <th style="padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);text-align:left">Fecha</th>
+              <th style="padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);text-align:left">Empresa</th>
+              <th style="padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);text-align:center">Turno</th>
+              <th style="padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);text-align:center">Solicitado</th>
+              <th style="padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);text-align:center;width:130px">Acción</th>
+            </tr></thead>
+            <tbody id="sol-tbody"><tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Cargando...</td></tr></tbody>
+          </table>
+        </div>
+        <div id="sol-pager" style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:12px;font-size:12px;color:var(--muted)"></div>
       </div>
     </div><!-- /anl-solicitudes -->
 
@@ -4929,10 +4987,14 @@ async function initSolicitudes() {
   document.getElementById('sol-fecha').value = today()
   // Cargar empresas en el desplegable (mismo catálogo que el resto)
   const { data } = await db.from('personas').select('empresa')
-  const empresas = [...new Set((data||[]).map(x=>x.empresa).filter(Boolean))].sort()
-  const sel = document.getElementById('sol-empresa')
-  sel.innerHTML = '<option value="">Selecciona...</option>' + empresas.map(e=>`<option value="${e}">${e}</option>`).join('')
-  await solCargarLista()
+  solEmpresas = [...new Set((data||[]).map(x=>x.empresa).filter(Boolean))].sort()
+  const opts = solEmpresas.map(e=>`<option value="${plaEsc(e)}">${plaEsc(e)}</option>`).join('')
+  document.getElementById('sol-empresa').innerHTML = '<option value="">Selecciona...</option>' + opts
+  const fe = document.getElementById('sol-f-empresa'), cur = fe.value
+  fe.innerHTML = '<option value="">Todas</option>' + opts
+  fe.value = solEmpresas.includes(cur) ? cur : ''
+  if (!document.getElementById('sol-f-desde').value) solFiltroMes()
+  else await solCargarLista()
   solInicializado = true
 }
 
@@ -4966,56 +5028,289 @@ async function solGuardar() {
   setTimeout(()=>{res.style.display='none'}, 3000)
 }
 
-async function solCargarLista() {
-  const { data } = await db.from('solicitudes_personal').select('*').order('fecha', { ascending: false })
-  const cont = document.getElementById('sol-lista')
-  const cnt = document.getElementById('sol-count')
+// ---------- Solicitudes: lista, edición, carga masiva ----------
+let solEmpresas = [], solData = [], solPagina = 1, solSel = new Set(), solEditId = null
+let solMasivoFilas = [], solMasivoErrores = [], solMasivoBusy = false
+const SOL_PAGE = 25
+const SOL_TURNOS = ['manana','dia','noche']
+const solNorm = v => String(v ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ')
+const solFmtFecha = f => { const [y,m,d] = f.split('-'); return `${d}/${m}/${y}` }
 
-  if (!data?.length) {
-    cont.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">Sin solicitudes registradas aún</div>'
-    cnt.textContent = '0 registros'
-    return
+// Trae TODAS las filas (Supabase limita a 1000 por consulta)
+async function solFetchTodo(armar) {
+  let out = [], desde = 0
+  for (;;) {
+    const { data, error } = await armar(db.from('solicitudes_personal').select('*')).range(desde, desde + 999)
+    if (error) throw error
+    out = out.concat(data || [])
+    if (!data || data.length < 1000) break
+    desde += 1000
   }
-  cnt.textContent = data.length + ' registro' + (data.length!==1?'s':'')
+  return out
+}
 
-  // Agrupar por fecha
-  const grupos = {}
-  data.forEach(s => { if(!grupos[s.fecha]) grupos[s.fecha]=[]; grupos[s.fecha].push(s) })
+function solFiltroMes() {
+  const t = today(), y = +t.slice(0,4), m = +t.slice(5,7)
+  document.getElementById('sol-f-desde').value = `${t.slice(0,8)}01`
+  document.getElementById('sol-f-hasta').value = `${t.slice(0,8)}${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2,'0')}`
+  solCargarLista()
+}
 
-  const colores = {}
-  const palette = ['#3b82f6','#f59e0b','#22c27a','#8b5cf6','#e85d9b','#ef4444','#06b6d4']
-  let ci = 0
-  const colorEmp = emp => { if(!colores[emp]) colores[emp]=palette[ci++%palette.length]; return colores[emp] }
-
-  let html = '<table style="width:100%;border-collapse:collapse"><thead><tr>' +
-    '<th style="text-align:left;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border)">Empresa</th>' +
-    '<th style="text-align:center;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border)">Turno</th>' +
-    '<th style="text-align:center;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border)">Solicitado</th>' +
-    '<th style="text-align:center;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border)">Acción</th>' +
-    '</tr></thead><tbody>'
-
-  Object.keys(grupos).sort((a,b)=>b.localeCompare(a)).forEach(fecha => {
-    const fechaLabel = new Date(fecha+'T12:00:00Z').toLocaleDateString('es-PE',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
-    html += `<tr><td colspan="4" style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:14px 12px 6px;background:var(--bg)">📅 ${fechaLabel}</td></tr>`
-    grupos[fecha].forEach(s => {
-      const _sc = TURNO_COLOR[s.turno] || { bg:'#f0f2f6', text:'#7a8299' }
-      const turnoStyle = `background:${_sc.bg};color:${_sc.text}`
-      html += `<tr>
-        <td style="padding:11px 12px;font-size:13px;border-bottom:1px solid var(--bg)"><span style="display:flex;align-items:center;gap:8px;font-weight:700"><span style="width:9px;height:9px;border-radius:50%;background:${colorEmp(s.empresa)};flex-shrink:0"></span>${s.empresa}</span></td>
-        <td style="padding:11px 12px;text-align:center;border-bottom:1px solid var(--bg)"><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;${turnoStyle}">${TURNO_LABEL[s.turno]||s.turno}</span></td>
-        <td style="padding:11px 12px;text-align:center;border-bottom:1px solid var(--bg)"><span style="font-family:monospace;font-size:14px;font-weight:700;background:var(--bg);padding:3px 12px;border-radius:7px">${s.solicitado}</span></td>
-        <td style="padding:11px 12px;text-align:center;border-bottom:1px solid var(--bg)"><button onclick="solEliminar(${s.id})" style="background:none;border:none;color:var(--border);cursor:pointer;font-size:15px;padding:4px 8px;border-radius:6px" onmouseover="this.style.background='#fce7f3';this.style.color='#9d174d'" onmouseout="this.style.background='none';this.style.color='var(--border)'">✕</button></td>
-      </tr>`
+async function solCargarLista() {
+  const desde = document.getElementById('sol-f-desde').value
+  const hasta = document.getElementById('sol-f-hasta').value
+  const emp = document.getElementById('sol-f-empresa').value
+  const turno = document.getElementById('sol-f-turno').value
+  try {
+    solData = await solFetchTodo(q => {
+      if (desde) q = q.gte('fecha', desde)
+      if (hasta) q = q.lte('fecha', hasta)
+      if (emp) q = q.eq('empresa', emp)
+      if (turno) q = q.eq('turno', turno)
+      return q.order('fecha', { ascending: false }).order('id', { ascending: true })
     })
-  })
-  html += '</tbody></table>'
-  cont.innerHTML = html
+  } catch (e) { showToast('Error cargando solicitudes: ' + e.message, 'error'); return }
+  solData.sort((a,b) => b.fecha.localeCompare(a.fecha) || SOL_TURNOS.indexOf(a.turno) - SOL_TURNOS.indexOf(b.turno) || a.empresa.localeCompare(b.empresa))
+  solPagina = 1
+  solSel.clear()
+  solRender()
+}
+
+function solRender() {
+  const total = solData.length
+  const paginas = Math.max(1, Math.ceil(total / SOL_PAGE))
+  if (solPagina > paginas) solPagina = paginas
+  const suma = solData.reduce((a, x) => a + (x.solicitado || 0), 0)
+  document.getElementById('sol-count').textContent = `${total} registro${total!==1?'s':''} · ${suma} personas solicitadas en total`
+  const tb = document.getElementById('sol-tbody')
+  if (!total) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Sin solicitudes en este filtro</td></tr>'
+  } else {
+    const colores = {}, palette = ['#3b82f6','#f59e0b','#22c27a','#8b5cf6','#e85d9b','#ef4444','#06b6d4']
+    let ci = 0
+    const colorEmp = e => (colores[e] ||= palette[ci++ % palette.length])
+    const btn = "padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;"
+    tb.innerHTML = solData.slice((solPagina-1)*SOL_PAGE, solPagina*SOL_PAGE).map(s => {
+      const sc = TURNO_COLOR[s.turno] || { bg:'#f0f2f6', text:'#7a8299' }
+      return `<tr style="border-bottom:1px solid var(--bg)${solSel.has(s.id)?';background:#eff6ff':''}">
+        <td style="padding:9px 12px"><input type="checkbox" data-id="${s.id}" class="sol-chk" ${solSel.has(s.id)?'checked':''}/></td>
+        <td style="padding:9px 12px;white-space:nowrap">${solFmtFecha(s.fecha)}</td>
+        <td style="padding:9px 12px;font-weight:700"><span style="display:inline-flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:${colorEmp(s.empresa)}"></span>${plaEsc(s.empresa)}</span></td>
+        <td style="padding:9px 12px;text-align:center"><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${sc.bg};color:${sc.text}">${TURNO_LABEL[s.turno]||plaEsc(s.turno)}</span></td>
+        <td style="padding:9px 12px;text-align:center"><span style="font-family:monospace;font-size:14px;font-weight:700;background:var(--bg);padding:3px 12px;border-radius:7px">${s.solicitado}</span></td>
+        <td style="padding:9px 12px;text-align:center;white-space:nowrap">
+          <button data-acc="edit" data-id="${s.id}" style="${btn}color:var(--accent3)">Editar</button>
+          <button data-acc="del" data-id="${s.id}" style="${btn}color:#b91c1c">Eliminar</button></td></tr>`
+    }).join('')
+  }
+  // paginador
+  const pg = document.getElementById('sol-pager')
+  const b = (txt, p, dis) => `<button ${dis?'disabled':''} onclick="solIrPagina(${p})" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-weight:700;cursor:${dis?'default':'pointer'};opacity:${dis?.4:1}">${txt}</button>`
+  pg.innerHTML = total > SOL_PAGE ? `${b('« Anterior', solPagina-1, solPagina<=1)}<span>Página <strong style="color:var(--text)">${solPagina}</strong> de ${paginas}</span>${b('Siguiente »', solPagina+1, solPagina>=paginas)}` : ''
+  // barra de selección
+  const bulk = document.getElementById('sol-bulk')
+  bulk.style.display = solSel.size ? 'inline' : 'none'
+  document.getElementById('sol-bulk-n').textContent = solSel.size + ' seleccionada' + (solSel.size!==1?'s':'')
+  const idsPag = solData.slice((solPagina-1)*SOL_PAGE, solPagina*SOL_PAGE).map(x => x.id)
+  document.getElementById('sol-chk-all').checked = idsPag.length > 0 && idsPag.every(id => solSel.has(id))
+  // listener delegado (una sola vez)
+  if (!tb.dataset.listener) {
+    tb.dataset.listener = '1'
+    tb.addEventListener('click', e => {
+      const bt = e.target.closest('button[data-acc]')
+      if (bt) { const id = +bt.dataset.id; bt.dataset.acc === 'edit' ? solAbrirEdit(id) : solEliminar(id); return }
+    })
+    tb.addEventListener('change', e => {
+      const c = e.target.closest('.sol-chk'); if (!c) return
+      const id = +c.dataset.id
+      c.checked ? solSel.add(id) : solSel.delete(id)
+      solRender()
+    })
+  }
+}
+
+function solIrPagina(p) { solPagina = p; solRender() }
+function solSelPagina(on) {
+  solData.slice((solPagina-1)*SOL_PAGE, solPagina*SOL_PAGE).forEach(x => on ? solSel.add(x.id) : solSel.delete(x.id))
+  solRender()
 }
 
 async function solEliminar(id) {
   if (!confirm('¿Eliminar esta solicitud?')) return
-  await db.from('solicitudes_personal').delete().eq('id', id)
+  const { error } = await db.from('solicitudes_personal').delete().eq('id', id)
+  if (error) { showToast('Error: ' + error.message, 'error'); return }
+  showToast('✓ Solicitud eliminada')
   await solCargarLista()
+}
+
+async function solEliminarSel() {
+  const ids = [...solSel]
+  if (!ids.length || !confirm(`¿Eliminar ${ids.length} solicitud${ids.length!==1?'es':''}? Esta acción no se puede deshacer.`)) return
+  for (let i = 0; i < ids.length; i += 200) {
+    const { error } = await db.from('solicitudes_personal').delete().in('id', ids.slice(i, i+200))
+    if (error) { showToast('Error: ' + error.message, 'error'); await solCargarLista(); return }
+  }
+  showToast(`✓ ${ids.length} solicitudes eliminadas`)
+  await solCargarLista()
+}
+
+// ----- Editar -----
+function solAbrirEdit(id) {
+  const s = solData.find(x => x.id === id); if (!s) return
+  solEditId = id
+  document.getElementById('sol-e-fecha').value = s.fecha
+  document.getElementById('sol-e-turno').value = s.turno
+  const lista = solEmpresas.includes(s.empresa) ? solEmpresas : [...solEmpresas, s.empresa].sort()
+  const sel = document.getElementById('sol-e-empresa')
+  sel.innerHTML = lista.map(e => `<option value="${plaEsc(e)}">${plaEsc(e)}</option>`).join('')
+  sel.value = s.empresa
+  document.getElementById('sol-e-cantidad').value = s.solicitado
+  const box = document.getElementById('sol-edit')
+  box.style.display = 'block'
+  box.scrollIntoView({ behavior:'smooth', block:'center' })
+}
+function solCerrarEdit() { document.getElementById('sol-edit').style.display = 'none'; solEditId = null }
+
+async function solGuardarEdit() {
+  const s = solData.find(x => x.id === solEditId); if (!s) return
+  const fecha = document.getElementById('sol-e-fecha').value
+  const turno = document.getElementById('sol-e-turno').value
+  const empresa = document.getElementById('sol-e-empresa').value
+  const cantidad = parseInt(document.getElementById('sol-e-cantidad').value)
+  if (!fecha || !empresa || !(cantidad >= 1)) { showToast('Completa fecha, empresa y una cantidad válida', 'error'); return }
+  const btn = document.getElementById('sol-e-btn'); btn.disabled = true
+  try {
+    if (fecha !== s.fecha || turno !== s.turno || empresa !== s.empresa) {
+      const { data: otro } = await db.from('solicitudes_personal').select('id').eq('fecha', fecha).eq('turno', turno).eq('empresa', empresa).neq('id', s.id).limit(1)
+      if (otro?.length) { showToast('Ya existe una solicitud con esa fecha, turno y empresa. Edita esa o elimínala primero.', 'error'); return }
+    }
+    const { error } = await db.from('solicitudes_personal').update({ fecha, turno, empresa, solicitado: cantidad }).eq('id', s.id)
+    if (error) { showToast('Error: ' + error.message, 'error'); return }
+    showToast('✓ Solicitud actualizada')
+    solCerrarEdit()
+    await solCargarLista()
+  } finally { btn.disabled = false }
+}
+
+// ----- Carga masiva -----
+async function solDescargarPlantilla() {
+  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
+  const emp = solEmpresas[0] || 'EMPRESA'
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['Fecha','Turno','Empresa','Cantidad'],
+    ['26/10/2026','Noche',emp,10],
+    ['27/10/2026','Día',emp,8]
+  ])
+  ws['!cols'] = [{wch:13},{wch:10},{wch:20},{wch:10}]
+  ws['A2'] = { t:'s', v:'26/10/2026' }; ws['A3'] = { t:'s', v:'27/10/2026' }
+  const ref = XLSX.utils.aoa_to_sheet([['Turnos válidos'],['Mañana'],['Día'],['Noche'],[],['Empresas válidas'], ...solEmpresas.map(e => [e])])
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Solicitudes')
+  XLSX.utils.book_append_sheet(wb, ref, 'Referencia')
+  XLSX.writeFile(wb, 'plantilla_solicitudes.xlsx')
+}
+
+function solParseFecha(v) {
+  let y, m, d
+  if (typeof v === 'number' && isFinite(v)) {
+    const dt = new Date(Date.UTC(1899, 11, 30) + Math.floor(v) * 86400000)
+    y = dt.getUTCFullYear(); m = dt.getUTCMonth() + 1; d = dt.getUTCDate()
+  } else {
+    const t = String(v ?? '').trim()
+    let mt
+    if ((mt = t.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/))) { y = +mt[1]; m = +mt[2]; d = +mt[3] }
+    else if ((mt = t.match(/^(\d{1,2})[-\/\.](\d{1,2})[-\/\.](\d{2,4})/))) { d = +mt[1]; m = +mt[2]; y = +mt[3]; if (y < 100) y += 2000 }
+    else return null
+  }
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) return null
+  return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+}
+
+async function solLeerExcel(file) {
+  if (!file) return
+  try {
+    const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
+    const wb = XLSX.read(await file.arrayBuffer())
+    const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, raw:true, defval:'' })
+    if (!raw.length) { showToast('El archivo está vacío', 'error'); return }
+    const hdr = raw[0].map(solNorm)
+    const ix = { fecha: hdr.indexOf('fecha'), turno: hdr.indexOf('turno'), empresa: hdr.indexOf('empresa'), cant: hdr.findIndex(h => h === 'cantidad' || h === 'solicitado') }
+    if (Object.values(ix).some(v => v < 0)) { showToast('Usa la plantilla: columnas Fecha, Turno, Empresa y Cantidad', 'error'); return }
+    const mapaEmp = new Map(solEmpresas.map(e => [solNorm(e), e]))
+    const validas = new Map(), errores = []
+    let repetidas = 0
+    raw.slice(1).forEach((r, i) => {
+      const fila = i + 2
+      if (r.every(c => String(c).trim() === '')) return
+      const vistos = { fecha: r[ix.fecha], turno: r[ix.turno], empresa: r[ix.empresa], cant: r[ix.cant] }
+      const err = motivo => errores.push({ fila, motivo, fecha: String(vistos.fecha), turno: String(vistos.turno), empresa: String(vistos.empresa), cantidad: String(vistos.cant) })
+      const fecha = solParseFecha(vistos.fecha)
+      if (!fecha) return err('Fecha inválida (usa DD/MM/AAAA)')
+      const turno = solNorm(vistos.turno)
+      if (!SOL_TURNOS.includes(turno)) return err('Turno inválido (Mañana, Día o Noche)')
+      const empresa = mapaEmp.get(solNorm(vistos.empresa))
+      if (!empresa) return err('La empresa no existe en el panel')
+      const cant = Number(String(vistos.cant).replace(',', '.'))
+      if (!Number.isInteger(cant) || cant < 1) return err('Cantidad inválida (entero mayor a 0)')
+      const k = `${fecha}|${turno}|${empresa}`
+      if (validas.has(k)) repetidas++
+      validas.set(k, { fecha, turno, empresa, solicitado: cant })
+    })
+    solMasivoFilas = [...validas.values()]
+    solMasivoErrores = errores
+    // cuántas ya existen (por fecha+turno+empresa)
+    let existentes = new Set()
+    if (solMasivoFilas.length) {
+      const fechas = solMasivoFilas.map(f => f.fecha).sort()
+      const rows = await solFetchTodo(q => q.gte('fecha', fechas[0]).lte('fecha', fechas[fechas.length-1]).order('id'))
+      existentes = new Set(rows.map(x => `${x.fecha}|${x.turno}|${x.empresa}`))
+    }
+    const upd = solMasivoFilas.filter(f => existentes.has(`${f.fecha}|${f.turno}|${f.empresa}`)).length
+    document.getElementById('sol-masivo-resumen').innerHTML =
+      `✅ <strong>${solMasivoFilas.length - upd}</strong> nuevas · 🔄 <strong>${upd}</strong> ya existen (se actualiza la cantidad)` +
+      (repetidas ? ` · 🔁 <strong>${repetidas}</strong> repetidas en el archivo (se usa la última)` : '') +
+      ` · ⚠️ <strong>${errores.length}</strong> con error (no se cargan)`
+    const porMotivo = {}; errores.forEach(e => porMotivo[e.motivo] = (porMotivo[e.motivo]||0) + 1)
+    document.getElementById('sol-masivo-errores').innerHTML = errores.length
+      ? `<div style="font-weight:700;margin-bottom:4px">${Object.entries(porMotivo).map(([k,v]) => `${plaEsc(k)} (${v})`).join(' · ')}</div>` +
+        errores.map(e => `Fila ${e.fila}: ${plaEsc(e.motivo)} — «${plaEsc(e.fecha)}» · «${plaEsc(e.turno)}» · «${plaEsc(e.empresa)}» · «${plaEsc(e.cantidad)}»`).join('<br>') +
+        `<div style="margin-top:6px"><a href="#" onclick="solDescargarErrores();return false" style="color:var(--accent3);font-weight:700">⬇️ Descargar lista de errores</a></div>` : ''
+    document.getElementById('sol-btn-masivo').disabled = !solMasivoFilas.length
+    document.getElementById('sol-masivo').style.display = 'block'
+  } catch (e) { showToast('No se pudo leer el Excel: ' + e.message, 'error') }
+}
+
+async function solDescargarErrores() {
+  if (!solMasivoErrores.length) return
+  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Fila Excel','Motivo','Fecha','Turno','Empresa','Cantidad'], ...solMasivoErrores.map(e => [e.fila, e.motivo, e.fecha, e.turno, e.empresa, e.cantidad])]), 'Errores')
+  XLSX.writeFile(wb, 'errores_solicitudes.xlsx')
+}
+
+function solCancelarMasivo() { solMasivoFilas = []; solMasivoErrores = []; document.getElementById('sol-masivo').style.display = 'none' }
+
+async function solConfirmarMasivo() {
+  if (solMasivoBusy || !solMasivoFilas.length) return
+  solMasivoBusy = true
+  const btn = document.getElementById('sol-btn-masivo'); btn.disabled = true; btn.textContent = 'Cargando…'
+  let ok = 0; const fallos = []
+  try {
+    for (let i = 0; i < solMasivoFilas.length; i += 100) {
+      const lote = solMasivoFilas.slice(i, i + 100)
+      const { error } = await db.from('solicitudes_personal').upsert(lote, { onConflict: 'fecha,turno,empresa' })
+      if (!error) { ok += lote.length; continue }
+      for (const f of lote) {
+        const { error: e1 } = await db.from('solicitudes_personal').upsert(f, { onConflict: 'fecha,turno,empresa' })
+        e1 ? fallos.push(`${f.fecha} ${f.turno} ${f.empresa}: ${e1.message}`) : ok++
+      }
+    }
+    if (fallos.length) { showToast(`✓ ${ok} cargadas · ✗ ${fallos.length} con error: ${fallos[0]}`, 'error') }
+    else showToast(`✓ ${ok} solicitudes cargadas`)
+    solCancelarMasivo()
+    await solCargarLista()
+  } finally { solMasivoBusy = false; btn.disabled = false; btn.textContent = 'Confirmar carga' }
 }
 
 // ═══════════════════════════════════════════════════════════════
