@@ -1430,13 +1430,21 @@ tr:hover td{background:#f7f9fc}
       </select>
     </div>
     <div class="modal-field">
-      <label>Hora de ingreso</label>
-      <input class="modal-select" type="text" id="modal-ingreso" placeholder="ej: 08:30" />
+      <label>Ingreso</label>
+      <div style="display:flex;gap:8px">
+        <input class="modal-select" type="date" id="modal-ingreso-f" style="flex:1.3"/>
+        <input class="modal-select" type="time" id="modal-ingreso-h" style="flex:1"/>
+      </div>
     </div>
     <div class="modal-field">
-      <label>Hora de salida</label>
-      <input class="modal-select" type="text" id="modal-salida" placeholder="ej: 17:00 (opcional)" />
+      <label>Salida <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted)">— al poner la hora, el estado pasa a «Salió»</span></label>
+      <div style="display:flex;gap:8px">
+        <input class="modal-select" type="date" id="modal-salida-f" style="flex:1.3" onchange="mdlSalidaCambio()"/>
+        <input class="modal-select" type="time" id="modal-salida-h" style="flex:1" onchange="mdlSalidaCambio()"/>
+      </div>
+      <button type="button" onclick="mdlLimpiarSalida()" id="modal-limpiar-salida" style="align-self:flex-start;margin-top:6px;background:none;border:none;color:var(--accent3);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0;display:none">✕ Quitar hora de salida</button>
     </div>
+    <div id="modal-aviso" style="display:none;font-size:12px;font-weight:600;padding:9px 12px;border-radius:8px;margin-bottom:14px"></div>
     <div class="modal-actions">
       <button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button>
       <button class="btn-modal-save" onclick="guardarEdicion()">Guardar</button>
@@ -2577,6 +2585,86 @@ async function buscarEventos() {
 let editDni = null
 let editJornada = null
 
+// ─── MODAL DE EDICIÓN ────────────────────────────────
+// "DD/MM/YYYY HH:MM"  →  { f:'YYYY-MM-DD', h:'HH:MM' }
+function mdlParse(str) {
+  const m = String(str || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T](\d{1,2}):(\d{2}))?/)
+  if (!m) {
+    const soloHora = String(str || '').trim().match(/^(\d{1,2}):(\d{2})$/)
+    return soloHora ? { f: '', h: `${soloHora[1].padStart(2,'0')}:${soloHora[2]}` } : { f: '', h: '' }
+  }
+  return { f: `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`, h: m[4] ? `${m[4].padStart(2,'0')}:${m[5]}` : '' }
+}
+// { 'YYYY-MM-DD', 'HH:MM' } → "DD/MM/YYYY HH:MM"
+const mdlJoin = (f, h) => (f && h) ? `${f.split('-').reverse().join('/')} ${h}` : ''
+// "DD/MM/YYYY HH:MM" (hora Lima) → milisegundos UTC
+function mdlMs(str) {
+  const { f, h } = mdlParse(str)
+  if (!f || !h) return null
+  const [y, mo, d] = f.split('-').map(Number), [hh, mi] = h.split(':').map(Number)
+  return Date.UTC(y, mo - 1, d, hh + 5, mi)
+}
+const mdlIso = str => { const ms = mdlMs(str); return ms === null ? new Date().toISOString() : new Date(ms).toISOString() }
+
+function mdlAviso(msg, tipo) {
+  const el = document.getElementById('modal-aviso')
+  if (!msg) { el.style.display = 'none'; return }
+  el.style.display = 'block'
+  el.style.background = tipo === 'error' ? '#fee2e2' : '#dbeafe'
+  el.style.color = tipo === 'error' ? '#991b1b' : '#1e40af'
+  el.textContent = msg
+}
+
+function mdlTieneSalida() {
+  return !!(document.getElementById('modal-salida-f').value && document.getElementById('modal-salida-h').value)
+}
+
+// Si se completa la salida, el estado pasa automáticamente a «salida»
+function mdlSalidaCambio() {
+  const sel = document.getElementById('modal-estado')
+  // Si solo se puso la hora, deducir la fecha: mismo día, o el siguiente si cruza medianoche
+  const sf = document.getElementById('modal-salida-f'), sh = document.getElementById('modal-salida-h')
+  if (sh.value && !sf.value) {
+    const fIng = document.getElementById('modal-ingreso-f').value
+    const hIng = document.getElementById('modal-ingreso-h').value
+    if (fIng) {
+      const d = new Date(fIng + 'T12:00:00Z')
+      if (hIng && sh.value <= hIng) d.setUTCDate(d.getUTCDate() + 1)
+      sf.value = d.toISOString().slice(0, 10)
+    }
+  }
+  if (mdlTieneSalida()) {
+    if (sel.value !== 'salida') { sel.value = 'salida'; mdlAviso('Estado cambiado a «Salió» automáticamente.', 'info') }
+  } else if (sel.value === 'salida') {
+    sel.value = 'dentro'; mdlAviso('Sin hora de salida el estado vuelve a «Dentro».', 'info')
+  }
+  mdlSync()
+}
+
+// Si se elige otro estado, se borra la salida; si se elige «salida», se pide la hora
+function mdlEstadoCambio() {
+  const v = document.getElementById('modal-estado').value
+  if (v !== 'salida' && mdlTieneSalida()) {
+    mdlLimpiarSalida()
+    mdlAviso('Se quitó la hora de salida porque el estado ya no es «Salió».', 'info')
+  } else if (v === 'salida' && !mdlTieneSalida()) {
+    mdlAviso('Completa la fecha y hora de salida para guardar.', 'error')
+  } else mdlAviso('')
+  mdlSync()
+}
+
+function mdlLimpiarSalida() {
+  document.getElementById('modal-salida-f').value = ''
+  document.getElementById('modal-salida-h').value = ''
+  const sel = document.getElementById('modal-estado')
+  if (sel.value === 'salida') sel.value = 'dentro'
+  mdlSync()
+}
+
+function mdlSync() {
+  document.getElementById('modal-limpiar-salida').style.display = mdlTieneSalida() ? 'block' : 'none'
+}
+
 function abrirModal(registroId) {
   // registroId puede ser "dni_jornada" o solo "dni" (legacy)
   let dni, jornada
@@ -2587,19 +2675,27 @@ function abrirModal(registroId) {
     dni = registroId
     jornada = 1
   }
-  
-  const e = estadoHoy.find(x => x.dni === dni && (x.jornada || 1) === jornada)
+
+  const e = estadoHoy.find(x => String(x.dni).trim() === String(dni).trim() && (x.jornada || 1) === jornada)
   if (!e) return
-  
-  editDni = dni
+
+  editDni = e.dni
   editJornada = jornada  // Guardar jornada para el update
-  
+
   const jornadaLabel = jornada > 1 ? ` (Jornada ${jornada})` : ''
   document.getElementById('modal-nombre').textContent = e.nombre + jornadaLabel
   document.getElementById('modal-meta').textContent = e.empresa + (e.area ? ' · ' + e.area : '')
   document.getElementById('modal-estado').value = e.estado
-  document.getElementById('modal-ingreso').value = e.ingreso || ''
-  document.getElementById('modal-salida').value = e.salida || ''
+  document.getElementById('modal-estado').onchange = mdlEstadoCambio
+  const ing = mdlParse(e.ingreso), sal = mdlParse(e.salida)
+  document.getElementById('modal-ingreso-f').value = ing.f || e.fecha || today()
+  document.getElementById('modal-ingreso-h').value = ing.h
+  document.getElementById('modal-salida-f').value = sal.f || (sal.h ? (e.fecha || today()) : '')
+  document.getElementById('modal-salida-h').value = sal.h
+  // Registro incoherente previo: estado "dentro" con salida escrita
+  mdlAviso(e.estado !== 'salida' && sal.h ? 'Este registro tiene hora de salida pero sigue como «' + (ESTADO_BADGE[e.estado]?.label || e.estado) + '». Al guardar quedará como «Salió».' : '', 'info')
+  if (e.estado !== 'salida' && sal.h) document.getElementById('modal-estado').value = 'salida'
+  mdlSync()
   document.getElementById('modal-overlay').classList.add('open')
 }
 
@@ -2613,12 +2709,22 @@ function cerrarModal(e) {
 async function guardarEdicion() {
   if (!editDni) return
   const nuevoEstado = document.getElementById('modal-estado').value
-  const ingreso = document.getElementById('modal-ingreso').value.trim()
-  const salida = document.getElementById('modal-salida').value.trim()
-  
+  const ingreso = mdlJoin(document.getElementById('modal-ingreso-f').value, document.getElementById('modal-ingreso-h').value)
+  const salida = mdlJoin(document.getElementById('modal-salida-f').value, document.getElementById('modal-salida-h').value)
+
+  // ── Validaciones ──
+  if (!ingreso) { mdlAviso('Completa la fecha y hora de ingreso.', 'error'); return }
+  if (nuevoEstado === 'salida' && !salida) { mdlAviso('Para el estado «Salió» necesitas fecha y hora de salida.', 'error'); return }
+  if (salida && nuevoEstado !== 'salida') { mdlAviso('Hay hora de salida: el estado debe ser «Salió» o quita la hora.', 'error'); return }
+  if (salida) {
+    const dif = mdlMs(salida) - mdlMs(ingreso)
+    if (dif <= 0) { mdlAviso('La salida debe ser posterior al ingreso.', 'error'); return }
+    if (dif > 24 * 3600 * 1000 && !confirm('La salida es más de 24 horas después del ingreso. ¿Guardar igual?')) return
+  }
+
   // Buscar el registro específico por dni + jornada
   const jornada = editJornada || 1
-  const existente = estadoHoy.find(e => e.dni === editDni && (e.jornada || 1) === jornada)
+  const existente = estadoHoy.find(e => String(e.dni).trim() === String(editDni).trim() && (e.jornada || 1) === jornada)
   const estadoAnterior = existente?.estado
 
   // CRÍTICO: usar la fecha y jornada real del registro
@@ -2644,12 +2750,12 @@ async function guardarEdicion() {
     if (estadoAnterior && estadoAnterior !== nuevoEstado) {
       // Mapeo de estado → tipos de evento a eliminar
       const TIPOS_A_ELIMINAR = {
-        'dentro': ['ingreso', 'break_retorno', 'banio_retorno'],
+        'dentro': ['break_retorno', 'banio_retorno'],
         'break': ['break_salida'],
         'banio': ['banio_salida'],
         'salida': ['salida']
       }
-      
+
       // Mapeo de estado → tipo de evento a insertar
       const TIPO_A_INSERTAR = {
         'dentro': null,  // No insertar (es estado resultante, no acción)
@@ -2661,45 +2767,48 @@ async function guardarEdicion() {
       const tiposEliminar = TIPOS_A_ELIMINAR[estadoAnterior] || []
       const tipoInsertar = TIPO_A_INSERTAR[nuevoEstado]
 
-      // Rango de fecha para buscar eventos (mismo día)
-      const fechaDesde = fechaRegistro + 'T05:00:00Z'
-      const fechaHasta = fechaRegistro + 'T29:59:59Z'
+      // Ventana de la jornada: 5am del día → 5am del siguiente (Lima = UTC-5)
+      const fechaDesde = fechaRegistro + 'T10:00:00Z'
+      const _sig = new Date(fechaRegistro + 'T12:00:00Z'); _sig.setUTCDate(_sig.getUTCDate() + 1)
+      const fechaHasta = _sig.toISOString().slice(0, 10) + 'T10:00:00Z'
 
       // Eliminar eventos del estado anterior
       if (tiposEliminar.length > 0) {
-        await db.from('eventos')
+        const { error: errDel } = await db.from('eventos')
           .delete()
           .eq('dni', editDni)
           .in('tipo', tiposEliminar)
           .gte('fecha_iso', fechaDesde)
           .lte('fecha_iso', fechaHasta)
+        if (errDel) console.warn('No se pudieron limpiar eventos previos:', errDel.message)
       }
 
-      // Insertar evento del nuevo estado
+      // Insertar evento del nuevo estado con la hora REAL escrita (no la de edición)
       if (tipoInsertar) {
-        const horaEvento = nuevoEstado === 'salida' ? salida : ingreso
-        const fechaFormateada = `${fechaRegistro.split('-').reverse().join('/')} ${horaEvento || '00:00'}`
-        
-        await db.from('eventos').insert({
+        const marca = nuevoEstado === 'salida' ? salida : ingreso
+        const { error: errEv } = await db.from('eventos').insert({
           dni: editDni,
           nombre: existente.nombre,
           empresa: existente.empresa,
           area: existente.area || '',
           tipo: tipoInsertar,
-          fecha: fechaFormateada,
-          fecha_iso: new Date().toISOString()
+          fecha: marca || fmt(new Date()),
+          fecha_iso: mdlIso(marca)
         })
+        if (errEv) console.warn('No se pudo registrar el evento:', errEv.message)
       }
     }
 
     document.getElementById('modal-overlay').classList.remove('open')
     editDni = null
+    editJornada = null
+    mdlAviso('')
     showToast('Registro actualizado y sincronizado ✓', 'success')
     loadEstadoHoy()
 
   } catch (err) {
     console.error('Error al guardar edición:', err)
-    showToast('Error al guardar. Intenta de nuevo.', 'error')
+    mdlAviso('Error al guardar: ' + (err.message || 'intenta de nuevo'), 'error')
   }
 }
 
