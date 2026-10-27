@@ -424,33 +424,43 @@ tr:hover td{background:#f7f9fc}
     <div class="stat-card pink"><div class="stat-num" id="sa-salida">0</div><div class="stat-label">Salieron</div></div>
   </div>
 
-  <!-- BARRA TURNOS -->
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 20px;margin-bottom:22px;display:flex;align-items:center;gap:24px">
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="width:8px;height:8px;border-radius:50%;background:#06b6d4"></div>
-      <div>
-        <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#155e75" id="sa-manana">0</span>
-        <span style="font-size:12px;font-weight:600;color:#155e75;margin-left:4px">Turno Mañana</span>
-        <div style="font-size:10px;color:var(--muted)">ingreso 5am — 10:59am</div>
-      </div>
+  <!-- CUMPLIMIENTO vs SOLICITADO -->
+  <style>
+    .cump{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:22px;overflow:hidden}
+    .cump-head{display:flex;align-items:center;gap:22px;padding:16px 20px;cursor:pointer;flex-wrap:wrap}
+    .cump-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:4px}
+    .cump-pct{font-size:36px;font-weight:800;line-height:1;font-family:'Syne','DM Sans',sans-serif}
+    .cump-kv strong{font-size:18px}
+    .cump-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;display:inline-block}
+    .cump-track{height:10px;background:var(--bg);border-radius:6px;position:relative}
+    .cump-fill{height:100%;border-radius:6px;transition:width .3s}
+    .cump-mark{position:absolute;top:-3px;width:2px;height:16px;background:var(--text);opacity:.3;left:90%}
+    .cump-turnos{display:flex;gap:8px;padding:0 20px 14px;flex-wrap:wrap}
+    .cump-tp{font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;background:var(--bg);display:flex;gap:6px;align-items:center}
+    .cump-tp i{width:8px;height:8px;border-radius:50%;display:inline-block}
+    .cump-exp{display:none;border-top:1px solid var(--border)}
+    .cump.open .cump-exp{display:block}
+    .cump.open .cump-chev span{display:inline-block;transform:rotate(180deg)}
+    .cump table{width:100%;border-collapse:collapse;font-size:13px}
+    .cump th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:9px 14px;text-align:center;background:var(--bg)}
+    .cump td{padding:10px 14px;border-bottom:1px solid var(--bg);text-align:center}
+    .cump th:first-child,.cump td:first-child{text-align:left}
+    .cump tr.cump-emp{cursor:pointer}.cump tr.cump-emp:hover td{background:#f7f9fc}.cump tr.cump-sel td{background:#eff6ff}
+    .cump-mini{height:6px;width:70px;background:var(--bg);border-radius:4px;display:inline-block;vertical-align:middle;margin-left:8px;overflow:hidden}
+    .cump-mini div{height:100%}
+  </style>
+  <div class="cump" id="cump">
+    <div class="cump-head" onclick="cumpToggle()">
+      <div><div class="cump-lbl">Cumplimiento</div><div class="cump-pct" id="cump-pct">—</div></div>
+      <div class="cump-kv"><div class="cump-lbl">Real / Solicitado</div><strong id="cump-real">0</strong> <span style="color:var(--muted)">de</span> <strong id="cump-sol">0</strong></div>
+      <div class="cump-kv"><div class="cump-lbl">Diferencia</div><span id="cump-dif">—</span></div>
+      <div style="flex:1;min-width:180px"><div class="cump-lbl" id="cump-est"></div><div class="cump-track"><div class="cump-fill" id="cump-fill" style="width:0"></div><div class="cump-mark"></div></div></div>
+      <div class="cump-chev" style="margin-left:auto;font-size:12px;color:var(--muted);font-weight:600">Ver por proveedor <span>▼</span></div>
     </div>
-    <div style="width:1px;height:32px;background:var(--border)"></div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b"></div>
-      <div>
-        <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#92400e" id="sa-dia">0</span>
-        <span style="font-size:12px;font-weight:600;color:#92400e;margin-left:4px">Turno Día</span>
-        <div style="font-size:10px;color:var(--muted)">ingreso 11am — 8:59pm</div>
-      </div>
-    </div>
-    <div style="width:1px;height:32px;background:var(--border)"></div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="width:8px;height:8px;border-radius:50%;background:#8b5cf6"></div>
-      <div>
-        <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#5b21b6" id="sa-noche">0</span>
-        <span style="font-size:12px;font-weight:600;color:#5b21b6;margin-left:4px">Turno Noche</span>
-        <div style="font-size:10px;color:var(--muted)">ingreso 9pm — 4:59am</div>
-      </div>
+    <div class="cump-turnos" id="cump-turnos"></div>
+    <div class="cump-exp">
+      <table><thead><tr><th>Proveedor</th><th>Solicitado</th><th>Real</th><th>Diferencia</th><th>Cumplimiento</th></tr></thead><tbody id="cump-tb"></tbody></table>
+      <div id="cump-foot" style="padding:10px 20px;font-size:11px;color:var(--muted);background:var(--bg)"></div>
     </div>
   </div>
 
@@ -1567,7 +1577,7 @@ function showPage(name, el) {
   document.getElementById('page-' + name).classList.add('active')
   el.classList.add('active')
   if (name === 'reportes') initReportes()
-  if (name === 'situacion') { updateEmpresaBtns(); renderSituacion() }
+  if (name === 'situacion') { updateEmpresaBtns(); renderSituacion(); cumpRefrescar() }
   if (name === 'personal') loadCatalogo()
   if (name === 'banio') initBanio()
   if (name === 'actas') {
@@ -2282,6 +2292,135 @@ function filtrarTurno(turno) {
   renderSituacion()
 }
 
+// ─── CUMPLIMIENTO vs SOLICITADO (tarjeta de Situación Actual) ─────────────
+let cumpSolic = [], cumpAyerRows = [], cumpAbierto = false
+const cumpKey = v => String(v ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ')
+const CUMP_ORDEN = ['manana','dia','noche']
+
+// Contexto según la hora de Lima: jornada y estado de cada turno
+function cumpContexto(ahora = Date.now()) {
+  const l = new Date(ahora - 5*3600*1000)
+  const h = l.getUTCHours() + l.getUTCMinutes()/60
+  const J = (() => { const d = new Date(l); if (l.getUTCHours() < 5) d.setUTCDate(d.getUTCDate()-1); return d.toISOString().slice(0,10) })()
+  const ayer = (() => { const d = new Date(J + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate()-1); return d.toISOString().slice(0,10) })()
+  // Noche de madrugada (5–10am): la noche que acaba de terminar sigue en cierre hasta las 10am
+  const nocheAyer = h >= 5 && h < 10
+  return {
+    J, ayer, nocheAyer,
+    fechas: { manana: J, dia: J, noche: nocheAyer ? ayer : J },
+    estado: {
+      manana: (h >= 5 && h < 11) ? 'curso' : 'cerrado',
+      dia: (h >= 11 && h < 21) ? 'curso' : (h >= 5 && h < 11) ? 'porIniciar' : 'cerrado',
+      noche: (h >= 21 || h < 10) ? 'curso' : 'porIniciar'
+    }
+  }
+}
+
+// Cálculo puro: Map empresaKey -> { nombre, s, r } para un turno
+function cumpPorTurno(turno, ctx, filasHoy, filasAyer, solicitudes, getT) {
+  const filas = (turno === 'noche' && ctx.nocheAyer) ? filasAyer : filasHoy
+  const fecha = ctx.fechas[turno]
+  const m = new Map()
+  const get = (k, nombre) => { if (!m.has(k)) m.set(k, { nombre, s: 0, r: 0, dnis: new Set() }); return m.get(k) }
+  filas.forEach(f => {
+    if (!f.empresa || !f.dni || getT(f.ingreso) !== turno) return
+    const o = get(cumpKey(f.empresa), f.empresa)
+    o.nombre = f.empresa; o.dnis.add(String(f.dni).trim())
+  })
+  solicitudes.filter(x => x.turno === turno && x.fecha === fecha).forEach(x => {
+    const o = get(cumpKey(x.empresa), x.empresa)
+    o.s += x.solicitado || 0
+  })
+  m.forEach(o => { o.r = o.dnis.size })
+  return m
+}
+
+async function cumpRefrescar() {
+  const ctx = cumpContexto()
+  try {
+    const { data } = await db.from('solicitudes_personal').select('*').in('fecha', [ctx.J, ctx.ayer])
+    cumpSolic = data || []
+    if (ctx.nocheAyer) {
+      const r = await db.from('estado_hoy').select('dni,empresa,ingreso').eq('fecha', ctx.ayer)
+      cumpAyerRows = r.data || []
+    } else cumpAyerRows = []
+  } catch (e) { console.warn('cumplimiento:', e) }
+  cumpRender()
+}
+
+function cumpToggle() { cumpAbierto = !cumpAbierto; document.getElementById('cump').classList.toggle('open', cumpAbierto) }
+
+function cumpRender() {
+  const box = document.getElementById('cump'); if (!box) return
+  box.classList.toggle('open', cumpAbierto)
+  const ctx = cumpContexto()
+  const filasHoy = estadoHoy.filter(e => !e.esPendiente)
+  const porTurno = {}
+  CUMP_ORDEN.forEach(t => porTurno[t] = cumpPorTurno(t, ctx, filasHoy, cumpAyerRows, cumpSolic, getTurno))
+  const tot = m => { let s = 0, r = 0; m.forEach(o => { s += o.s; r += o.r }); return { s, r } }
+
+  const incl = filtroTurno !== 'todos' ? [filtroTurno] : CUMP_ORDEN.filter(t => ctx.estado[t] !== 'porIniciar')
+  const merged = new Map()
+  incl.forEach(t => porTurno[t].forEach((o, k) => {
+    if (!merged.has(k)) merged.set(k, { nombre: o.nombre, s: 0, r: 0 })
+    const x = merged.get(k); x.s += o.s; x.r += o.r
+  }))
+  const rows = [...merged.values()].filter(o => o.s || o.r)
+  const S = rows.reduce((a, o) => a + o.s, 0), R = rows.reduce((a, o) => a + o.r, 0)
+  const porIniciar = incl.length === 1 && ctx.estado[incl[0]] === 'porIniciar'
+  const enCurso = incl.some(t => ctx.estado[t] === 'curso')
+  const pct = S ? Math.round(R / S * 100) : null
+  const GRIS = '#7a8299', AZUL = '#3b82f6'
+  const colorDe = p => porIniciar ? GRIS : enCurso ? AZUL : (p == null ? GRIS : colorPct(p))
+  const c = colorDe(pct)
+
+  const elPct = document.getElementById('cump-pct')
+  if (porIniciar || pct == null) { elPct.textContent = porIniciar ? '—' : (R > 0 ? 'Sin solicitud' : '—'); elPct.style.fontSize = (!porIniciar && R > 0) ? '18px' : '36px' }
+  else { elPct.textContent = pct + '%'; elPct.style.fontSize = '36px' }
+  elPct.style.color = c
+  document.getElementById('cump-real').textContent = R
+  document.getElementById('cump-sol').textContent = S
+  const deficit = rows.reduce((a, o) => a + (o.s ? Math.max(0, o.s - o.r) : 0), 0)
+  document.getElementById('cump-dif').innerHTML = (porIniciar || !S) ? '<span style="color:var(--muted)">—</span>'
+    : (R >= S ? `<strong style="color:#22c27a">+${R-S}</strong>` : `<strong style="color:#ef4444">−${S-R}</strong>`)
+      + (R >= S && deficit ? ` <span style="font-size:11px;color:var(--muted)">(faltan ${deficit} en algún proveedor)</span>` : '')
+  document.getElementById('cump-est').innerHTML = porIniciar ? '<span class="cump-badge" style="background:#f0f2f6;color:#7a8299">Por iniciar</span>'
+    : enCurso ? '<span class="cump-badge" style="background:#dbeafe;color:#1e40af">En curso · el color se aplica al cerrar</span>'
+    : '<span class="cump-badge" style="background:#dcfce7;color:#166534">Turno cerrado</span>'
+  const fill = document.getElementById('cump-fill')
+  fill.style.width = (pct == null ? 0 : Math.min(100, pct)) + '%'; fill.style.background = c
+
+  // Píldoras por turno (solo con «Todos»)
+  const COLT = { manana: '#06b6d4', dia: '#f59e0b', noche: '#8b5cf6' }
+  document.getElementById('cump-turnos').innerHTML = filtroTurno !== 'todos' ? '' : CUMP_ORDEN.map(t => {
+    const { s, r } = tot(porTurno[t]), e = ctx.estado[t], pp = s ? Math.round(r / s * 100) : null
+    const txt = e === 'porIniciar' ? 'Por iniciar' : pp == null ? (r ? 'Sin solicitud' : '—') : e === 'curso' ? `${pp}% · en curso` : `${pp}%`
+    const cc = (e === 'cerrado' && pp != null) ? colorPct(pp) : GRIS
+    return `<span class="cump-tp"><i style="background:${COLT[t]}"></i>${TURNO_LABEL[t]} <strong style="color:${cc}">${txt}</strong> <span style="color:var(--muted);font-weight:500">${r}/${s}</span></span>`
+  }).join('')
+
+  // Tabla por proveedor (peor cumplimiento primero; sin solicitud al final)
+  rows.sort((a, b) => (a.s ? a.r / a.s : 999) - (b.s ? b.r / b.s : 999) || a.nombre.localeCompare(b.nombre))
+  document.getElementById('cump-tb').innerHTML = rows.length ? rows.map(o => {
+    const pp = o.s ? Math.round(o.r / o.s * 100) : null, cc = colorDe(pp), d = o.r - o.s
+    const sel = filtroEmpresas.includes(o.nombre) ? ' cump-sel' : ''
+    const difTxt = porIniciar ? '—' : !o.s ? '<span class="cump-badge" style="background:#fef3c7;color:#92400e">No solicitado</span>' : (d > 0 ? '+' + d : d)
+    const pctTxt = (porIniciar || pp == null) ? '—' : `<strong style="color:${cc}">${pp}%</strong><span class="cump-mini"><div style="width:${Math.min(100, pp)}%;background:${cc}"></div></span>`
+    return `<tr class="cump-emp${sel}" data-emp="${plaEsc(o.nombre)}"><td><strong>${plaEsc(o.nombre)}</strong></td><td>${o.s}</td><td>${o.r}</td><td style="color:${d < 0 ? '#ef4444' : d > 0 ? '#f59e0b' : '#22c27a'};font-weight:700">${difTxt}</td><td>${pctTxt}</td></tr>`
+  }).join('') : '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted)">Sin solicitudes ni ingresos para este turno</td></tr>'
+  const tb = document.getElementById('cump-tb')
+  if (!tb.dataset.listener) {
+    tb.dataset.listener = '1'
+    tb.addEventListener('click', e => { const tr = e.target.closest('tr[data-emp]'); if (tr) toggleEmpresa(tr.dataset.emp) })
+  }
+  const notas = []
+  if (filtroTurno === 'todos') notas.push('«Todos» suma solo los turnos ya iniciados.')
+  if (ctx.nocheAyer && (filtroTurno === 'noche' || filtroTurno === 'todos')) notas.push('Noche = la jornada que acaba de terminar (cierra a las 10 am).')
+  notas.push('Real = personas distintas que ingresaron. Naranja >100% · verde 90–100 · amarillo 85–89 · rojo <85.')
+  document.getElementById('cump-foot').textContent = notas.join(' ')
+}
+setInterval(() => { if (enPagina('situacion')) cumpRefrescar() }, 60000)
+
 function renderSituacion() {
   // Filtrar por empresa(s)
   let data = filtroEmpresas.length === 0 
@@ -2293,16 +2432,13 @@ function renderSituacion() {
     data = data.filter(e => getTurno(e.ingreso) === filtroTurno)
   }
   
-  const activos = data.filter(e => e.estado !== 'salida')
-  
   // Stats
   document.getElementById('sa-dentro').textContent = data.filter(e => e.estado === 'dentro').length
   document.getElementById('sa-break').textContent = data.filter(e => ['break', 'banio'].includes(e.estado)).length
   document.getElementById('sa-salida').textContent = data.filter(e => e.estado === 'salida').length
-  document.getElementById('sa-manana').textContent = activos.filter(e => getTurno(e.ingreso) === 'manana').length
-  document.getElementById('sa-dia').textContent = activos.filter(e => getTurno(e.ingreso) === 'dia').length
-  document.getElementById('sa-noche').textContent = activos.filter(e => getTurno(e.ingreso) === 'noche').length
   
+  cumpRender()
+
   // Título dinámico
   let titulo = filtroEmpresas.length === 0 ? 'Todas las empresas' : filtroEmpresas.join(', ')
   if (filtroTurno !== 'todos') {
