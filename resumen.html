@@ -182,6 +182,7 @@ tr:hover td{background:#f7f9fc}
     <!-- REPORTES -->
     <div id="tab-rep" style="display:none">
       <div class="filtros-row">
+        <div class="fg"><label>DNI</label><input type="text" id="r-dni" placeholder="Todos" style="width:120px" maxlength="15"/></div>
         <div class="fg"><label>Desde</label><input type="date" id="r-desde" style="width:140px"/></div>
         <div class="fg"><label>Hasta</label><input type="date" id="r-hasta" style="width:140px"/></div>
         <div class="fg">
@@ -196,10 +197,11 @@ tr:hover td{background:#f7f9fc}
         <div class="fg" style="justify-content:flex-end"><label>&nbsp;</label><button class="btn-buscar" onclick="buscarReporte()">Buscar</button></div>
         <div class="fg" style="justify-content:flex-end;margin-left:auto"><label>&nbsp;</label><button class="btn-dl" onclick="descargarReporte()">📥 Descargar Excel</button></div>
       </div>
+      <div id="rep-resumen"></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Nombre</th><th>Área</th><th>Turno</th><th>Ingreso</th><th>Salida</th><th>Break</th><th>Baño</th></tr></thead>
-          <tbody id="rep-body"><tr><td colspan="7" class="empty">Selecciona un rango y busca</td></tr></tbody>
+          <thead><tr><th>Fecha</th><th>Nombre</th><th>Área</th><th>Turno</th><th>Ingreso</th><th>Salida</th><th>Break</th><th>Baño</th></tr></thead>
+          <tbody id="rep-body"><tr><td colspan="8" class="empty">Selecciona un rango y busca</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -263,6 +265,7 @@ const minEntre = (a,b) => {
   } catch { return null }
 }
 const fmtMin = m => { if(m===null||m===undefined) return null; if(m<60) return m+'min'; return Math.floor(m/60)+'h '+(m%60)+'min' }
+const fechaLabel = f => { if(!f) return '—'; const [y,m,d]=f.split('-'); return `${d}/${m}/${y}` }
 
 // ─── LOGIN ────────────────────────────────────────────
 async function login() {
@@ -404,18 +407,22 @@ async function cargarDatos() {
 
 // ─── REPORTES ─────────────────────────────────────────
 async function buscarReporte() {
+  const dni = document.getElementById('r-dni').value.trim()
   const desde = document.getElementById('r-desde').value
   const hasta = document.getElementById('r-hasta').value
   const turno = document.getElementById('r-turno').value
   const tbody = document.getElementById('rep-body')
-  tbody.innerHTML = '<tr><td colspan="7" class="loading">Buscando...</td></tr>'
+  const resumenBox = document.getElementById('rep-resumen')
+  resumenBox.innerHTML = ''
+  tbody.innerHTML = '<tr><td colspan="8" class="loading">Buscando...</td></tr>'
 
   // Traer estado_hoy del rango
-  let q = db.from('estado_hoy').select('*').eq('empresa', empresaActual).order('ingreso',{ascending:true})
+  let q = db.from('estado_hoy').select('*').eq('empresa', empresaActual).order('fecha',{ascending:true})
+  if (dni) q = q.eq('dni', dni)
   if (desde) q = q.gte('fecha', desde)
   if (hasta) q = q.lte('fecha', hasta)
   const { data: estados } = await q
-  if (!estados?.length) { tbody.innerHTML='<tr><td colspan="7" class="empty">Sin registros para este rango</td></tr>'; return }
+  if (!estados?.length) { tbody.innerHTML='<tr><td colspan="8" class="empty">Sin registros para este rango</td></tr>'; return }
 
   // Traer eventos del rango — ventana amplia por fecha_iso (6am del primer día a 6am después del último)
   let qe = db.from('eventos').select('*').eq('empresa', empresaActual)
@@ -460,9 +467,41 @@ async function buscarReporte() {
 
   reporteData = rows
 
-  if (!rows.length) { tbody.innerHTML='<tr><td colspan="7" class="empty">Sin resultados con los filtros aplicados</td></tr>'; return }
+  if (!rows.length) { tbody.innerHTML='<tr><td colspan="8" class="empty">Sin resultados con los filtros aplicados</td></tr>'; return }
+
+  // Resumen inteligente: solo tiene sentido con un DNI puntual
+  if (dni) {
+    const nombre = rows[0].p.nombre
+    const diasAsistidos = rows.length
+    const turnosUsados = [...new Set(rows.map(r=>r._t).filter(Boolean))]
+    const turnoTag = turnosUsados.length===1
+      ? `<span class="tp ${turnosUsados[0]==='noche'?'tp-n':turnosUsados[0]==='manana'?'tp-m':'tp-d'}">${TURNO_LABEL[turnosUsados[0]]}</span>`
+      : `<span class="tp" style="background:#f3f4f6;color:#374151">Mixto</span>`
+    const turnoSub = turnosUsados.length===1 ? 'en todos los días' : turnosUsados.map(t=>TURNO_LABEL[t]).join(' / ')
+    resumenBox.innerHTML = `<div class="turno-bar" style="margin-bottom:1rem">
+      <div class="turno-item">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text)">${nombre} <span style="color:var(--muted);font-weight:500">(DNI ${dni})</span></div>
+          <div class="turno-sub">Rango consultado: ${desde?fechaLabel(desde):'—'} — ${hasta?fechaLabel(hasta):'—'}</div>
+        </div>
+      </div>
+      <div class="turno-sep"></div>
+      <div class="turno-item">
+        <span class="turno-num" style="color:#065f46">${diasAsistidos}</span>
+        <span class="turno-lbl" style="color:#065f46">${diasAsistidos===1?'día asistido':'días asistidos'}</span>
+      </div>
+      <div class="turno-sep"></div>
+      <div class="turno-item">
+        <div>
+          ${turnoTag}
+          <div class="turno-sub">${turnoSub}</div>
+        </div>
+      </div>
+    </div>`
+  }
 
   tbody.innerHTML = rows.map(({p,_t,breakStr,banioStr})=>`<tr>
+    <td>${fechaLabel(p.fecha)}</td>
     <td>${p.nombre}</td>
     <td>${p.area||'—'}</td>
     <td><span class="tp ${_t==='noche'?'tp-n':_t==='manana'?'tp-m':'tp-d'}">${TURNO_LABEL[_t]||'—'}</span></td>
@@ -476,12 +515,12 @@ async function buscarReporte() {
 async function descargarReporte() {
   if (!reporteData.length) { alert('Primero busca los datos'); return }
   const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
-  const rows = [['Nombre','Área','Turno','Ingreso','Salida','Break','Baño']]
+  const rows = [['Fecha','Nombre','Área','Turno','Ingreso','Salida','Break','Baño']]
   reporteData.forEach(({p,_t,breakStr,banioStr})=>{
-    rows.push([p.nombre, p.area||'', TURNO_LABEL[_t]||'', p.ingreso||'', p.salida||'', breakStr, banioStr])
+    rows.push([fechaLabel(p.fecha), p.nombre, p.area||'', TURNO_LABEL[_t]||'', p.ingreso||'', p.salida||'', breakStr, banioStr])
   })
   const ws = XLSX.utils.aoa_to_sheet(rows)
-  ws['!cols']=[{wch:24},{wch:16},{wch:10},{wch:20},{wch:20},{wch:14},{wch:18}]
+  ws['!cols']=[{wch:12},{wch:24},{wch:16},{wch:10},{wch:20},{wch:20},{wch:14},{wch:18}]
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb,ws,'Reporte')
   XLSX.writeFile(wb,`reporte_${empresaActual}_${today()}.xlsx`)
