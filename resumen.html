@@ -181,8 +181,17 @@ tr:hover td{background:#f7f9fc}
 
     <!-- REPORTES -->
     <div id="tab-rep" style="display:none">
+      <div style="margin-bottom:10px">
+        <button class="btn-dl" id="btn-modo-masivo" onclick="toggleModoMasivo()" style="margin-left:0">📋 Consulta masiva de DNIs</button>
+      </div>
       <div class="filtros-row">
-        <div class="fg"><label>DNI</label><input type="text" id="r-dni" placeholder="Todos" style="width:120px" maxlength="15"/></div>
+        <div class="fg" id="fg-dni-individual"><label>DNI</label><input type="text" id="r-dni" placeholder="Todos" style="width:120px" maxlength="15"/></div>
+        <div class="fg" id="fg-dni-masivo" style="display:none">
+          <label>DNIs (uno por línea o separados por coma)</label>
+          <textarea id="r-dnis" placeholder="45201833
+48890211
+41203944" style="width:240px;height:40px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text);outline:none;font-family:inherit;resize:vertical"></textarea>
+        </div>
         <div class="fg"><label>Desde</label><input type="date" id="r-desde" style="width:140px"/></div>
         <div class="fg"><label>Hasta</label><input type="date" id="r-hasta" style="width:140px"/></div>
         <div class="fg">
@@ -200,7 +209,7 @@ tr:hover td{background:#f7f9fc}
       <div id="rep-resumen"></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Fecha</th><th>Nombre</th><th>Área</th><th>Turno</th><th>Ingreso</th><th>Salida</th><th>Break</th><th>Baño</th></tr></thead>
+          <thead id="rep-head"><tr><th>Fecha</th><th>Nombre</th><th>Área</th><th>Turno</th><th>Ingreso</th><th>Salida</th><th>Break</th><th>Baño</th></tr></thead>
           <tbody id="rep-body"><tr><td colspan="8" class="empty">Selecciona un rango y busca</td></tr></tbody>
         </table>
       </div>
@@ -216,6 +225,7 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 let empresaActual = ''
 let reporteData = []
+let reporteMasivoData = []
 
 // ─── HELPERS ──────────────────────────────────────────
 const pad = n => String(n).padStart(2,'0')
@@ -406,7 +416,22 @@ async function cargarDatos() {
 }
 
 // ─── REPORTES ─────────────────────────────────────────
+let modoMasivo = false
+function toggleModoMasivo() {
+  modoMasivo = !modoMasivo
+  document.getElementById('fg-dni-individual').style.display = modoMasivo ? 'none' : ''
+  document.getElementById('fg-dni-masivo').style.display = modoMasivo ? '' : 'none'
+  document.getElementById('btn-modo-masivo').style.background = modoMasivo ? 'var(--nav)' : 'var(--surface)'
+  document.getElementById('btn-modo-masivo').style.color = modoMasivo ? '#fff' : 'var(--text)'
+  document.getElementById('rep-resumen').innerHTML = ''
+  document.getElementById('rep-head').innerHTML = modoMasivo
+    ? '<tr><th>DNI</th><th>Nombre</th><th>Área</th><th>Días asistidos</th><th>% del rango</th><th>Turno</th></tr>'
+    : '<tr><th>Fecha</th><th>Nombre</th><th>Área</th><th>Turno</th><th>Ingreso</th><th>Salida</th><th>Break</th><th>Baño</th></tr>'
+  document.getElementById('rep-body').innerHTML = `<tr><td colspan="${modoMasivo?6:8}" class="empty">Selecciona un rango y busca</td></tr>`
+}
+
 async function buscarReporte() {
+  if (modoMasivo) return buscarMasivo()
   const dni = document.getElementById('r-dni').value.trim()
   const desde = document.getElementById('r-desde').value
   const hasta = document.getElementById('r-hasta').value
@@ -512,17 +537,106 @@ async function buscarReporte() {
   </tr>`).join('')
 }
 
-async function descargarReporte() {
-  if (!reporteData.length) { alert('Primero busca los datos'); return }
-  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
-  const rows = [['Fecha','Nombre','Área','Turno','Ingreso','Salida','Break','Baño']]
-  reporteData.forEach(({p,_t,breakStr,banioStr})=>{
-    rows.push([fechaLabel(p.fecha), p.nombre, p.area||'', TURNO_LABEL[_t]||'', p.ingreso||'', p.salida||'', breakStr, banioStr])
+// ─── CONSULTA MASIVA DE DNIs ───────────────────────────
+function diasEnRango(desde, hasta) {
+  if (!desde || !hasta) return null
+  const d1 = new Date(desde+'T00:00:00Z'), d2 = new Date(hasta+'T00:00:00Z')
+  return Math.round((d2-d1)/86400000) + 1
+}
+
+async function buscarMasivo() {
+  const crudo = document.getElementById('r-dnis').value
+  const dnis = [...new Set(crudo.split(/[,\s]+/).map(x=>x.trim()).filter(Boolean))]
+  const desde = document.getElementById('r-desde').value
+  const hasta = document.getElementById('r-hasta').value
+  const turno = document.getElementById('r-turno').value
+  const tbody = document.getElementById('rep-body')
+  const resumenBox = document.getElementById('rep-resumen')
+  resumenBox.innerHTML = ''
+
+  if (!dnis.length) { alert('Pega al menos un DNI'); return }
+  tbody.innerHTML = '<tr><td colspan="6" class="loading">Buscando...</td></tr>'
+
+  let q = db.from('estado_hoy').select('*').eq('empresa', empresaActual).in('dni', dnis)
+  if (desde) q = q.gte('fecha', desde)
+  if (hasta) q = q.lte('fecha', hasta)
+  const { data: estados } = await q
+
+  const porDni = {}
+  dnis.forEach(d => { porDni[d] = { dni:d, nombre:null, area:null, dias:0, turnos:new Set() } })
+  ;(estados||[]).forEach(p => {
+    const _t = getTurno(p.ingreso)
+    if (turno && turno !== 'todos' && _t !== turno) return
+    const reg = porDni[p.dni]
+    if (!reg) return
+    reg.dias++
+    reg.nombre = reg.nombre || p.nombre
+    reg.area = reg.area || p.area
+    if (_t) reg.turnos.add(_t)
   })
-  const ws = XLSX.utils.aoa_to_sheet(rows)
-  ws['!cols']=[{wch:12},{wch:24},{wch:16},{wch:10},{wch:20},{wch:20},{wch:14},{wch:18}]
+
+  const resultados = dnis.map(d => porDni[d])
+  reporteMasivoData = resultados
+  reporteData = []
+
+  const totalDiasRango = diasEnRango(desde, hasta)
+  const conAsistencia = resultados.filter(r=>r.dias>0).length
+  const sinRegistros = resultados.length - conAsistencia
+
+  resumenBox.innerHTML = `<div class="cards-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="card"><div class="card-num">${resultados.length}</div><div class="card-label">DNIs consultados</div></div>
+    <div class="card g"><div class="card-num">${conAsistencia}</div><div class="card-label">Con asistencia</div></div>
+    <div class="card" style="background:#fef2f2"><div class="card-num" style="color:#b91c1c">${sinRegistros}</div><div class="card-label">Sin registros</div></div>
+    <div class="card t"><div class="card-num">${totalDiasRango??'—'}</div><div class="card-label">Días del rango</div></div>
+  </div>`
+
+  if (!resultados.length) { tbody.innerHTML='<tr><td colspan="6" class="empty">Sin resultados</td></tr>'; return }
+
+  tbody.innerHTML = resultados.map(r => {
+    if (r.dias === 0) {
+      return `<tr style="background:#fef2f2"><td>${r.dni}</td><td colspan="4" style="color:#b91c1c">⚠️ Sin registros en este rango</td><td>—</td></tr>`
+    }
+    const turnosArr = [...r.turnos]
+    const turnoTag = turnosArr.length===1
+      ? `<span class="tp ${turnosArr[0]==='noche'?'tp-n':turnosArr[0]==='manana'?'tp-m':'tp-d'}">${TURNO_LABEL[turnosArr[0]]}</span>`
+      : `<span class="tp" style="background:#f3f4f6;color:#374151">Mixto</span>`
+    const pct = totalDiasRango ? Math.round(r.dias/totalDiasRango*100)+'%' : '—'
+    return `<tr>
+      <td>${r.dni}</td>
+      <td>${r.nombre||'—'}</td>
+      <td>${r.area||'—'}</td>
+      <td style="font-weight:700">${r.dias}</td>
+      <td style="color:var(--muted)">${pct}</td>
+      <td>${turnoTag}</td>
+    </tr>`
+  }).join('')
+}
+
+async function descargarReporte() {
+  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb,ws,'Reporte')
+
+  if (modoMasivo) {
+    if (!reporteMasivoData.length) { alert('Primero busca los datos'); return }
+    const rows = [['DNI','Nombre','Área','Días asistidos','Turno']]
+    reporteMasivoData.forEach(r=>{
+      const turnosArr=[...r.turnos]
+      const turnoLbl = r.dias===0 ? '—' : (turnosArr.length===1 ? TURNO_LABEL[turnosArr[0]] : 'Mixto')
+      rows.push([r.dni, r.nombre||'Sin registros', r.area||'', r.dias, turnoLbl])
+    })
+    const ws = XLSX.utils.aoa_to_sheet(rows)
+    ws['!cols']=[{wch:14},{wch:24},{wch:16},{wch:14},{wch:10}]
+    XLSX.utils.book_append_sheet(wb,ws,'Resumen DNIs')
+  } else {
+    if (!reporteData.length) { alert('Primero busca los datos'); return }
+    const rows = [['Fecha','Nombre','Área','Turno','Ingreso','Salida','Break','Baño']]
+    reporteData.forEach(({p,_t,breakStr,banioStr})=>{
+      rows.push([fechaLabel(p.fecha), p.nombre, p.area||'', TURNO_LABEL[_t]||'', p.ingreso||'', p.salida||'', breakStr, banioStr])
+    })
+    const ws = XLSX.utils.aoa_to_sheet(rows)
+    ws['!cols']=[{wch:12},{wch:24},{wch:16},{wch:10},{wch:20},{wch:20},{wch:14},{wch:18}]
+    XLSX.utils.book_append_sheet(wb,ws,'Reporte')
+  }
   XLSX.writeFile(wb,`reporte_${empresaActual}_${today()}.xlsx`)
 }
 </script>
