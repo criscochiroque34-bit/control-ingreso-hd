@@ -196,10 +196,12 @@ export function tablaPersonal(personal, conTiempo = true) {
 }
 
 // Buscar la solicitud de personal para una fecha+turno+empresa
+// Suma todas las áreas de esa empresa (una empresa puede tener una solicitud por área)
 export async function getSolicitud(fecha, turno, empresa) {
   const { data } = await db.from('solicitudes_personal').select('solicitado')
-    .eq('fecha', fecha).eq('turno', turno).eq('empresa', empresa).maybeSingle()
-  return data?.solicitado ?? null
+    .eq('fecha', fecha).eq('turno', turno).eq('empresa', empresa)
+  if (!data || !data.length) return null
+  return data.reduce((acc, r) => acc + (r.solicitado || 0), 0)
 }
 
 // Color del % según rangos: >100 naranja, 90-100 verde, 85-89 amarillo, <85 rojo
