@@ -972,7 +972,7 @@ tr:hover td{background:#f7f9fc}
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Área</th></tr></thead>
+          <thead><tr><th>DNI</th><th>Nombre</th><th>Empresa</th><th>Área</th><th></th></tr></thead>
           <tbody id="tabla-catalogo"></tbody>
         </table>
       </div>
@@ -1557,6 +1557,31 @@ tr:hover td{background:#f7f9fc}
     <div class="modal-actions">
       <button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button>
       <button class="btn-modal-save" onclick="guardarEdicion()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR PERSONA (catálogo) -->
+<div class="modal-overlay" id="modal-persona-overlay" onclick="cerrarModalPersona(event)">
+  <div class="modal">
+    <div class="modal-title">Editar persona</div>
+    <div class="modal-sub" id="modal-persona-dni">—</div>
+    <div class="modal-field">
+      <label>Nombre</label>
+      <input class="modal-select" type="text" id="modal-persona-nombre"/>
+    </div>
+    <div class="modal-field">
+      <label>Empresa</label>
+      <input class="modal-select" type="text" id="modal-persona-empresa"/>
+    </div>
+    <div class="modal-field">
+      <label>Área</label>
+      <input class="modal-select" type="text" id="modal-persona-area"/>
+    </div>
+    <div id="modal-persona-aviso" style="display:none;font-size:12px;font-weight:600;padding:9px 12px;border-radius:8px;margin-bottom:14px"></div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="cerrarModalPersona()">Cancelar</button>
+      <button class="btn-modal-save" id="modal-persona-btn-guardar" onclick="guardarPersona()">Guardar</button>
     </div>
   </div>
 </div>
@@ -3360,7 +3385,49 @@ function renderCatalogo() {
   if (!rows.length) { tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">Sin resultados</td></tr>'; return }
   tbody.innerHTML = rows.map(p=>`<tr>
     <td><b>${p.dni}</b></td><td>${p.nombre}</td><td>${p.empresa||'—'}</td><td>${p.area||'—'}</td>
+    <td style="text-align:center"><button onclick="abrirModalPersona('${p.dni}')" title="Editar" style="background:none;border:none;cursor:pointer;font-size:14px;padding:4px">✏️</button></td>
   </tr>`).join('')
+}
+
+// ─── EDITAR PERSONA (modal) ────────────────────────────
+function abrirModalPersona(dni) {
+  const p = catalogoPersonas.find(x => String(x.dni) === String(dni))
+  if (!p) return
+  document.getElementById('modal-persona-dni').textContent = 'DNI ' + p.dni
+  document.getElementById('modal-persona-nombre').value = p.nombre || ''
+  document.getElementById('modal-persona-empresa').value = p.empresa || ''
+  document.getElementById('modal-persona-area').value = p.area || ''
+  document.getElementById('modal-persona-overlay').dataset.dni = p.dni
+  document.getElementById('modal-persona-aviso').style.display = 'none'
+  document.getElementById('modal-persona-overlay').classList.add('open')
+}
+
+function cerrarModalPersona(e) {
+  if (e && e.target !== document.getElementById('modal-persona-overlay')) return
+  document.getElementById('modal-persona-overlay').classList.remove('open')
+}
+
+async function guardarPersona() {
+  const dni = document.getElementById('modal-persona-overlay').dataset.dni
+  const nombre = document.getElementById('modal-persona-nombre').value.trim()
+  const empresa = document.getElementById('modal-persona-empresa').value.trim()
+  const area = document.getElementById('modal-persona-area').value.trim()
+  const aviso = document.getElementById('modal-persona-aviso')
+
+  if (!nombre) { aviso.style.display='block'; aviso.style.background='#fee2e2'; aviso.style.color='#991b1b'; aviso.textContent='El nombre no puede estar vacío'; return }
+
+  const btn = document.getElementById('modal-persona-btn-guardar')
+  btn.disabled = true; btn.textContent = 'Guardando...'
+  const { error } = await db.from('personas').update({ nombre, empresa, area }).eq('dni', dni)
+  btn.disabled = false; btn.textContent = 'Guardar'
+
+  if (error) { aviso.style.display='block'; aviso.style.background='#fee2e2'; aviso.style.color='#991b1b'; aviso.textContent='Error: '+error.message; return }
+
+  const p = catalogoPersonas.find(x => String(x.dni) === String(dni))
+  if (p) { p.nombre = nombre; p.empresa = empresa; p.area = area }
+  renderCatalogo()
+  cerrarModalPersona()
+  showToast('Persona actualizada')
 }
 
 function handleDrop(e) {
