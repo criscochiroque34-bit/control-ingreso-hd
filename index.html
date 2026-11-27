@@ -1596,7 +1596,7 @@ tr:hover td{background:#f7f9fc}
     <div id="modal-persona-aviso" style="display:none;font-size:12px;font-weight:600;padding:9px 12px;border-radius:8px;margin-bottom:14px"></div>
     <div class="modal-actions">
       <button class="btn-modal-cancel" onclick="cerrarModalPersona()">Cancelar</button>
-      <button class="btn-modal-save" id="modal-persona-btn-guardar" onclick="guardarPersona()">Guardar</button>
+      <button class="btn-modal-save" id="modal-persona-btn-guardar" onclick="guardarEdicionPersona()">Guardar</button>
     </div>
   </div>
 </div>
@@ -3496,7 +3496,7 @@ function cerrarModalPersona(e) {
   document.getElementById('modal-persona-overlay').classList.remove('open')
 }
 
-async function guardarPersona() {
+async function guardarEdicionPersona() {
   const dni = document.getElementById('modal-persona-overlay').dataset.dni
   const nombre = document.getElementById('modal-persona-nombre').value.trim()
   const empresa = document.getElementById('modal-persona-empresa').value.trim()
