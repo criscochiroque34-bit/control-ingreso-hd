@@ -2408,8 +2408,11 @@ async function guardarPersona() {
 
 // ─── SITUACIÓN ACTUAL ─────────────────────────────────
 function updateEmpresaBtns() {
-  const empresas = [...new Set(estadoHoy.map(e => e.empresa).filter(Boolean))].sort()
-  
+  // Filtros inteligentes: solo empresas que tienen gente en el/las área(s) ya seleccionada(s)
+  const base = filtroAreas.length === 0 ? estadoHoy : estadoHoy.filter(e => filtroAreas.includes(e.area))
+  const empresas = [...new Set(base.map(e => e.empresa).filter(Boolean))].sort()
+  filtroEmpresas = filtroEmpresas.filter(e => empresas.includes(e))
+
   // Actualizar botón "Todas"
   const todasActivo = filtroEmpresas.length === 0
   document.getElementById('btn-emp-todas')?.classList.toggle('active', todasActivo)
@@ -2435,6 +2438,36 @@ function toggleEmpresa(empresa) {
       filtroEmpresas.push(empresa)    // Agregar
     }
   }
+  updateEmpresaBtns()
+  updateAreaBtns()
+  renderSituacion()
+}
+
+function updateAreaBtns() {
+  // Filtros inteligentes: solo áreas presentes en la(s) empresa(s) ya seleccionada(s)
+  const base = filtroEmpresas.length === 0 ? estadoHoy : estadoHoy.filter(e => filtroEmpresas.includes(e.empresa))
+  const areas = [...new Set(base.map(e => e.area).filter(Boolean))].sort()
+  filtroAreas = filtroAreas.filter(a => areas.includes(a))
+
+  const todasActivo = filtroAreas.length === 0
+  document.getElementById('btn-area-todas')?.classList.toggle('active', todasActivo)
+
+  const cont = document.getElementById('area-btns')
+  cont.innerHTML = areas.map(ar => {
+    const activo = filtroAreas.includes(ar)
+    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleArea('${ar}')">${ar}</button>`
+  }).join('')
+}
+
+function toggleArea(area) {
+  if (area === 'todas') {
+    filtroAreas = []
+  } else {
+    const idx = filtroAreas.indexOf(area)
+    if (idx >= 0) filtroAreas.splice(idx, 1)
+    else filtroAreas.push(area)
+  }
+  updateAreaBtns()
   updateEmpresaBtns()
   renderSituacion()
 }
@@ -2527,7 +2560,7 @@ async function cumpRefrescar() {
     const { data } = await db.from('solicitudes_personal').select('*').in('fecha', [ctx.J, ctx.ayer])
     cumpSolic = data || []
     if (ctx.nocheAyer) {
-      const r = await db.from('estado_hoy').select('dni,empresa,ingreso').eq('fecha', ctx.ayer)
+      const r = await db.from('estado_hoy').select('dni,empresa,area,ingreso').eq('fecha', ctx.ayer)
       cumpAyerRows = r.data || []
     } else cumpAyerRows = []
   } catch (e) { console.warn('cumplimiento:', e) }
@@ -2540,9 +2573,12 @@ function cumpRender() {
   const box = document.getElementById('cump'); if (!box) return
   box.classList.toggle('open', cumpAbierto)
   const ctx = cumpContexto()
-  const filasHoy = estadoHoy.filter(e => !e.esPendiente)
+  const matchFiltro = e => (filtroEmpresas.length === 0 || filtroEmpresas.includes(e.empresa)) && (filtroAreas.length === 0 || filtroAreas.includes(e.area))
+  const filasHoy = estadoHoy.filter(e => !e.esPendiente && matchFiltro(e))
+  const filasAyerF = cumpAyerRows.filter(matchFiltro)
+  const solFiltradas = cumpSolic.filter(matchFiltro)
   const porTurno = {}
-  CUMP_ORDEN.forEach(t => porTurno[t] = cumpPorTurno(t, ctx, filasHoy, cumpAyerRows, cumpSolic, getTurno))
+  CUMP_ORDEN.forEach(t => porTurno[t] = cumpPorTurno(t, ctx, filasHoy, filasAyerF, solFiltradas, getTurno))
   const tot = m => { let s = 0, r = 0; m.forEach(o => { s += o.s; r += o.r }); return { s, r } }
 
   const incl = filtroTurno !== 'todos' ? [filtroTurno] : CUMP_ORDEN.filter(t => ctx.estado[t] !== 'porIniciar')
