@@ -2425,7 +2425,7 @@ function updateEmpresaBtns() {
   const cont = document.getElementById('emp-btns')
   cont.innerHTML = empresas.map(emp => {
     const activo = filtroEmpresas.includes(emp)
-    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleEmpresa('${emp}')">${emp}</button>`
+    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleEmpresa('${emp.replace(/'/g, "\\'")}')">${emp}</button>`
   }).join('')
 }
 
@@ -2459,7 +2459,7 @@ function updateAreaBtns() {
   const cont = document.getElementById('area-btns')
   cont.innerHTML = areas.map(ar => {
     const activo = filtroAreas.includes(ar)
-    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleArea('${ar}')">${ar}</button>`
+    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleArea('${ar.replace(/'/g, "\\'")}')">${ar}</button>`
   }).join('')
 }
 
@@ -2473,31 +2473,6 @@ function toggleArea(area) {
   }
   updateAreaBtns()
   updateEmpresaBtns()
-  renderSituacion()
-}
-
-function updateAreaBtns() {
-  const areas = [...new Set(estadoHoy.map(e => e.area).filter(Boolean))].sort()
-
-  const todasActivo = filtroAreas.length === 0
-  document.getElementById('btn-area-todas')?.classList.toggle('active', todasActivo)
-
-  const cont = document.getElementById('area-btns')
-  cont.innerHTML = areas.map(ar => {
-    const activo = filtroAreas.includes(ar)
-    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleArea('${ar}')">${ar}</button>`
-  }).join('')
-}
-
-function toggleArea(area) {
-  if (area === 'todas') {
-    filtroAreas = []
-  } else {
-    const idx = filtroAreas.indexOf(area)
-    if (idx >= 0) filtroAreas.splice(idx, 1)
-    else filtroAreas.push(area)
-  }
-  updateAreaBtns()
   renderSituacion()
 }
 
@@ -3210,7 +3185,7 @@ function actualizarEmpresasResumen() {
   const cont = document.getElementById('res-emp-btns')
   cont.innerHTML = empresas.map(emp => {
     const activo = resumenEmpresas.includes(emp)
-    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleEmpresaResumen('${emp}')">${emp}</button>`
+    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleEmpresaResumen('${emp.replace(/'/g, "\\'")}')">${emp}</button>`
   }).join('')
 }
 
@@ -4559,8 +4534,10 @@ async function generarActa() {
   document.getElementById('acta-sin-salida').textContent = actaData.length - conSalida
 
   // Banner de cumplimiento — solo si hay solicitud registrada para esta fecha/turno/empresa
-  const { data: solData } = await db.from('solicitudes_personal').select('solicitado')
-    .eq('fecha', fecha).eq('turno', turno).eq('empresa', empresa).maybeSingle()
+  // Suma todas las filas (una empresa puede tener una solicitud por área)
+  const { data: solRows } = await db.from('solicitudes_personal').select('solicitado')
+    .eq('fecha', fecha).eq('turno', turno).eq('empresa', empresa)
+  const solData = solRows && solRows.length ? { solicitado: solRows.reduce((a,r)=>a+(r.solicitado||0),0) } : null
   const cumpBox = document.getElementById('acta-cumplimiento')
   const statsViejas = document.getElementById('acta-stats-viejas')
   if (solData) {
