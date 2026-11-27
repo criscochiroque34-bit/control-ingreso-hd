@@ -1278,7 +1278,11 @@ tr:hover td{background:#f7f9fc}
           </div>
           <div>
             <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Empresa</label>
-            <select class="form-input" id="ind-empresa" onchange="indCargar()"><option value="">Todas</option></select>
+            <select class="form-input" id="ind-empresa" onchange="indEmpresaCambio()"><option value="">Todas</option></select>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Área</label>
+            <select class="form-input" id="ind-area" onchange="indAreaCambio()"><option value="">Todas</option></select>
           </div>
           <div>
             <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;display:block">Turno</label>
@@ -6222,6 +6226,7 @@ async function solConfirmarMasivo() {
 // ═══════════════════════════════════════════════════════════════
 const colorPct = pct => pct > 100 ? '#f59e0b' : pct >= 90 ? '#22c27a' : pct >= 85 ? '#fbbf24' : '#ef4444'
 let indDataset = []  // dataset visible actual (para el descargable)
+let indPersonasData = []  // [{empresa, area}] del catálogo, para los filtros inteligentes
 
 async function initIndicadores() {
   // Default mes actual
@@ -6230,15 +6235,35 @@ async function initIndicadores() {
     const lima = new Date(Date.now() - 5*60*60*1000)
     mesInput.value = lima.toISOString().slice(0,7)
   }
-  // Empresas
-  const { data } = await db.from('personas').select('empresa')
-  const empresas = [...new Set((data||[]).map(x=>x.empresa).filter(Boolean))].sort()
-  const sel = document.getElementById('ind-empresa')
-  if (sel.options.length <= 1) {
-    sel.innerHTML = '<option value="">Todas</option>' + empresas.map(e=>`<option value="${e}">${e}</option>`).join('')
-  }
+  // Empresas y áreas (filtros inteligentes: se acotan entre sí)
+  const { data } = await db.from('personas').select('empresa,area')
+  indPersonasData = data || []
+  indPoblarEmpresas()
+  indPoblarAreas()
   await indCargar()
 }
+
+// Filtros inteligentes: Empresa acota las opciones de Área y viceversa
+function indPoblarEmpresas() {
+  const areaSel = document.getElementById('ind-area')?.value || ''
+  const base = areaSel ? indPersonasData.filter(p => p.area === areaSel) : indPersonasData
+  const empresas = [...new Set(base.map(p => p.empresa).filter(Boolean))].sort()
+  const sel = document.getElementById('ind-empresa'), cur = sel.value
+  sel.innerHTML = '<option value="">Todas</option>' + empresas.map(e => `<option value="${plaEsc(e)}">${plaEsc(e)}</option>`).join('')
+  sel.value = empresas.includes(cur) ? cur : ''
+}
+
+function indPoblarAreas() {
+  const empSel = document.getElementById('ind-empresa')?.value || ''
+  const base = empSel ? indPersonasData.filter(p => p.empresa === empSel) : indPersonasData
+  const areas = [...new Set(base.map(p => p.area).filter(Boolean))].sort()
+  const sel = document.getElementById('ind-area'), cur = sel.value
+  sel.innerHTML = '<option value="">Todas</option>' + areas.map(a => `<option value="${plaEsc(a)}">${plaEsc(a)}</option>`).join('')
+  sel.value = areas.includes(cur) ? cur : ''
+}
+
+function indEmpresaCambio() { indPoblarAreas(); indCargar() }
+function indAreaCambio() { indPoblarEmpresas(); indCargar() }
 
 // Alterna entre selector de mes y selector de día específico según la vista elegida
 function indCambiarVista() {
@@ -6259,6 +6284,7 @@ function indCambiarVista() {
 
 async function indCargar() {
   const empresaFiltro = document.getElementById('ind-empresa').value
+  const areaFiltro = document.getElementById('ind-area').value
   const turnoFiltro = document.getElementById('ind-turno').value
   const vista = document.getElementById('ind-vista').value
 
@@ -6281,12 +6307,14 @@ async function indCargar() {
   // Traer solicitudes del mes
   let qs = db.from('solicitudes_personal').select('*').gte('fecha', primerDia).lte('fecha', ultimoDia)
   if (empresaFiltro) qs = qs.eq('empresa', empresaFiltro)
+  if (areaFiltro) qs = qs.eq('area', areaFiltro)
   if (turnoFiltro) qs = qs.eq('turno', turnoFiltro)
   const { data: solicitudes } = await qs
 
   // Traer estados del mes (para contar asistencia)
   let qe = db.from('estado_hoy').select('*').gte('fecha', primerDia).lte('fecha', ultimoDia)
   if (empresaFiltro) qe = qe.eq('empresa', empresaFiltro)
+  if (areaFiltro) qe = qe.eq('area', areaFiltro)
   const { data: estados } = await qe
 
   // Calcular asistencia por fecha+turno+empresa(+área) — cuenta DNIs ÚNICOS (evita doble conteo por reingreso)
@@ -6440,6 +6468,7 @@ function indArmarFilas() {
       Fecha: d.fecha,
       Turno: TURNO_LABEL[d.turno] || d.turno,
       Empresa: d.empresa,
+      Área: d.area || '',
       Solicitado: d.solicitado,
       Real: d.asistio,
       'Cumplimiento %': d.pct
