@@ -654,6 +654,12 @@ tr:hover td{background:#f7f9fc}
 <div class="page" id="page-banio">
   <div class="section-title"><div class="dot"></div> Control de Baño — Personal Planilla</div>
 
+  <div style="display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:16px;width:fit-content">
+    <button class="banio-subtab active" data-sub="registro" onclick="banioSwitchSub('registro',this)">🚻 Registro</button>
+    <button class="banio-subtab" data-sub="consultar" onclick="banioSwitchSub('consultar',this)">🔍 Consultar</button>
+  </div>
+
+  <div class="banio-sub-content active" id="banio-sub-registro">
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:14px;border:1px solid var(--border);box-shadow:0 2px 12px rgba(30,36,51,.07);margin-bottom:16px">
 
     <!-- ══ OPERACIONES ══ -->
@@ -742,6 +748,52 @@ tr:hover td{background:#f7f9fc}
       <div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Sin registros aún</div>
     </div>
   </div>
+  </div><!-- /banio-sub-registro -->
+
+  <!-- ══ CONSULTAR ══ -->
+  <div class="banio-sub-content" id="banio-sub-consultar">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">Consultar historial de baño</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px">
+        <div style="flex:1;min-width:180px">
+          <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">DNI o Nombre</label>
+          <input type="text" id="bc-busqueda" placeholder="Todos" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif"/>
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Desde</label>
+          <input type="date" id="bc-desde" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif"/>
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:4px">Hasta</label>
+          <input type="date" id="bc-hasta" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);font-family:'DM Sans',sans-serif"/>
+        </div>
+        <button onclick="banioConsultaBuscar()" style="padding:9px 18px;border-radius:8px;border:none;background:var(--nav-bg);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Buscar</button>
+        <button onclick="banioConsultaDescargar()" style="padding:9px 16px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:auto">📥 Descargar Excel</button>
+      </div>
+
+      <div id="bc-resumen" style="display:none;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+        <div style="padding:14px 16px;border-radius:10px;background:var(--bg);border:1px solid var(--border);text-align:center">
+          <div id="bc-total" style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800">0</div>
+          <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-top:4px">Salidas</div>
+        </div>
+        <div style="padding:14px 16px;border-radius:10px;background:var(--bg);border:1px solid var(--border);text-align:center">
+          <div id="bc-min-total" style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800">0</div>
+          <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-top:4px">Min. totales</div>
+        </div>
+        <div style="padding:14px 16px;border-radius:10px;background:var(--bg);border:1px solid var(--border);text-align:center">
+          <div id="bc-min-prom" style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800">0</div>
+          <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-top:4px">Min. promedio</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Nombre</th><th>DNI</th><th>Motivo</th><th>Salida</th><th>Aprobación</th><th>Retorno</th><th>Tiempo</th><th>Veces en jornada</th></tr></thead>
+          <tbody id="bc-tbody"><tr><td colspan="9" style="text-align:center;padding:26px;color:var(--muted)">Escribe un DNI/nombre o elige un rango y busca</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- /banio-sub-consultar -->
 </div>
 
 <!-- ===================== RANKINGS ===================== -->
@@ -1033,6 +1085,10 @@ tr:hover td{background:#f7f9fc}
       .anl-subtab.active{background:var(--nav-bg);color:#fff}
       .anl-sub-content{display:none}
       .anl-sub-content.active{display:block}
+      .banio-subtab{padding:9px 16px;border-radius:7px;border:none;background:transparent;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+      .banio-subtab.active{background:var(--nav-bg);color:#fff}
+      .banio-sub-content{display:none}
+      .banio-sub-content.active{display:block}
     </style>
 
     <!-- ============ SUB: GENERAR ACTA ============ -->
@@ -2425,7 +2481,7 @@ function updateEmpresaBtns() {
   const cont = document.getElementById('emp-btns')
   cont.innerHTML = empresas.map(emp => {
     const activo = filtroEmpresas.includes(emp)
-    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleEmpresa('${emp}')">${emp}</button>`
+    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleEmpresa('${emp.replace(/'/g, "\\'")}')">${emp}</button>`
   }).join('')
 }
 
@@ -2459,7 +2515,7 @@ function updateAreaBtns() {
   const cont = document.getElementById('area-btns')
   cont.innerHTML = areas.map(ar => {
     const activo = filtroAreas.includes(ar)
-    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleArea('${ar}')">${ar}</button>`
+    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleArea('${ar.replace(/'/g, "\\'")}')">${ar}</button>`
   }).join('')
 }
 
@@ -2473,31 +2529,6 @@ function toggleArea(area) {
   }
   updateAreaBtns()
   updateEmpresaBtns()
-  renderSituacion()
-}
-
-function updateAreaBtns() {
-  const areas = [...new Set(estadoHoy.map(e => e.area).filter(Boolean))].sort()
-
-  const todasActivo = filtroAreas.length === 0
-  document.getElementById('btn-area-todas')?.classList.toggle('active', todasActivo)
-
-  const cont = document.getElementById('area-btns')
-  cont.innerHTML = areas.map(ar => {
-    const activo = filtroAreas.includes(ar)
-    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleArea('${ar}')">${ar}</button>`
-  }).join('')
-}
-
-function toggleArea(area) {
-  if (area === 'todas') {
-    filtroAreas = []
-  } else {
-    const idx = filtroAreas.indexOf(area)
-    if (idx >= 0) filtroAreas.splice(idx, 1)
-    else filtroAreas.push(area)
-  }
-  updateAreaBtns()
   renderSituacion()
 }
 
@@ -3210,7 +3241,7 @@ function actualizarEmpresasResumen() {
   const cont = document.getElementById('res-emp-btns')
   cont.innerHTML = empresas.map(emp => {
     const activo = resumenEmpresas.includes(emp)
-    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleEmpresaResumen('${emp}')">${emp}</button>`
+    return `<button class="emp-btn ${activo ? 'active' : ''}" onclick="toggleEmpresaResumen('${emp.replace(/'/g, "\\'")}')">${emp}</button>`
   }).join('')
 }
 
@@ -4559,8 +4590,10 @@ async function generarActa() {
   document.getElementById('acta-sin-salida').textContent = actaData.length - conSalida
 
   // Banner de cumplimiento — solo si hay solicitud registrada para esta fecha/turno/empresa
-  const { data: solData } = await db.from('solicitudes_personal').select('solicitado')
-    .eq('fecha', fecha).eq('turno', turno).eq('empresa', empresa).maybeSingle()
+  // Suma todas las filas (una empresa puede tener una solicitud por área)
+  const { data: solRows } = await db.from('solicitudes_personal').select('solicitado')
+    .eq('fecha', fecha).eq('turno', turno).eq('empresa', empresa)
+  const solData = solRows && solRows.length ? { solicitado: solRows.reduce((a,r)=>a+(r.solicitado||0),0) } : null
   const cumpBox = document.getElementById('acta-cumplimiento')
   const statsViejas = document.getElementById('acta-stats-viejas')
   if (solData) {
@@ -4896,6 +4929,11 @@ async function initBanio() {
   // Siempre recargar planilla fresco — así aparecen nuevas personas sin necesidad de refrescar
   const { data } = await db.from('planilla').select('*').order('nombre')
   banioPlanilla = (data || []).filter(p => p.activo !== false) // excluye dados de baja
+
+  if (!document.getElementById('bc-desde').value) {
+    document.getElementById('bc-desde').value = today()
+    document.getElementById('bc-hasta').value = today()
+  }
 
   // Listener delegado del dropdown (una sola vez) — robusto ante cualquier DNI
   const dd = document.getElementById('banio-dd')
@@ -5432,6 +5470,98 @@ document.addEventListener('click', e => {
     }
   }
 })
+
+// ─── BAÑO: SUBTABS Y CONSULTA ──────────────────────────
+function banioSwitchSub(sub, el) {
+  document.querySelectorAll('#page-banio .banio-subtab').forEach(b => b.classList.remove('active'))
+  el.classList.add('active')
+  document.getElementById('banio-sub-registro').classList.toggle('active', sub === 'registro')
+  document.getElementById('banio-sub-consultar').classList.toggle('active', sub === 'consultar')
+}
+
+async function banioConsultaFetchTodo(armar) {
+  let out = [], desde = 0
+  for (;;) {
+    const { data, error } = await armar(db.from('banio_planilla').select('*')).range(desde, desde + 999)
+    if (error) throw error
+    out = out.concat(data || [])
+    if (!data || data.length < 1000) break
+    desde += 1000
+  }
+  return out
+}
+
+let banioConsultaData = []
+
+async function banioConsultaBuscar() {
+  const q = document.getElementById('bc-busqueda').value.trim()
+  const desde = document.getElementById('bc-desde').value
+  const hasta = document.getElementById('bc-hasta').value
+  const tbody = document.getElementById('bc-tbody')
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:26px;color:var(--muted)">Buscando...</td></tr>'
+
+  let registros
+  try {
+    registros = await banioConsultaFetchTodo(q0 => {
+      let qb = q0
+      if (desde) qb = qb.gte('fecha', desde)
+      if (hasta) qb = qb.lte('fecha', hasta)
+      if (q) qb = qb.or(`dni.ilike.%${q}%,nombre.ilike.%${q}%`)
+      return qb.order('fecha', { ascending: false }).order('solicitado_at', { ascending: false })
+    })
+  } catch (e) { showToast('Error buscando: ' + e.message, 'error'); return }
+
+  banioConsultaData = registros
+  banioConsultaRender()
+}
+
+function banioConsultaRender() {
+  const rows = banioConsultaData
+  const resumenBox = document.getElementById('bc-resumen')
+  const tbody = document.getElementById('bc-tbody')
+
+  if (!rows.length) {
+    resumenBox.style.display = 'none'
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:26px;color:var(--muted)">Sin registros para este filtro</td></tr>'
+    return
+  }
+
+  const totalMin = rows.reduce((a, r) => a + (r.tiempo_min || 0), 0)
+  const conTiempo = rows.filter(r => r.tiempo_min != null).length
+  resumenBox.style.display = 'grid'
+  document.getElementById('bc-total').textContent = rows.length
+  document.getElementById('bc-min-total').textContent = Math.round(totalMin)
+  document.getElementById('bc-min-prom').textContent = conTiempo ? (totalMin / conTiempo).toFixed(1) : '0'
+
+  const hora = iso => iso ? new Date(iso).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Lima' }) : '—'
+
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td>${solFmtFecha(r.fecha)}</td>
+    <td>${plaEsc(r.nombre)}</td>
+    <td style="font-family:monospace">${plaEsc(r.dni)}</td>
+    <td>${plaEsc(r.motivo) || '—'}</td>
+    <td>${hora(r.solicitado_at)}</td>
+    <td>${hora(r.aprobado_seg_at)}</td>
+    <td>${hora(r.retorno_at)}</td>
+    <td>${r.tiempo_min != null ? r.tiempo_min.toFixed(1) + ' min' : '<span style="color:var(--muted)">En curso</span>'}</td>
+    <td style="text-align:center">${r.veces_jornada || 1}</td>
+  </tr>`).join('')
+}
+
+async function banioConsultaDescargar() {
+  if (!banioConsultaData.length) { showToast('Primero busca los datos', 'error'); return }
+  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm')
+  const hora = iso => iso ? new Date(iso).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Lima' }) : ''
+  const rows = [['Fecha', 'Nombre', 'DNI', 'Motivo', 'Salida', 'Aprobación', 'Retorno', 'Tiempo (min)', 'Veces en jornada']]
+  banioConsultaData.forEach(r => {
+    rows.push([r.fecha, r.nombre, r.dni, r.motivo || '', hora(r.solicitado_at), hora(r.aprobado_seg_at), hora(r.retorno_at), r.tiempo_min ?? '', r.veces_jornada || 1])
+  })
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols'] = [{ wch: 12 }, { wch: 24 }, { wch: 12 }, { wch: 16 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 14 }]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Historial Baño')
+  XLSX.writeFile(wb, `historial_banio_${today()}.xlsx`)
+}
 
 // ─── RANKINGS ─────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
